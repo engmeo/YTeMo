@@ -9,10 +9,22 @@ from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
+from dataclasses import asdict
 from supabase import create_client
 
 from agent import chat
 from agent_core import AgentCore, AgentCoreError
+from companion_core import (
+    CompanionCore, ConsentScope, NeedStatus, UserPriority,
+    ConsentRequiredError, CompanionNotFoundError,
+)
+from proactive_engine import (
+    ProactiveEngine, TriggerEvent, TriggerType, ProposalStatus,
+    ProactiveEngineError,
+)
+from supabase_companion_repository import (
+    SupabaseCompanionRepository, SupabaseProposalRepository,
+)
 
 load_dotenv()
 
@@ -29,6 +41,10 @@ db_client = create_client(
 )
 
 agent_core = AgentCore(db_client)
+companion_repository = SupabaseCompanionRepository(db_client)
+companion_core = CompanionCore(companion_repository)
+proposal_repository = SupabaseProposalRepository(db_client)
+proactive_engine = ProactiveEngine(companion_core, proposal_repository)
 
 app = FastAPI(
     title="Y TE MO API",
@@ -49,7 +65,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -366,3 +382,213 @@ def resume_agent_task(
         return {"task": task, "message": "Task đã hoàn thành."}
     background_tasks.add_task(_run_agent_task, user_id, task_id)
     return {"task_id": task_id, "message": "Đã đưa task vào hàng đợi tiếp tục."}
+
+
+# ---------------------------------------------------------------------------
+# Persistent Personal Healthcare Companion API
+# Every user_id comes from get_current_user(), never from request payload.
+# ---------------------------------------------------------------------------
+
+class ConsentRequest(BaseModel):
+    scope: ConsentScope
+    granted: bool
+
+
+class ContextRequest(BaseModel):
+    scope: ConsentScope
+    category: str = Field(min_length=1, max_length=100)
+    content: str = Field(min_length=1, max_length=8000)
+    source: str = Field(default="user_provided", max_length=100)
+    expires_at: Optional[str] = None
+
+
+class NeedRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    description: str = Field(default="Chưa có mô tả", min_length=1, max_length=4000)
+    priority: UserPriority = UserPriority.NORMAL
+    next_step: Optional[str] = Field(default=None, max_length=1000)
+
+
+class NeedUpdateRequest(BaseModel):
+    status: Optional[NeedStatus] = None
+    next_step: Optional[str] = Field(default=None, max_length=1000)
+
+
+class FollowUpRequest(BaseModel):
+    summary: str = Field(min_length=1, max_length=2000)
+
+
+class ProactiveEventRequest(BaseModel):
+    trigger_type: TriggerType
+    summary: str = Field(min_length=1, max_length=2000)
+    source: str = Field(default="user_action", max_length=100)
+
+
+class ProposalStatusRequest(BaseModel):
+    status: ProposalStatus
+
+
+def _serialize(value):
+    if hasattr(value, "__dataclass_fields__"):
+        value = asdict(value)
+    if isinstance(value, dict):
+        return {k: _serialize(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_serialize(v) for v in value]
+    if hasattr(value, "value"):
+        return value.value
+    return value
+
+
+def _companion_error(exc):
+    if isinstance(exc, ConsentRequiredError):
+        raise HTTPException(status_code=403, detail=str(exc))
+    if isinstance(exc, (CompanionNotFoundError, ProactiveEngineError)):
+        raise HTTPException(status_code=404, detail=str(exc))
+    if isinstance(exc, ValueError):
+        raise HTTPException(status_code=422, detail=str(exc))
+    print("COMPANION ERROR:", repr(exc), flush=True)
+    raise HTTPException(status_code=503, detail="Companion service temporarily unavailable")
+
+
+@app.post("/companion/initialize")
+def companion_initialize(user=Depends(get_current_user)):
+    try:
+        return companion_core.initialize(str(user.id))
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.get("/companion")
+def companion_snapshot(user=Depends(get_current_user)):
+    try:
+        return companion_core.snapshot(str(user.id))
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.put("/companion/consent")
+def companion_set_consent(request: ConsentRequest, user=Depends(get_current_user)):
+    try:
+        return companion_core.set_consent(
+            str(user.id), request.scope, request.granted
+        )
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.post("/companion/context")
+def companion_save_context(request: ContextRequest, user=Depends(get_current_user)):
+    try:
+        item = companion_core.remember_context(
+            str(user.id), scope=request.scope, category=request.category,
+            content=request.content, source=request.source,
+            expires_at=request.expires_at,
+        )
+        return _serialize(item)
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.get("/companion/context")
+def companion_get_context(user=Depends(get_current_user)):
+    try:
+        return {"items": _serialize(companion_core.get_context(str(user.id)))}
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.delete("/companion/context/{context_id}")
+def companion_delete_context(context_id: str, user=Depends(get_current_user)):
+    try:
+        deleted = companion_core.delete_context(str(user.id), context_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Context not found")
+        return {"deleted": True}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.post("/companion/needs")
+def companion_create_need(request: NeedRequest, user=Depends(get_current_user)):
+    try:
+        need = companion_core.create_need(
+            str(user.id), title=request.title, description=request.description,
+            user_priority=request.priority, next_step=request.next_step,
+        )
+        return _serialize(need)
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.get("/companion/needs")
+def companion_list_needs(include_resolved: bool = False, user=Depends(get_current_user)):
+    try:
+        return {"needs": _serialize(companion_core.list_needs(
+            str(user.id), include_resolved=include_resolved
+        ))}
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.patch("/companion/needs/{need_id}")
+def companion_update_need(need_id: str, request: NeedUpdateRequest,
+                          user=Depends(get_current_user)):
+    try:
+        need = companion_core.update_need(
+            str(user.id), need_id, status=request.status,
+            next_step=request.next_step,
+        )
+        return _serialize(need)
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.post("/companion/follow-up")
+def companion_record_follow_up(request: FollowUpRequest,
+                               user=Depends(get_current_user)):
+    try:
+        event = companion_core.record_follow_up_event(
+            str(user.id), request.summary
+        )
+        return _serialize(event)
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.post("/companion/proactive/evaluate")
+def companion_evaluate_proactive(request: ProactiveEventRequest,
+                                 user=Depends(get_current_user)):
+    try:
+        event = TriggerEvent(
+            user_id=str(user.id), trigger_type=request.trigger_type,
+            summary=request.summary, source=request.source,
+        )
+        proposals = proactive_engine.evaluate(event)
+        return {"proposals": _serialize(proposals)}
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.get("/companion/proactive/proposals")
+def companion_list_proposals(user=Depends(get_current_user)):
+    try:
+        return {"proposals": _serialize(
+            proactive_engine.list_proposals(str(user.id))
+        )}
+    except Exception as exc:
+        _companion_error(exc)
+
+
+@app.patch("/companion/proactive/proposals/{proposal_id}")
+def companion_update_proposal(proposal_id: str, request: ProposalStatusRequest,
+                              user=Depends(get_current_user)):
+    try:
+        proposal = proactive_engine.update_proposal(
+            str(user.id), proposal_id, request.status
+        )
+        return _serialize(proposal)
+    except Exception as exc:
+        _companion_error(exc)
