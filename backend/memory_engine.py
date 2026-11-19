@@ -28,6 +28,43 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _parse_timestamp(value: Any) -> Optional[datetime]:
+    """Parse ISO timestamps consistently; naive timestamps are treated as UTC."""
+    if value is None or value == "":
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _is_temporally_valid(row: Dict[str, Any], as_of: str) -> bool:
+    """Fail closed on malformed timestamps; expiry is exclusive."""
+    moment = _parse_timestamp(as_of)
+    if moment is None:
+        return False
+
+    start = row.get("valid_from")
+    until = row.get("valid_until")
+    expiry = row.get("expires_at")
+
+    if start not in (None, ""):
+        parsed_start = _parse_timestamp(start)
+        if parsed_start is None or parsed_start > moment:
+            return False
+
+    for value in (until, expiry):
+        if value not in (None, ""):
+            parsed_end = _parse_timestamp(value)
+            if parsed_end is None or parsed_end <= moment:
+                return False
+
+    return True
+
+
 def _canonical(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str)
 
@@ -81,12 +118,28 @@ class MemoryQuery:
 
 class MemoryRepository(Protocol):
     def insert(self, row: Dict[str, Any]) -> Dict[str, Any]: ...
+    def insert_with_audit(self, row: Dict[str, Any],
+                          audit: Dict[str, Any]) -> Dict[str, Any]: ...
+    def insert_with_audit(self, row: Dict[str, Any],
+                          audit: Dict[str, Any]) -> Dict[str, Any]:
+        result = self.client.rpc(
+            "memory_write_with_audit",
+            {"p_memory": row, "p_audit": audit},
+        ).execute()
+        data = getattr(result, "data", None)
+        if isinstance(data, list):
+            data = data[0] if data else None
+        if not isinstance(data, dict) or not data.get("id"):
+            raise RuntimeError("Transactional memory write returned no memory")
+        return data
+
     def find_duplicate(self, *, user_id: Optional[str], agent_key: Optional[str],
                        memory_type: str, dedupe_hash: str) -> Optional[Dict[str, Any]]: ...
     def retrieve(self, *, user_id: str, agent_key: Optional[str],
                  memory_types: Optional[List[str]], as_of: str,
                  include_agent_global: bool, limit: int) -> List[Dict[str, Any]]: ...
-    def update(self, memory_id: str, values: Dict[str, Any]) -> Dict[str, Any]: ...
+    def update(self, memory_id: str, values: Dict[str, Any], *,
+               user_id: str, expected_status: Optional[str] = None) -> Dict[str, Any]: ...
     def audit(self, row: Dict[str, Any]) -> None: ...
 
 
@@ -124,44 +177,76 @@ class SupabaseMemoryRepository:
                  include_agent_global: bool, limit: int) -> List[Dict[str, Any]]:
         q = (self.client.table("agent_memories").select("*")
              .eq("owner_type", "USER").eq("user_id", user_id)
-             .eq("status", "ACTIVE").is_("deleted_at", "null")
-             .lte("valid_from", as_of))
-        # User-wide Companion memories and this Agent's private namespace.
+             .eq("status", "ACTIVE").is_("deleted_at", "null"))
+        # Keep both OR groups in one PostgREST AND expression.
         if agent_key:
-            q = q.or_(f"agent_key.is.null,agent_key.eq.{agent_key}")
+            q = q.and_(
+                f"or(valid_from.is.null,valid_from.lte.{as_of}),"
+                f"or(agent_key.is.null,agent_key.eq.{agent_key})"
+            )
         else:
+            q = q.or_(f"valid_from.is.null,valid_from.lte.{as_of}")
             q = q.is_("agent_key", "null")
         if memory_types:
             q = q.in_("memory_type", memory_types)
         data = getattr(q.order("recorded_at", desc=True).limit(limit).execute(),
                        "data", None) or []
-        rows = []
-        for row in data:
-            until = row.get("valid_until")
-            expiry = row.get("expires_at")
-            if until and until < as_of:
-                continue
-            if expiry and expiry < as_of:
-                continue
-            rows.append(row)
+        rows = [row for row in data if _is_temporally_valid(row, as_of)]
+
         if include_agent_global and agent_key:
             g = (self.client.table("agent_memories").select("*")
                  .eq("owner_type", "AGENT").eq("agent_key", agent_key)
-                 .eq("status", "ACTIVE").is_("deleted_at", "null"))
+                 .eq("status", "ACTIVE").is_("deleted_at", "null")
+                 .or_(f"valid_from.is.null,valid_from.lte.{as_of}"))
             if memory_types:
                 g = g.in_("memory_type", memory_types)
             global_rows = getattr(g.order("recorded_at", desc=True).limit(limit).execute(),
                                   "data", None) or []
-            rows.extend(global_rows)
+            rows.extend(row for row in global_rows
+                        if _is_temporally_valid(row, as_of))
         return rows[:limit]
 
-    def update(self, memory_id: str, values: Dict[str, Any]) -> Dict[str, Any]:
-        result = (self.client.table("agent_memories").update(values)
-                  .eq("id", memory_id).execute())
+    def update_with_audit(self, memory_id: str, values: Dict[str, Any],
+                          audit: Dict[str, Any], *, user_id: str,
+                          expected_status: Optional[str] = None) -> Dict[str, Any]: ...
+    def update(self, memory_id: str, values: Dict[str, Any], *,
+               user_id: str, expected_status: Optional[str] = None) -> Dict[str, Any]:
+        if not user_id or not user_id.strip():
+            raise PermissionError("An owner user_id is required for memory updates")
+        q = (self.client.table("agent_memories").update(values)
+             .eq("id", memory_id)
+             .eq("owner_type", "USER")
+             .eq("user_id", user_id)
+             .is_("deleted_at", "null"))
+        if expected_status:
+            q = q.eq("status", expected_status)
+        result = q.execute()
         data = getattr(result, "data", None) or []
         if not data:
             raise LookupError("Memory not found or update not permitted")
         return data[0]
+
+    def update_with_audit(self, memory_id: str, values: Dict[str, Any],
+                          audit: Dict[str, Any], *, user_id: str,
+                          expected_status: Optional[str] = None) -> Dict[str, Any]:
+        if not user_id or not user_id.strip():
+            raise PermissionError("An owner user_id is required for memory updates")
+        result = self.client.rpc(
+            "memory_update_with_audit",
+            {
+                "p_memory_id": memory_id,
+                "p_user_id": user_id,
+                "p_values": values,
+                "p_audit": audit,
+                "p_expected_status": expected_status,
+            },
+        ).execute()
+        data = getattr(result, "data", None)
+        if isinstance(data, list):
+            data = data[0] if data else None
+        if not isinstance(data, dict) or not data.get("id"):
+            raise LookupError("Memory not found or update not permitted")
+        return data
 
     def audit(self, row: Dict[str, Any]) -> None:
         self.client.table("agent_memory_audit").insert(row).execute()
@@ -238,11 +323,14 @@ class MemoryEngine:
             "observed_at": _now(), "expires_at": expires_at, "dedupe_hash": digest,
             "created_by_agent": created_by_agent, "metadata": metadata or {},
         }
-        saved = self.repository.insert(row)
-        self.repository.audit({
-            "memory_id": saved["id"], "action": "CREATED", "actor_type":
-            "AGENT" if created_by_agent else "SYSTEM", "actor_id": created_by_agent,
-            "new_state": {"status": "CANDIDATE", "verification_state": "UNVERIFIED"},
+        saved = self.repository.insert_with_audit(row, {
+            "action": "CREATED",
+            "actor_type": "AGENT" if created_by_agent else "SYSTEM",
+            "actor_id": created_by_agent,
+            "new_state": {
+                "status": "CANDIDATE",
+                "verification_state": "UNVERIFIED",
+            },
             "reason": "Memory captured as an unverified candidate",
         })
         return MemoryWriteResult(self._from_row(saved), True, "created_as_candidate")
@@ -283,39 +371,67 @@ class MemoryEngine:
                 for t in terms)]
         return [self._from_row(r) for r in rows]
 
-    def review(self, memory_id: str, *, decision: str, actor_id: str,
-               actor_type: str = "HUMAN", reason: str = "") -> MemoryRecord:
+    def review(self, memory_id: str, *, user_id: str, decision: str,
+               actor_id: str, actor_type: str = "HUMAN",
+               reason: str = "") -> MemoryRecord:
         decision = decision.upper()
         if decision not in {"APPROVE", "REJECT"}:
             raise ValueError("decision must be APPROVE or REJECT")
-        if actor_type.upper() != "HUMAN" or not actor_id:
+        if actor_type.upper() != "HUMAN" or not isinstance(actor_id, str) or not actor_id.strip():
             raise PermissionError("Only an identified human reviewer may review memory")
         status = "ACTIVE" if decision == "APPROVE" else "REJECTED"
         verification = "REVIEWED" if decision == "APPROVE" else "DISPUTED"
-        updated = self.repository.update(memory_id, {
-            "status": status, "verification_state": verification,
-            "reviewed_by": actor_id, "reviewed_at": _now(), "updated_at": _now(),
-        })
-        self.repository.audit({
-            "memory_id": memory_id, "action": "ACTIVATED" if decision == "APPROVE" else "REJECTED",
-            "actor_type": "HUMAN", "actor_id": actor_id,
-            "new_state": {"status": status, "verification_state": verification},
-            "reason": reason or "Human review",
-        })
+        if not user_id or not user_id.strip():
+            raise PermissionError("Memory owner user_id is required")
+        updated = self.repository.update_with_audit(
+            memory_id,
+            {
+                "status": status,
+                "verification_state": verification,
+                "reviewed_by": actor_id,
+                "reviewed_at": _now(),
+                "updated_at": _now(),
+            },
+            {
+                "action": "ACTIVATED" if decision == "APPROVE" else "REJECTED",
+                "actor_type": "HUMAN",
+                "actor_id": actor_id,
+                "new_state": {
+                    "status": status,
+                    "verification_state": verification,
+                },
+                "reason": reason or "Human review",
+            },
+            user_id=user_id,
+            expected_status="CANDIDATE",
+        )
         return self._from_row(updated)
 
-    def soft_delete(self, memory_id: str, *, actor_id: str,
+    def soft_delete(self, memory_id: str, *, user_id: str, actor_id: str,
                     actor_type: str = "HUMAN", reason: str = "") -> None:
-        if not actor_id:
-            raise PermissionError("actor_id is required")
-        self.repository.update(memory_id, {
-            "deleted_at": _now(), "status": "ARCHIVED", "updated_at": _now(),
-        })
-        self.repository.audit({
-            "memory_id": memory_id, "action": "DELETED",
-            "actor_type": actor_type.upper(), "actor_id": actor_id,
-            "reason": reason or "Soft-deleted",
-        })
+        if actor_type.upper() not in {"HUMAN", "SYSTEM"} or not isinstance(actor_id, str) or not actor_id.strip():
+            raise PermissionError("Deletion requires an identified HUMAN or SYSTEM actor")
+        if not user_id or not user_id.strip():
+            raise PermissionError("Memory owner user_id is required")
+        self.repository.update_with_audit(
+            memory_id,
+            {
+                "deleted_at": _now(),
+                "status": "ARCHIVED",
+                "updated_at": _now(),
+            },
+            {
+                "action": "DELETED",
+                "actor_type": actor_type.upper(),
+                "actor_id": actor_id,
+                "new_state": {
+                    "status": "ARCHIVED",
+                    "deleted": True,
+                },
+                "reason": reason or "Soft-deleted",
+            },
+            user_id=user_id,
+        )
 
     @staticmethod
     def _from_row(row: Dict[str, Any]) -> MemoryRecord:
