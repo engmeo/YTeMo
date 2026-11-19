@@ -1,4 +1,4 @@
-﻿"""Consent-aware, framework-neutral memory engine for Y TE MO.
+"""Consent-aware, framework-neutral memory engine for Y TE MO.
 
 This module stores candidate memories by default. It does not call an LLM,
 make clinical judgments, or promote unverified content automatically.
@@ -260,6 +260,22 @@ class MemoryEngine:
             memory_types=query.memory_types, as_of=now,
             include_agent_global=query.include_agent_global,
             limit=max(1, min(query.limit, 100)))
+        # Re-check consent at retrieval time; write-time consent is insufficient.
+        permitted_rows = []
+        for row in rows:
+            sensitivity = str(row.get("sensitivity", "NORMAL")).upper()
+            scope = row.get("consent_scope")
+            if sensitivity in {"PERSONAL", "HEALTH", "HIGH"} and not scope:
+                continue
+            if scope:
+                normalized_scope = str(scope).upper()
+                if normalized_scope not in CONSENT_SCOPES:
+                    continue
+                if not self.consent_checker(query.user_id, normalized_scope):
+                    continue
+            permitted_rows.append(row)
+        rows = permitted_rows
+
         if query.query:
             terms = [t.casefold() for t in query.query.split() if t.strip()]
             rows = [r for r in rows if all(

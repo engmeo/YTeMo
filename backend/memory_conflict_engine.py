@@ -1,4 +1,4 @@
-﻿"""Conflict detection and evidence tracking for Y TE MO.
+"""Conflict detection and evidence tracking for Y TE MO.
 
 Framework-neutral module. It does not decide clinical truth, call an LLM,
 or write to Supabase. It preserves competing claims and their provenance.
@@ -113,8 +113,15 @@ class EvidenceStore:
 
     def add(self, evidence: Evidence) -> Evidence:
         existing = self._items.get(evidence.evidence_id)
-        if existing and existing != evidence:
-            raise ValueError("Evidence ID collision")
+        if existing:
+            same_identity = (
+                existing.source_type == evidence.source_type
+                and existing.source_ref == evidence.source_ref
+                and existing.excerpt_hash == evidence.excerpt_hash
+            )
+            if not same_identity:
+                raise ValueError("Evidence ID collision")
+            return existing
         self._items[evidence.evidence_id] = evidence
         return evidence
 

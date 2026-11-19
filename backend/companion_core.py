@@ -173,6 +173,28 @@ class CompanionCore:
         record = state.consents.get(scope.value)
         return bool(record and record.granted)
 
+    def has_consent(self, user_id: str, scope: ConsentScope) -> bool:
+        """Public fail-closed consent check for internal memory services."""
+        try:
+            state = self._load(user_id)
+            return bool(state and self._has_consent(state, scope))
+        except Exception:
+            return False
+
+    @staticmethod
+    def _context_is_expired(item: ContextItem) -> bool:
+        if not item.expires_at:
+            return False
+        try:
+            value = item.expires_at.replace("Z", "+00:00")
+            expiry = datetime.fromisoformat(value)
+            if expiry.tzinfo is None:
+                expiry = expiry.replace(tzinfo=timezone.utc)
+            return expiry <= datetime.now(timezone.utc)
+        except (TypeError, ValueError):
+            # Fail closed: malformed expiry must never expose old context.
+            return True
+
     @staticmethod
     def _require_consent(state: CompanionState, scope: ConsentScope) -> None:
         if not CompanionCore._has_consent(state, scope):
@@ -209,6 +231,12 @@ class CompanionCore:
         state.consents[scope.value] = ConsentRecord(
             scope=scope, granted=bool(granted), updated_at=_now()
         )
+        # Revocation is destructive for this consent scope:
+        # old context must not reappear after consent is granted again.
+        if not granted:
+            state.context_items = [
+                item for item in state.context_items if item.scope != scope
+            ]
         self._add_event(
             state,
             "consent_granted" if granted else "consent_revoked",
@@ -259,7 +287,9 @@ class CompanionCore:
         allowed = set(scopes) if scopes is not None else set(ConsentScope)
         return [
             item for item in state.context_items
-            if item.scope in allowed and self._has_consent(state, item.scope)
+            if item.scope in allowed
+            and self._has_consent(state, item.scope)
+            and not self._context_is_expired(item)
         ]
 
     def delete_context(self, user_id: str, context_id: str) -> bool:
