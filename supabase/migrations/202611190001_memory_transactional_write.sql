@@ -18,6 +18,7 @@ begin
 
     -- Supply database defaults for fields populated through JSON records.
     v_memory := p_memory || jsonb_build_object(
+        'id', coalesce(p_memory->>'id', gen_random_uuid()::text),
         'recorded_at', coalesce(p_memory->>'recorded_at', now()::text),
         'created_at', coalesce(p_memory->>'created_at', now()::text),
         'updated_at', coalesce(p_memory->>'updated_at', now()::text),
