@@ -1,0 +1,233 @@
+"""Framework-neutral, serializable domain models for cognitive planning.
+
+These models describe plans and knowledge; they do not execute actions or
+establish clinical truth. Timestamps must be ISO-8601 strings with a timezone.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Mapping
+from uuid import uuid4
+from datetime import datetime
+
+
+def _aware_timestamp(value: str, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name} must be a non-empty ISO-8601 timestamp.")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a valid ISO-8601 timestamp.") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field_name} must include a timezone.")
+    return value
+
+
+class GoalPriority(str, Enum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class StepRisk(str, Enum):
+    MINIMAL = "minimal"
+    LOW = "low"
+    MODERATE = "moderate"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class PlanStatus(str, Enum):
+    DRAFT = "draft"
+    VALIDATED = "validated"
+    READY = "ready"
+    RUNNING = "running"
+    BLOCKED = "blocked"
+    HUMAN_REVIEW = "human_review"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SUPERSEDED = "superseded"
+
+
+@dataclass(frozen=True)
+class StateFact:
+    """A sourced assertion about the world or a patient at a point in time."""
+    key: str
+    value: Any
+    observed_at: str
+    source_type: str
+    source_id: str
+    confidence: float = 1.0
+    valid_from: str | None = None
+    valid_until: str | None = None
+    sensitivity: str = "ordinary"
+
+    def __post_init__(self) -> None:
+        if not self.key.strip():
+            raise ValueError("StateFact.key must not be empty.")
+        if not self.source_type.strip() or not self.source_id.strip():
+            raise ValueError("StateFact requires source_type and source_id.")
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("StateFact.confidence must be between 0 and 1.")
+        _aware_timestamp(self.observed_at, "observed_at")
+        if self.valid_from is not None:
+            _aware_timestamp(self.valid_from, "valid_from")
+        if self.valid_until is not None:
+            _aware_timestamp(self.valid_until, "valid_until")
+
+
+@dataclass(frozen=True)
+class StateSnapshot:
+    """A versioned, provenance-aware state snapshot.
+
+    `domain` is explicit so the same kernel can represent healthcare, robotics,
+    or general-purpose environments. Healthcare semantics are first-class
+    through the patient_state flag and domain-specific facts/constraints.
+    """
+    subject_id: str
+    domain: str
+    revision: int
+    as_of: str
+    facts: tuple[StateFact, ...] = ()
+    constraints: tuple[str, ...] = ()
+    unknowns: tuple[str, ...] = ()
+    patient_state: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.subject_id.strip() or not self.domain.strip():
+            raise ValueError("StateSnapshot requires subject_id and domain.")
+        if self.revision < 0:
+            raise ValueError("StateSnapshot.revision cannot be negative.")
+        _aware_timestamp(self.as_of, "as_of")
+        keys = [fact.key for fact in self.facts]
+        if len(keys) != len(set(keys)):
+            raise ValueError("StateSnapshot fact keys must be unique.")
+
+
+@dataclass(frozen=True)
+class BeliefHypothesis:
+    """An uncertain hypothesis; probability is not a diagnosis or truth claim."""
+    hypothesis_id: str
+    statement: str
+    probability: float
+    evidence_refs: tuple[str, ...] = ()
+    alternatives: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.hypothesis_id.strip() or not self.statement.strip():
+            raise ValueError("BeliefHypothesis requires an id and statement.")
+        if not 0.0 <= self.probability <= 1.0:
+            raise ValueError("Hypothesis probability must be between 0 and 1.")
+
+
+@dataclass(frozen=True)
+class BeliefState:
+    snapshot: StateSnapshot
+    hypotheses: tuple[BeliefHypothesis, ...] = ()
+    unresolved_questions: tuple[str, ...] = ()
+    confidence_threshold: float = 0.8
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.confidence_threshold <= 1.0:
+            raise ValueError("confidence_threshold must be between 0 and 1.")
+        ids = [item.hypothesis_id for item in self.hypotheses]
+        if len(ids) != len(set(ids)):
+            raise ValueError("BeliefState hypothesis ids must be unique.")
+
+    def fact(self, key: str) -> StateFact | None:
+        return next((item for item in self.snapshot.facts if item.key == key), None)
+
+    def is_known(self, key: str) -> bool:
+        item = self.fact(key)
+        return item is not None and item.confidence >= self.confidence_threshold
+
+
+@dataclass(frozen=True)
+class Goal:
+    goal_id: str
+    description: str
+    domain: str
+    priority: GoalPriority = GoalPriority.NORMAL
+    success_criteria: tuple[str, ...] = ()
+    constraints: tuple[str, ...] = ()
+    deadline: str | None = None
+    parent_goal_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.goal_id.strip() or not self.description.strip() or not self.domain.strip():
+            raise ValueError("Goal requires goal_id, description, and domain.")
+        if self.deadline is not None:
+            _aware_timestamp(self.deadline, "deadline")
+
+
+@dataclass(frozen=True)
+class PlanStep:
+    step_id: str
+    action: str
+    description: str
+    depends_on: tuple[str, ...] = ()
+    preconditions: tuple[str, ...] = ()
+    effects: Mapping[str, Any] = field(default_factory=dict)
+    risk: StepRisk = StepRisk.LOW
+    requires_human_approval: bool = False
+    expected_duration_seconds: int | None = None
+    resource_requirements: Mapping[str, float] = field(default_factory=dict)
+    evidence_refs: tuple[str, ...] = ()
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.step_id.strip() or not self.action.strip() or not self.description.strip():
+            raise ValueError("PlanStep requires step_id, action, and description.")
+        if self.expected_duration_seconds is not None and self.expected_duration_seconds < 0:
+            raise ValueError("expected_duration_seconds cannot be negative.")
+        if any(not name.strip() for name in self.depends_on):
+            raise ValueError("PlanStep dependencies cannot contain empty ids.")
+        if any(not key.strip() or value < 0 for key, value in self.resource_requirements.items()):
+            raise ValueError("Resource requirements need non-empty keys and non-negative values.")
+
+
+@dataclass(frozen=True)
+class Plan:
+    plan_id: str
+    goal_id: str
+    domain: str
+    state_revision: int
+    steps: tuple[PlanStep, ...]
+    created_at: str
+    version: int = 1
+    status: PlanStatus = PlanStatus.DRAFT
+    rationale: str = ""
+    assumptions: tuple[str, ...] = ()
+    unresolved_risks: tuple[str, ...] = ()
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def create(
+        cls,
+        goal: Goal,
+        state: StateSnapshot,
+        steps: tuple[PlanStep, ...],
+        *,
+        rationale: str = "",
+        assumptions: tuple[str, ...] = (),
+    ) -> "Plan":
+        return cls(
+            plan_id=str(uuid4()),
+            goal_id=goal.goal_id,
+            domain=goal.domain,
+            state_revision=state.revision,
+            steps=steps,
+            created_at=datetime.now().astimezone().isoformat(),
+            rationale=rationale,
+            assumptions=assumptions,
+        )
+
+    def __post_init__(self) -> None:
+        if not self.plan_id.strip() or not self.goal_id.strip() or not self.domain.strip():
+            raise ValueError("Plan requires plan_id, goal_id, and domain.")
+        if self.version < 1 or self.state_revision < 0:
+            raise ValueError("Plan version must be positive and state_revision non-negative.")
+        _aware_timestamp(self.created_at, "created_at")

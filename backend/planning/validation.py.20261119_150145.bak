@@ -1,0 +1,135 @@
+"""Deterministic structural and policy validation for proposed plans."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from .models import Plan, PlanStatus, StepRisk
+
+
+@dataclass(frozen=True)
+class PlanningPolicy:
+    max_steps: int = 100
+    require_human_approval_for_high_risk: bool = True
+    require_human_approval_for_critical_risk: bool = True
+    healthcare_domain_names: tuple[str, ...] = ("healthcare", "clinical", "patient-care")
+    require_evidence_for_healthcare_high_risk: bool = True
+
+
+@dataclass(frozen=True)
+class PlanValidationIssue:
+    code: str
+    message: str
+    step_id: str | None = None
+    severity: str = "error"
+
+
+@dataclass(frozen=True)
+class PlanValidationResult:
+    valid: bool
+    issues: tuple[PlanValidationIssue, ...]
+    topological_order: tuple[str, ...]
+
+    @property
+    def blocking_issues(self) -> tuple[PlanValidationIssue, ...]:
+        return tuple(item for item in self.issues if item.severity == "error")
+
+
+def validate_plan(plan: Plan, policy: PlanningPolicy | None = None) -> PlanValidationResult:
+    policy = policy or PlanningPolicy()
+    issues: list[PlanValidationIssue] = []
+    steps = plan.steps
+    ids = [step.step_id for step in steps]
+
+    if len(steps) > policy.max_steps:
+        issues.append(PlanValidationIssue(
+            "max_steps_exceeded",
+            f"Plan has {len(steps)} steps; policy allows {policy.max_steps}.",
+        ))
+
+    if len(ids) != len(set(ids)):
+        issues.append(PlanValidationIssue("duplicate_step_id", "Step ids must be unique."))
+
+    known = set(ids)
+    graph: dict[str, tuple[str, ...]] = {}
+    for step in steps:
+        if step.step_id in graph:
+            continue
+        unknown = [dep for dep in step.depends_on if dep not in known]
+        if unknown:
+            issues.append(PlanValidationIssue(
+                "unknown_dependency",
+                f"Unknown dependencies: {', '.join(unknown)}.",
+                step.step_id,
+            ))
+        if step.step_id in step.depends_on:
+            issues.append(PlanValidationIssue(
+                "self_dependency", "A step cannot depend on itself.", step.step_id
+            ))
+        graph[step.step_id] = tuple(dep for dep in step.depends_on if dep in known)
+
+        if policy.require_human_approval_for_high_risk and step.risk == StepRisk.HIGH:
+            if not step.requires_human_approval:
+                issues.append(PlanValidationIssue(
+                    "human_approval_required",
+                    "High-risk steps require explicit human approval.",
+                    step.step_id,
+                ))
+        if policy.require_human_approval_for_critical_risk and step.risk == StepRisk.CRITICAL:
+            if not step.requires_human_approval:
+                issues.append(PlanValidationIssue(
+                    "human_approval_required",
+                    "Critical-risk steps require explicit human approval.",
+                    step.step_id,
+                ))
+
+        if (
+            plan.domain.lower() in policy.healthcare_domain_names
+            and policy.require_evidence_for_healthcare_high_risk
+            and step.risk in {StepRisk.HIGH, StepRisk.CRITICAL}
+            and not step.evidence_refs
+        ):
+            issues.append(PlanValidationIssue(
+                "healthcare_evidence_required",
+                "High/critical-risk healthcare steps require evidence references.",
+                step.step_id,
+            ))
+
+    # Kahn topological sort. Deterministic ordering makes tests/replays stable.
+    indegree = {node: len(deps) for node, deps in graph.items()}
+    dependents: dict[str, list[str]] = {node: [] for node in graph}
+    for node, deps in graph.items():
+        for dep in deps:
+            dependents[dep].append(node)
+
+    ready = sorted(node for node, degree in indegree.items() if degree == 0)
+    order: list[str] = []
+    while ready:
+        node = ready.pop(0)
+        order.append(node)
+        for child in sorted(dependents[node]):
+            indegree[child] -= 1
+            if indegree[child] == 0:
+                ready.append(child)
+                ready.sort()
+
+    if len(order) != len(graph):
+        issues.append(PlanValidationIssue(
+            "dependency_cycle", "Plan dependency graph contains a cycle."
+        ))
+
+    errors = any(item.severity == "error" for item in issues)
+    return PlanValidationResult(
+        valid=not errors,
+        issues=tuple(issues),
+        topological_order=tuple(order) if not errors else (),
+    )
+
+
+def mark_validated(plan: Plan, policy: PlanningPolicy | None = None) -> Plan:
+    """Return a validated copy; never mutates or executes the original plan."""
+    from dataclasses import replace
+
+    result = validate_plan(plan, policy)
+    if not result.valid:
+        details = "; ".join(f"{item.code}: {item.message}" for item in result.blocking_issues)
+        raise ValueError(f"Plan validation failed: {details}")
+    return replace(plan, status=PlanStatus.VALIDATED)

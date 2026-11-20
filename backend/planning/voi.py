@@ -1,0 +1,82 @@
+"""Finite-state expected Value of Information calculations."""
+from __future__ import annotations
+from dataclasses import dataclass
+from math import isfinite
+from types import MappingProxyType
+from typing import Mapping
+
+
+@dataclass(frozen=True)
+class ValueOfInformationResult:
+    current_best_decision: str
+    current_expected_utility: float
+    expected_utility_after_observation: float
+    gross_value: float
+    information_cost: float
+    net_value: float
+    outcome_probabilities: Mapping[str, float]
+
+    def __post_init__(self):
+        object.__setattr__(self, "outcome_probabilities", MappingProxyType(dict(self.outcome_probabilities)))
+
+
+def _number(value, label):
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value):
+        raise ValueError(f"{label} must be a finite number")
+    return float(value)
+
+
+def evaluate_value_of_information(
+    prior: Mapping[str, float],
+    decision_utilities: Mapping[str, Mapping[str, float]],
+    observation_model: Mapping[str, Mapping[str, float]],
+    *,
+    information_cost: float = 0.0,
+) -> ValueOfInformationResult:
+    """Compute EVSI for discrete hypotheses, decisions and observation outcomes.
+
+    observation_model[outcome][hypothesis] is P(outcome | hypothesis).
+    Utilities and costs use caller-defined units; no domain assumptions are made.
+    """
+    cost = _number(information_cost, "information_cost")
+    if cost < 0:
+        raise ValueError("information_cost must be non-negative")
+    if not prior or not decision_utilities or not observation_model:
+        raise ValueError("prior, decision_utilities and observation_model must be non-empty")
+    hypotheses = set(prior)
+    if any(not isinstance(h, str) or not h.strip() for h in hypotheses):
+        raise ValueError("hypothesis ids must be non-empty strings")
+    p = {h: _number(v, f"prior[{h}]") for h, v in prior.items()}
+    if any(v < 0 for v in p.values()) or sum(p.values()) <= 0:
+        raise ValueError("prior probabilities must be non-negative with positive total")
+    total = sum(p.values())
+    p = {h: v / total for h, v in p.items()}
+    utilities = {}
+    for decision, values in decision_utilities.items():
+        if not isinstance(decision, str) or not decision.strip() or set(values) != hypotheses:
+            raise ValueError("each decision must define utility for every hypothesis")
+        utilities[decision] = {h: _number(values[h], f"utility[{decision}][{h}]") for h in hypotheses}
+    likelihoods = {}
+    for outcome, values in observation_model.items():
+        if not isinstance(outcome, str) or not outcome.strip() or set(values) != hypotheses:
+            raise ValueError("each observation outcome must define likelihood for every hypothesis")
+        row = {h: _number(values[h], f"P({outcome}|{h})") for h in hypotheses}
+        if any(v < 0 or v > 1 for v in row.values()):
+            raise ValueError("observation likelihoods must be between 0 and 1")
+        likelihoods[outcome] = row
+    for h in hypotheses:
+        if abs(sum(likelihoods[o][h] for o in likelihoods) - 1.0) > 1e-8:
+            raise ValueError(f"observation probabilities for hypothesis {h!r} must sum to 1")
+    expected_by_decision = {d: sum(p[h] * utility for h, utility in values.items()) for d, values in utilities.items()}
+    best_decision = max(expected_by_decision, key=lambda d: (expected_by_decision[d], d))
+    current = expected_by_decision[best_decision]
+    outcome_probs = {o: sum(p[h] * likelihoods[o][h] for h in hypotheses) for o in likelihoods}
+    after = 0.0
+    for outcome, probability in outcome_probs.items():
+        if probability <= 0:
+            continue
+        posterior = {h: p[h] * likelihoods[outcome][h] / probability for h in hypotheses}
+        best_after = max(sum(posterior[h] * utilities[d][h] for h in hypotheses) for d in utilities)
+        after += probability * best_after
+    gross = after - current
+    return ValueOfInformationResult(best_decision, current, after, gross, cost, gross - cost, outcome_probs)
