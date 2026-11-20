@@ -281,3 +281,97 @@ def test_unknown_step_is_rejected():
     state = initialize_execution(plan, 10)
     with pytest.raises(KeyError):
         mark_step_started(plan, state, "missing")
+
+
+import pytest
+
+from planning.models import Goal, StateSnapshot, Plan, PlanStep
+from planning.execution import (
+    initialize_execution,
+    mark_step_started,
+    record_step_failure,
+    record_execution_feedback,
+    evaluate_recovery,
+    ExecutionFeedback,
+    RecoveryPolicy,
+    RecoveryAction,
+)
+from planning.world_model import PredictionEvaluation
+
+
+def _execution_fixture():
+    goal = Goal("recovery-goal", "Test recovery", "general")
+    state = StateSnapshot(
+        "subject-1", "general", 1, "2026-11-20T00:00:00+00:00"
+    )
+    plan = Plan.create(
+        goal,
+        state,
+        (PlanStep("step-1", "test", "Test step"),),
+    )
+    snapshot = initialize_execution(plan, 1)
+    snapshot = mark_step_started(plan, snapshot, "step-1")
+    snapshot = record_step_failure(plan, snapshot, "step-1", "test failure")
+    return plan, snapshot
+
+
+def test_execution_feedback_uses_prediction_evaluation_for_deviation():
+    plan, snapshot = _execution_fixture()
+    evaluation = PredictionEvaluation(
+        rule_id="rule-1",
+        compared_keys=("position",),
+        matched_keys=(),
+        mismatched_keys=("position",),
+        missing_keys=(),
+        accuracy=0.0,
+    )
+    feedback = ExecutionFeedback(
+        step_id="step-1",
+        prediction_evaluation=evaluation,
+        observed_effects={"position": "unexpected"},
+        evidence_refs=("evidence-1",),
+    )
+
+    updated = record_execution_feedback(plan, snapshot, feedback)
+    assert updated.record("step-1").observed_effects == {"position": "unexpected"}
+    assert updated.events[-1].details["deviation_detected"] is True
+
+
+def test_recovery_recommends_replan_for_observed_deviation():
+    plan, snapshot = _execution_fixture()
+    evaluation = PredictionEvaluation(
+        rule_id="rule-1",
+        compared_keys=("position",),
+        matched_keys=(),
+        mismatched_keys=("position",),
+        missing_keys=(),
+        accuracy=0.0,
+    )
+    feedback = ExecutionFeedback(
+        step_id="step-1",
+        prediction_evaluation=evaluation,
+    )
+
+    decision = evaluate_recovery(
+        plan,
+        snapshot,
+        "step-1",
+        feedback=feedback,
+        policy=RecoveryPolicy(allow_replanning=True),
+    )
+    assert decision.action is RecoveryAction.REPLAN
+    assert decision.requires_new_plan is True
+
+
+def test_recovery_rejects_pending_step():
+    goal = Goal("pending-goal", "Test pending", "general")
+    state = StateSnapshot(
+        "subject-1", "general", 1, "2026-11-20T00:00:00+00:00"
+    )
+    plan = Plan.create(
+        goal, state, (PlanStep("step-1", "test", "Test step"),)
+    )
+    snapshot = initialize_execution(plan, 1)
+
+    with pytest.raises(ValueError, match="completed or failed"):
+        evaluate_recovery(plan, snapshot, "step-1")

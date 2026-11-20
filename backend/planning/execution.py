@@ -376,7 +376,13 @@ def record_execution_feedback(
         feedback.step_id,
         timestamp,
         {
-            "deviation_detected": feedback.deviation_detected,
+            "deviation_detected": bool(
+                feedback.prediction_evaluation
+                and (
+                    feedback.prediction_evaluation.mismatched_keys
+                    or feedback.prediction_evaluation.missing_keys
+                )
+            ),
             "mismatched_keys": (
                 feedback.prediction_evaluation.mismatched_keys
                 if feedback.prediction_evaluation else ()
@@ -419,7 +425,14 @@ def evaluate_recovery(
         current_world_revision is not None
         and current_world_revision != snapshot.world_revision
     )
-    deviation = bool(feedback and feedback.deviation_detected)
+    deviation = bool(
+        feedback
+        and feedback.prediction_evaluation
+        and (
+            feedback.prediction_evaluation.mismatched_keys
+            or feedback.prediction_evaluation.missing_keys
+        )
+    )
 
     if step.risk in policy.human_review_risks or step.requires_human_approval:
         action = RecoveryAction.HUMAN_REVIEW
