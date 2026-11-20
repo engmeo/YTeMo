@@ -58,7 +58,8 @@ class FakeDB:
 
 
 def load_recovery(db, worker):
-    source = Path("main.py").read_text(encoding="utf-8")
+    source_path = Path(__file__).resolve().with_name("main.py")
+    source = source_path.read_text(encoding="utf-8")
     tree = ast.parse(source)
     matches = [
         node for node in tree.body
