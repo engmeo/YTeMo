@@ -26,6 +26,14 @@ from .models import Plan
 from .validation import validate_plan, mark_validated
 from .scheduler import schedule_plan, evaluate_plan
 from .governance import evaluate_governance
+from .world_model import WorldState
+from .execution import (
+    initialize_execution, record_execution_feedback,
+    evaluate_recovery, record_recovery_recommendation,
+    RecoveryAction,
+)
+from .replanning import assess_replan
+from .metacognition import record_verified_outcome, select_strategy
 
 
 def _now() -> datetime:
@@ -71,6 +79,7 @@ class PipelineEngine:
 
     ORDER = (
         PipelineStage.INTAKE,
+        PipelineStage.WORLD_MODEL,
         PipelineStage.HTN_PLANNING,
         PipelineStage.STRATEGY_PLANNING,
         PipelineStage.DECISION,
@@ -78,6 +87,10 @@ class PipelineEngine:
         PipelineStage.VALIDATION,
         PipelineStage.SCHEDULING,
         PipelineStage.GOVERNANCE,
+        PipelineStage.EXECUTION_MONITORING,
+        PipelineStage.RECOVERY,
+        PipelineStage.REPLANNING,
+        PipelineStage.META_COGNITION,
     )
 
     def __init__(
@@ -103,6 +116,7 @@ class PipelineEngine:
 
         handlers = {
             PipelineStage.INTAKE: self._intake,
+            PipelineStage.WORLD_MODEL: self._world_model,
             PipelineStage.HTN_PLANNING: self._htn,
             PipelineStage.STRATEGY_PLANNING: self._strategy,
             PipelineStage.DECISION: self._decision,
@@ -110,6 +124,10 @@ class PipelineEngine:
             PipelineStage.VALIDATION: self._validation,
             PipelineStage.SCHEDULING: self._scheduling,
             PipelineStage.GOVERNANCE: self._governance,
+            PipelineStage.EXECUTION_MONITORING: self._execution_monitoring,
+            PipelineStage.RECOVERY: self._recovery,
+            PipelineStage.REPLANNING: self._replanning,
+            PipelineStage.META_COGNITION: self._meta_cognition,
         }
         for stage, handler in handlers.items():
             if not self.registry.supports(stage):
@@ -200,6 +218,74 @@ class PipelineEngine:
         )
         return replace(context, governance=result), result
 
+    def _world_model(self, context: PipelineContext, strategy=None):
+        inputs = context.inputs
+        if inputs.world_state is None or inputs.world_model is None or inputs.world_action is None:
+            raise ValueError("World Model requires world_state, world_model and world_action")
+        state = inputs.world_state
+        request_state = context.request.state
+        if state.subject_id != request_state.subject_id or state.domain.casefold() != request_state.domain.casefold():
+            raise ValueError("WorldState subject/domain does not match PipelineRequest")
+        if state.revision != request_state.revision:
+            raise ValueError("WorldState revision does not match PipelineRequest")
+        prediction = inputs.world_model.predict(state, inputs.world_action)
+        return replace(context, world_prediction=prediction), prediction
+
+    def _execution_monitoring(self, context: PipelineContext, strategy=None):
+        if context.plan is None:
+            raise ValueError("Execution Monitoring requires a generated Plan")
+        snapshot = context.execution_snapshot or context.inputs.execution_snapshot
+        if snapshot is None:
+            snapshot = initialize_execution(context.plan, context.request.state.revision)
+        if snapshot.plan_id != context.plan.plan_id or snapshot.plan_version != context.plan.version:
+            raise ValueError("ExecutionSnapshot does not match the current Plan")
+        feedback = context.inputs.execution_feedback
+        if feedback is not None:
+            snapshot = record_execution_feedback(context.plan, snapshot, feedback)
+        return replace(context, execution_snapshot=snapshot), snapshot
+
+    def _recovery(self, context: PipelineContext, strategy=None):
+        if context.plan is None or context.execution_snapshot is None:
+            raise ValueError("Recovery requires Plan and ExecutionSnapshot; enable execution_monitoring first")
+        step_id = context.inputs.recovery_step_id
+        if step_id is None:
+            raise ValueError("Recovery requires recovery_step_id")
+        decision = evaluate_recovery(
+            context.plan,
+            context.execution_snapshot,
+            step_id,
+            policy=context.inputs.recovery_policy,
+            feedback=context.inputs.execution_feedback,
+            current_world_revision=context.inputs.current_world_revision,
+        )
+        snapshot = record_recovery_recommendation(context.execution_snapshot, decision)
+        return replace(context, recovery=decision, execution_snapshot=snapshot), decision
+
+    def _replanning(self, context: PipelineContext, strategy=None):
+        inputs = context.inputs
+        decision = assess_replan(
+            changed_fact_keys=inputs.changed_fact_keys,
+            step_fact_dependencies=inputs.step_fact_dependencies,
+            explicit_trigger=inputs.replan_trigger,
+            risk_limit_exceeded=inputs.risk_limit_exceeded,
+        )
+        return replace(context, replanning=decision), decision
+
+    def _meta_cognition(self, context: PipelineContext, strategy=None):
+        inputs = context.inputs
+        state = inputs.meta_state
+        for evidence in inputs.outcome_evidence:
+            update = record_verified_outcome(state, evidence)
+            state = update.state
+        if not inputs.meta_candidates:
+            raise ValueError("Meta-Cognition requires meta_candidates")
+        decision = select_strategy(
+            inputs.meta_candidates,
+            state,
+            policy=inputs.meta_policy,
+        )
+        return replace(context, meta_state=state, meta_decision=decision), decision
+
     def run(self, request, inputs: PipelineInputs, *, strategy=None) -> PipelineResult:
         policy = request.policy
         context = PipelineContext(
@@ -249,6 +335,11 @@ class PipelineEngine:
             PipelineStage.VALIDATION: "planning.validation.validate_plan",
             PipelineStage.SCHEDULING: "planning.scheduler.schedule_plan",
             PipelineStage.GOVERNANCE: "planning.governance.evaluate_governance",
+            PipelineStage.WORLD_MODEL: "planning.world_model.RuleBasedWorldModel.predict",
+            PipelineStage.EXECUTION_MONITORING: "planning.execution.initialize_execution",
+            PipelineStage.RECOVERY: "planning.execution.evaluate_recovery",
+            PipelineStage.REPLANNING: "planning.replanning.assess_replan",
+            PipelineStage.META_COGNITION: "planning.metacognition.select_strategy",
         }
 
         def make_provenance(stage, handler_name):
@@ -285,9 +376,31 @@ class PipelineEngine:
                     status = PipelineStatus.BLOCKED
                     reasons.append(reason)
 
+                elif stage == PipelineStage.WORLD_MODEL and not context.world_prediction.applicable:
+                    stage_status = StageStatus.BLOCKED
+                    reason = "World Model transition is not applicable"
+                    status = PipelineStatus.BLOCKED
+                    reasons.extend(context.world_prediction.reasons)
+
                 elif stage == PipelineStage.SCHEDULING and not context.schedule.feasible:
                     stage_status = StageStatus.BLOCKED
                     reason = "Plan scheduling is infeasible"
+                    status = PipelineStatus.BLOCKED
+                    reasons.append(reason)
+
+                elif stage == PipelineStage.RECOVERY and context.recovery.action in (
+                    RecoveryAction.HUMAN_REVIEW,
+                ):
+                    stage_status = StageStatus.HUMAN_REVIEW
+                    reason = context.recovery.reason
+                    status = PipelineStatus.HUMAN_REVIEW
+                    reasons.append(reason)
+
+                elif stage == PipelineStage.RECOVERY and context.recovery.action in (
+                    RecoveryAction.ABORT, RecoveryAction.PAUSE,
+                ):
+                    stage_status = StageStatus.BLOCKED
+                    reason = context.recovery.reason
                     status = PipelineStatus.BLOCKED
                     reasons.append(reason)
 

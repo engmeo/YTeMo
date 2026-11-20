@@ -41,9 +41,9 @@ def make_request(stages):
     return request
 
 
-def test_registry_has_eight_supported_handlers():
+def test_registry_has_thirteen_supported_handlers():
     engine = PipelineEngine()
-    assert len(engine.registry.stages) == 8
+    assert len(engine.registry.stages) == 13
     assert engine.registry.supports(PipelineStage.STRATEGY_PLANNING)
     assert engine.registry.supports(PipelineStage.GOVERNANCE)
 
@@ -83,7 +83,7 @@ def test_strategy_pipeline_runs_through_validation_and_scheduling():
     assert result.metadata["execution_performed"] is False
 
 
-def test_pipeline_rejects_unsupported_world_model_stage():
+def test_world_model_stage_is_registered_and_requires_explicit_inputs():
     stages = (
         PipelineStage.STRATEGY_PLANNING,
         PipelineStage.WORLD_MODEL,
@@ -93,12 +93,12 @@ def test_pipeline_rejects_unsupported_world_model_stage():
     request = make_request(stages)
     inputs = PipelineInputs(planning_mode=PipelinePlanningMode.STRATEGY)
 
-    try:
-        PipelineEngine().run(request, inputs, strategy=SimpleStrategy())
-    except ValueError as exc:
-        assert "No registered handler" in str(exc)
-    else:
-        raise AssertionError("Unsupported stage was silently accepted")
+    engine = PipelineEngine()
+    assert engine.registry.supports(PipelineStage.WORLD_MODEL)
+    result = engine.run(request, inputs, strategy=SimpleStrategy())
+    stage = _integration_stage(result, PipelineStage.WORLD_MODEL)
+    assert stage.status.value == "failed"
+    assert "world_state" in (stage.reason or "")
 
 
 def test_strategy_pipeline_requires_strategy_object():
