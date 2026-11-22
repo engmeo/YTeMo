@@ -1,0 +1,142 @@
+"""Safe, local-first extraction of text from user-provided healthcare documents.
+
+Files are processed in memory and are not persisted by this module. Supported
+formats are text-based PDF, DOCX, TXT and Markdown. Scanned PDFs require an OCR
+service and are reported explicitly instead of silently returning empty text.
+"""
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from io import BytesIO
+from pathlib import Path
+from typing import Any
+import zipfile
+
+MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
+MAX_EXTRACTED_CHARACTERS = 200_000
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
+
+
+class DocumentExtractionError(ValueError):
+    """Raised when a document cannot be safely or reliably extracted."""
+
+
+@dataclass(frozen=True)
+class DocumentExtraction:
+    filename: str
+    media_type: str
+    extraction_status: str
+    text: str
+    page_count: int | None
+    character_count: int
+    truncated: bool
+    persisted: bool = False
+    limitations: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def _decode_text(data: bytes) -> str:
+    for encoding in ("utf-8-sig", "utf-16", "cp1258"):
+        try:
+            return data.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    raise DocumentExtractionError("Không đọc được bảng mã văn bản. Hãy lưu file ở UTF-8.")
+
+
+def _extract_pdf(data: bytes) -> tuple[str, int]:
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(BytesIO(data), strict=False)
+        if reader.is_encrypted:
+            raise DocumentExtractionError("PDF được mã hóa; chưa thể đọc nội dung.")
+        pages = []
+        for index, page in enumerate(reader.pages):
+            page_text = (page.extract_text() or "").strip()
+            if page_text:
+                pages.append(f"[Trang {index + 1}]\n{page_text}")
+        return "\n\n".join(pages), len(reader.pages)
+    except DocumentExtractionError:
+        raise
+    except Exception as exc:
+        raise DocumentExtractionError("PDF không hợp lệ hoặc không thể trích xuất.") from exc
+
+
+def _extract_docx(data: bytes) -> str:
+    try:
+        from docx import Document
+        document = Document(BytesIO(data))
+        parts = [p.text.strip() for p in document.paragraphs if p.text.strip()]
+        for table_index, table in enumerate(document.tables, start=1):
+            parts.append(f"[Bảng {table_index}]")
+            for row in table.rows:
+                cells = [cell.text.strip().replace("\n", " / ") for cell in row.cells]
+                if any(cells):
+                    parts.append(" | ".join(cells))
+        return "\n".join(parts)
+    except Exception as exc:
+        raise DocumentExtractionError("DOCX không hợp lệ hoặc không thể trích xuất.") from exc
+
+
+def extract_medical_document(filename: str, data: bytes) -> DocumentExtraction:
+    """Extract text from a supported document without storing the uploaded bytes."""
+    safe_name = Path((filename or "document").replace("\\", "/")).name
+    extension = Path(safe_name).suffix.lower()
+    if extension not in SUPPORTED_EXTENSIONS:
+        raise DocumentExtractionError("Chỉ hỗ trợ PDF, DOCX, TXT và Markdown.")
+    if not isinstance(data, bytes) or not data:
+        raise DocumentExtractionError("File rỗng hoặc không hợp lệ.")
+    if len(data) > MAX_DOCUMENT_BYTES:
+        raise DocumentExtractionError("File vượt giới hạn 10 MB.")
+
+    page_count = None
+    if extension == ".pdf":
+        if not data.startswith(b"%PDF-"):
+            raise DocumentExtractionError("Nội dung file không khớp định dạng PDF.")
+        text, page_count = _extract_pdf(data)
+        media_type = "application/pdf"
+    elif extension == ".docx":
+        if not data.startswith(b"PK"):
+            raise DocumentExtractionError("Nội dung file không khớp định dạng DOCX.")
+        try:
+            with zipfile.ZipFile(BytesIO(data)) as archive:
+                if "word/document.xml" not in archive.namelist():
+                    raise DocumentExtractionError("File ZIP không phải tài liệu DOCX.")
+        except zipfile.BadZipFile as exc:
+            raise DocumentExtractionError("DOCX không hợp lệ.") from exc
+        text = _extract_docx(data)
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    else:
+        if b"\x00" in data[:4096]:
+            raise DocumentExtractionError("File văn bản chứa dữ liệu nhị phân không hợp lệ.")
+        text = _decode_text(data)
+        media_type = "text/markdown" if extension == ".md" else "text/plain"
+
+    text = "\n".join(line.rstrip() for line in text.replace("\x00", "").splitlines()).strip()
+    if not text:
+        if extension == ".pdf":
+            raise DocumentExtractionError(
+                "PDF không có lớp văn bản (có thể là bản scan). Cần OCR trước khi phân tích."
+            )
+        raise DocumentExtractionError("Không tìm thấy nội dung văn bản trong file.")
+
+    truncated = len(text) > MAX_EXTRACTED_CHARACTERS
+    if truncated:
+        text = text[:MAX_EXTRACTED_CHARACTERS]
+    return DocumentExtraction(
+        filename=safe_name,
+        media_type=media_type,
+        extraction_status="text_extracted",
+        text=text,
+        page_count=page_count,
+        character_count=len(text),
+        truncated=truncated,
+        persisted=False,
+        limitations=(
+            "Chỉ trích xuất văn bản; không xác thực tính đúng/sai của hồ sơ.",
+            "Không OCR PDF scan; không suy luận chẩn đoán hoặc khuyến nghị điều trị.",
+            "File được xử lý trong bộ nhớ của request và không được lưu bởi endpoint này.",
+        ),
+    )

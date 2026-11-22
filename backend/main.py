@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
@@ -25,6 +25,12 @@ from proactive_engine import (
 )
 from supabase_companion_repository import (
     SupabaseCompanionRepository, SupabaseProposalRepository,
+)
+from healthcare_documents import (
+    DocumentExtractionError, MAX_DOCUMENT_BYTES, extract_medical_document,
+)
+from healthcare_specialists import (
+    DEFAULT_AGENT_KEYS, HealthcareAgentService,
 )
 
 load_dotenv()
@@ -59,6 +65,7 @@ memory_engine = MemoryEngine(
 )
 proposal_repository = SupabaseProposalRepository(db_client)
 proactive_engine = ProactiveEngine(companion_core, proposal_repository)
+healthcare_agent_service = HealthcareAgentService()
 
 app = FastAPI(
     title="Y TE MO API",
@@ -488,6 +495,60 @@ class ProactiveEventRequest(BaseModel):
 
 class ProposalStatusRequest(BaseModel):
     status: ProposalStatus
+
+
+class HealthcareAnalysisRequest(BaseModel):
+    document_text: str = Field(min_length=1, max_length=200000)
+    agent_keys: Optional[list[str]] = Field(default=None, min_length=1)
+
+
+
+# ---------------------------------------------------------------------------
+# Healthcare document extraction and specialist-agent orchestration.
+# Uploaded files are processed in memory; this endpoint does not persist them.
+# ---------------------------------------------------------------------------
+
+@app.post("/healthcare/documents/extract")
+async def extract_healthcare_document(
+    file: UploadFile = File(...),
+    user=Depends(get_current_user),
+):
+    # Read one byte beyond the limit so oversized uploads are rejected early.
+    try:
+        data = await file.read(MAX_DOCUMENT_BYTES + 1)
+        if len(data) > MAX_DOCUMENT_BYTES:
+            raise HTTPException(status_code=413, detail="File vượt giới hạn 10 MB.")
+        extracted = extract_medical_document(file.filename or "document", data)
+        return {
+            "document": extracted.to_dict(),
+            "next_step": "Gửi document.text đến POST /healthcare/agents/run để chạy các Specialist Agents.",
+        }
+    except DocumentExtractionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    finally:
+        await file.close()
+
+
+@app.get("/healthcare/agents")
+def list_healthcare_agents(user=Depends(get_current_user)):
+    return {
+        "agents": healthcare_agent_service.list_agents(),
+        "default_agent_keys": list(DEFAULT_AGENT_KEYS),
+    }
+
+
+@app.post("/healthcare/agents/run")
+def run_healthcare_agents(
+    request: HealthcareAnalysisRequest,
+    user=Depends(get_current_user),
+):
+    try:
+        return healthcare_agent_service.run(
+            request.document_text,
+            request.agent_keys,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 def _serialize(value):
