@@ -383,7 +383,7 @@ function toast(s){let t=document.getElementById('toast');t.textContent=s;t.class
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = window.YTEMO_API_BASE || 'https://ytemo-api.onrender.com';
 const authPanel = document.getElementById('authPanel');
 const chatPanel = document.getElementById('chatPanel');
 const authStatus = document.getElementById('authStatus');
@@ -430,6 +430,23 @@ async function getAccessToken() {
   if (error || !data.session) throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
   return data.session.access_token;
 }
+async function fetchWithAuth(path, options = {}) {
+  const sendRequest = (accessToken) => {
+    const headers = new Headers(options.headers || {});
+    headers.set('Authorization', `Bearer ${accessToken}`);
+    return fetch(`${API_BASE}${path}`, { ...options, headers });
+  };
+
+  const token = await getAccessToken();
+  const response = await sendRequest(token);
+
+  if (response.status !== 401) return response;
+
+  const { data, error } = await supabase.auth.refreshSession();
+  if (error || !data.session?.access_token) return response;
+
+  return sendRequest(data.session.access_token);
+}
 async function showSignedIn(user) {
   currentUser = user;
   authPanel.hidden = true;
@@ -439,10 +456,7 @@ async function showSignedIn(user) {
   clearChat();
   if (conversationId) {
     try {
-      const token = await getAccessToken();
-      const response = await fetch(`${API_BASE}/conversations/${encodeURIComponent(conversationId)}/messages`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await fetchWithAuth(`/conversations/${encodeURIComponent(conversationId)}/messages`);
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.messages) && data.messages.length) {
@@ -512,10 +526,9 @@ async function sendMessage(message) {
   chatInput.value = '';
   setBusy(true);
   try {
-    const token = await getAccessToken();
-    const response = await fetch(`${API_BASE}/chat`, {
+    const response = await fetchWithAuth('/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: clean, conversation_id: conversationId })
     });
     const result = await response.json();
@@ -561,8 +574,7 @@ let extractedDocument = null;
 let healthBusy = false;
 function healthStatus(node, message, error=false) { node.textContent = message; node.classList.toggle('error', error); }
 async function healthRequest(path, options={}) {
-  const token = await getAccessToken();
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers: { ...(options.headers||{}), Authorization: `Bearer ${token}` } });
+  const response = await fetchWithAuth(path, options);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.detail || `Backend trả về HTTP ${response.status}`);
   return data;
