@@ -1092,6 +1092,59 @@
               }
             ],
             "title": "Agent Keys"
+          },
+          "cost_items": {
+            "anyOf": [
+              {
+                "type": "array",
+                "maxItems": 500,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Items"
+          },
+          "bhyt": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "eligible_amount": {
+                    "type": "number"
+                  },
+                  "coverage_rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "patient_cap": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "currency": {
+                    "type": "string",
+                    "default": "VND"
+                  },
+                  "rule_reference": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "eligible_amount",
+                  "coverage_rate"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "BHYT"
           }
         },
         "type": "object",

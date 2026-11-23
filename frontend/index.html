@@ -360,6 +360,19 @@ Gần đây có điều gì về sức khỏe, việc chăm sóc người thân 
    </div>
    <div class="health-actions"><button id="runHealthBtn" type="button" disabled>CHẠY PHÂN TÍCH</button></div>
    <div class="health-status" id="runHealthStatus" role="status" style="background:#203b3b;color:#e8eee8;border-color:var(--acid)">Chưa có văn bản để phân tích.</div>
+    <details class="health-safety" style="margin-top:14px;padding:14px;border:1px solid var(--line)">
+     <summary style="cursor:pointer;font-weight:800">BỔ SUNG DỮ LIỆU CHI PHÍ / BHYT ĐÃ XÁC MINH</summary>
+     <p>Chỉ nhập khoản tiền đã có trên hóa đơn hoặc bảng giá. Mỗi dòng cần source_quote khớp nguyên văn với document_text hoặc source_ref có thể truy vết. Không nhập giá phỏng đoán.</p>
+     <label for="costItemsJson">DANH SÁCH CHI PHÍ (JSON)</label>
+     <textarea id="costItemsJson" rows="6" style="width:100%;margin-top:8px;padding:10px;font:11px/1.5 var(--mono);color:var(--ink);background:#fff;border:1px solid var(--line)">[]</textarea>
+     <small>category dùng: visit, medicine, lab, imaging, procedure, supplies, transport, other. Ví dụ: [{"item_id":"m1","category":"medicine","description":"Tên thuốc","quantity":1,"unit_price":25000,"currency":"VND","source_quote":"Dòng hóa đơn ghi 25.000đ"}]</small>
+     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:12px">
+      <label>SỐ TIỀN ĐỦ ĐIỀU KIỆN<input id="bhytEligibleAmount" type="number" min="0" step="0.01" placeholder="Để trống nếu chưa rõ"></label>
+      <label>MỨC HƯỞNG ĐÃ XÁC MINH (%)<input id="bhytCoverageRate" type="number" min="0" max="100" step="0.01" placeholder="Ví dụ 80"></label>
+      <label>TRẦN CHI TRẢ (TÙY CHỌN)<input id="bhytPatientCap" type="number" min="0" step="0.01" placeholder="Không bắt buộc"></label>
+     </div>
+     <p style="margin-bottom:0">BHYT chỉ tính số học từ số tiền, tỷ lệ và trần do người dùng cung cấp; hệ thống không xác định đúng tuyến, đối tượng hoặc quyền lợi pháp lý.</p>
+    </details>
    <div class="health-safety">GIỚI HẠN AN TOÀN<br>Hệ thống chỉ trích xuất thông tin có bằng chứng. Không chẩn đoán, kê đơn, diễn giải kết quả xét nghiệm, ước tính chi phí còn thiếu hoặc xác định mức hưởng BHYT. Đối chiếu kết quả với hồ sơ gốc và chuyên gia y tế.</div>
   </div>
  </div><div id="healthResults" class="health-results" aria-live="polite"></div></div>
@@ -483,8 +496,18 @@ async function initialize() {
     setAuthStatus('Đã kết nối backend. Đăng nhập bằng tài khoản Supabase của bạn.');
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) await showSignedIn(session.user);
+    if (typeof syncHealthcareAccess === 'function') syncHealthcareAccess();
     supabase.auth.onAuthStateChange((event, sessionNow) => {
-      if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_IN' && sessionNow?.user) {
+        Promise.resolve().then(async () => {
+          try {
+            await showSignedIn(sessionNow.user);
+            if (typeof syncHealthcareAccess === 'function') syncHealthcareAccess();
+          } catch (error) {
+            setAuthStatus(`Đồng bộ phiên đăng nhập thất bại: ${error.message}`, true);
+          }
+        });
+      } else if (event === 'SIGNED_OUT') {
         currentUser = null;
         conversationId = null;
         chatMessages.innerHTML = '';
@@ -492,6 +515,7 @@ async function initialize() {
         authPanel.hidden = false;
         document.getElementById('loginPassword').value = '';
         setAuthStatus('Bạn đã đăng xuất. Vui lòng đăng nhập lại.');
+        if (typeof syncHealthcareAccess === 'function') syncHealthcareAccess();
       }
     });
   } catch (error) {
@@ -512,7 +536,6 @@ loginForm.addEventListener('submit', async (event) => {
     });
     if (error) throw error;
     document.getElementById('loginPassword').value = '';
-    await showSignedIn(data.user);
   } catch (error) {
     setAuthStatus(`Đăng nhập thất bại: ${error.message}`, true);
   } finally {
@@ -562,7 +585,6 @@ document.getElementById('newChatBtn').addEventListener('click', () => {
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   if (supabase) await supabase.auth.signOut();
 });
-initialize();
 
 // Healthcare document workflow: authenticated calls to the three real backend endpoints.
 const healthFile = document.getElementById('healthFile');
@@ -630,6 +652,44 @@ function renderHealthResults(data) {
     }
     healthResults.append(card);
   }
+  const report=data.cost_intelligence_report;
+  if(report){
+    const card=document.createElement('article'); card.className='health-result';
+    const title=document.createElement('h3'); title.textContent='Báo cáo tổng hợp chi phí & BHYT'; card.append(title);
+    const journey=report.journey_cost;
+    if(journey){
+      const total=document.createElement('p');
+      total.textContent=`Tổng chi phí đã nhập: ${Number(journey.total||0).toLocaleString('vi-VN')} ${journey.currency||'VND'} · ${journey.line_count||0} dòng`;
+      card.append(total);
+      const categories=document.createElement('p');
+      categories.textContent='Theo nhóm: '+Object.entries(journey.by_category||{}).map(([key,value])=>`${key}: ${Number(value).toLocaleString('vi-VN')}`).join(' · ');
+      card.append(categories);
+      for(const item of (journey.items||[])){
+        const line=document.createElement('div'); line.className='health-finding';
+        const label=document.createElement('b'); label.textContent=`${item.category} · ${item.description}`; line.append(label);
+        const detail=document.createElement('div'); detail.textContent=`${item.quantity} × ${Number(item.unit_price).toLocaleString('vi-VN')} = ${Number(item.amount).toLocaleString('vi-VN')} ${item.currency}`; line.append(detail);
+        if(item.source_quote||item.source_ref){const source=document.createElement('small');source.textContent=item.source_quote?`Nguồn: ${item.source_quote}`:`Nguồn tham chiếu: ${item.source_ref}`;line.append(source);}
+        card.append(line);
+      }
+    } else {
+      const p=document.createElement('p'); p.textContent='Chưa có dữ liệu chi phí.'; card.append(p);
+    }
+    const med=document.createElement('p');
+    med.textContent=`Tổng nhóm thuốc đã nhập: ${Number(report.medication_costs?.total||0).toLocaleString('vi-VN')} ${report.medication_costs?.currency||journey?.currency||'VND'}`; card.append(med);
+    const lab=document.createElement('p');
+    lab.textContent=`Tổng nhóm xét nghiệm đã nhập: ${Number(report.lab_costs?.total||0).toLocaleString('vi-VN')} ${report.lab_costs?.currency||journey?.currency||'VND'}`; card.append(lab);
+    const benefit=report.bhyt;
+    if(benefit){
+      const p=document.createElement('p');
+      p.textContent=benefit.status==='estimate_only'
+        ? `Ước tính số học BHYT: quỹ chi ${Number(benefit.estimated_insurer_payment).toLocaleString('vi-VN')} ${benefit.currency}; người bệnh còn ${Number(benefit.estimated_patient_share_of_eligible_amount).toLocaleString('vi-VN')} ${benefit.currency} trên số tiền đủ điều kiện. Cần xác minh thủ công.`
+        : (benefit.reason||'Chưa tính BHYT do thiếu dữ liệu đã xác minh.');
+      card.append(p);
+    }
+    const note=document.createElement('p'); note.className='health-muted';
+    note.textContent=report.clinical_boundary||'Chỉ tổng hợp số liệu được cung cấp; không thay thế xác minh BHYT hoặc tư vấn chuyên môn.'; card.append(note);
+    healthResults.append(card);
+  }
   const limits=document.createElement('p'); limits.className='health-muted'; limits.textContent=(data.limitations||[]).join(' · '); healthResults.append(limits);
 }
 runHealthBtn.addEventListener('click',async()=>{
@@ -637,7 +697,29 @@ runHealthBtn.addEventListener('click',async()=>{
   const agent_keys=[...document.querySelectorAll('#healthAgentList input:checked')].map(x=>x.value);
   if(!agent_keys.length) return healthStatus(runHealthStatus,'Hãy chọn ít nhất một Agent.',true);
   healthBusy=true; runHealthBtn.disabled=true; runHealthBtn.textContent='ĐANG ĐIỀU PHỐI…'; healthStatus(runHealthStatus,'Đang chạy các Specialist Agents và kiểm tra bằng chứng…');
-  try { const data=await healthRequest('/healthcare/agents/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({document_text:textValue,agent_keys})}); renderHealthResults(data); healthStatus(runHealthStatus,`Hoàn tất. ${data.agents_completed?.length||0}/${data.agents_requested?.length||0} Agent đã trả kết quả. Task: ${data.task_id}`); }
+  try {
+    let cost_items;
+    const rawItems=document.getElementById('costItemsJson').value.trim();
+    if(rawItems){
+      cost_items=JSON.parse(rawItems);
+      if(!Array.isArray(cost_items)) throw new Error('Danh sách chi phí phải là một JSON array.');
+    }
+    const eligible=document.getElementById('bhytEligibleAmount').value.trim();
+    const rate=document.getElementById('bhytCoverageRate').value.trim();
+    const cap=document.getElementById('bhytPatientCap').value.trim();
+    let bhyt;
+    if(eligible!=='' || rate!=='' || cap!==''){
+      if(eligible==='' || rate==='') throw new Error('Để tính BHYT cần nhập cả số tiền đủ điều kiện và mức hưởng đã xác minh.');
+      bhyt={eligible_amount:Number(eligible),coverage_rate:Number(rate),currency:'VND'};
+      if(cap!=='') bhyt.patient_cap=Number(cap);
+    }
+    const payload={document_text:textValue,agent_keys};
+    if(cost_items!==undefined) payload.cost_items=cost_items;
+    if(bhyt!==undefined) payload.bhyt=bhyt;
+    const data=await healthRequest('/healthcare/agents/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    renderHealthResults(data);
+    healthStatus(runHealthStatus,`Hoàn tất. ${data.agents_completed?.length||0}/${data.agents_requested?.length||0} Agent đã trả kết quả. Task: ${data.task_id}`);
+  }
   catch(error){healthStatus(runHealthStatus,`Phân tích thất bại: ${error.message}`,true);}
   finally{healthBusy=false;runHealthBtn.disabled=!healthText.value.trim() || !currentUser;runHealthBtn.textContent='CHẠY PHÂN TÍCH';}
 });
@@ -649,8 +731,9 @@ function syncHealthcareAccess(){
   if(!signed) runHealthBtn.disabled=true;
 }
 syncHealthcareAccess();
-initialize();
 
+
+initialize();
 </script>
 
 </body></html>

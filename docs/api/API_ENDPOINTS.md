@@ -498,6 +498,13 @@
 
 ---
 
+## STT19 — HealthcareAnalysisRequest extension
+`POST /healthcare/agents/run` (authenticated) nhận thêm hai trường tùy chọn:
+- `cost_items`: tối đa 500 object; mỗi dòng cần `source_quote` hoặc `source_ref`. Nếu có `source_quote`, backend kiểm tra chuỗi đó nằm trong `document_text`.
+- `bhyt`: object gồm `eligible_amount`, `coverage_rate` (0–100), tùy chọn `patient_cap`, `currency`, `rule_reference`.
+
+Response có `cost_intelligence_report`. Backend không suy đoán giá hoặc quyền lợi BHYT; phép tính BHYT chỉ dùng dữ liệu đã được caller xác minh.
+
 ## Components / Schemas
 
 ### `AgentTaskRequest`

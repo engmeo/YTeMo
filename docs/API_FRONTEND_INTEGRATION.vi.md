@@ -193,6 +193,27 @@ const analysis = await fetch(`${API_BASE}/healthcare/agents/run`, {
 
 Do not manually set the multipart `Content-Type`; the browser must add its boundary. Do not log document text, access tokens, or identifiable health information.
 
+### 5.7 Cost Intelligence — STT19
+`POST /healthcare/agents/run` vẫn yêu cầu Supabase session hợp lệ. Ngoài `document_text` và `agent_keys`, Frontend có thể gửi thêm:
+- `cost_items`: tối đa 500 dòng; `category` thuộc `visit`, `medicine`, `lab`, `imaging`, `procedure`, `supplies`, `transport`, `other`; mỗi dòng cần `description`, `quantity`, `unit_price`, `currency` và ít nhất một trong `source_quote` / `source_ref`. Nếu có `source_quote`, backend kiểm tra trích dẫn xuất hiện trong `document_text`.
+- `bhyt`: chỉ gửi khi dữ liệu đã được xác minh; bắt buộc `eligible_amount` và `coverage_rate` (0–100), tùy chọn `patient_cap`, `currency`, `rule_reference`.
+
+Ví dụ payload:
+```javascript
+{
+  document_text: extracted.document.text,
+  agent_keys: ["cost", "medication", "lab", "bhyt"],
+  cost_items: [{
+    item_id: "lab-01", category: "lab", description: "Glucose",
+    quantity: 1, unit_price: 50000, currency: "VND",
+    source_quote: "Glucose — 50.000đ"
+  }],
+  bhyt: { eligible_amount: 50000, coverage_rate: 80, currency: "VND" }
+}
+```
+
+Response bổ sung `cost_intelligence_report`: tổng chi phí, phân nhóm, tổng nhóm thuốc/xét nghiệm và phép tính BHYT. Không có dữ liệu tài chính thì báo cáo ở trạng thái `insufficient_data` / `not_calculated`, không tự tạo giá. BHYT chỉ là phép tính số học từ đầu vào; không xác định đúng tuyến, đối tượng, quyền lợi pháp lý hoặc phạm vi được chi trả. Thuốc và xét nghiệm chỉ được trích xuất/tổng hợp, không kê đơn hoặc kết luận chỉ định.
+
 ## 6. Mapping API → màn hình
 
 | Màn hình | API chính |

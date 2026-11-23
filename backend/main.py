@@ -32,6 +32,9 @@ from healthcare_documents import (
 from healthcare_specialists import (
     DEFAULT_AGENT_KEYS, HealthcareAgentService,
 )
+from healthcare_cost_intelligence import (
+    CostIntelligenceError, build_cost_intelligence_report,
+)
 
 load_dotenv()
 
@@ -500,6 +503,10 @@ class ProposalStatusRequest(BaseModel):
 class HealthcareAnalysisRequest(BaseModel):
     document_text: str = Field(min_length=1, max_length=200000)
     agent_keys: Optional[list[str]] = Field(default=None, min_length=1)
+    # Structured financial inputs are optional and must be explicitly supplied.
+    cost_items: Optional[list[dict]] = None
+    # BHYT is arithmetic only; eligibility/rate must be verified by the caller.
+    bhyt: Optional[dict] = None
 
 
 
@@ -600,11 +607,58 @@ def run_healthcare_agents(
     user=Depends(get_current_user),
 ):
     try:
-        return healthcare_agent_service.run(
+        result = healthcare_agent_service.run(
             request.document_text,
             request.agent_keys,
         )
-    except ValueError as exc:
+
+        # Never infer prices or BHYT eligibility. Only aggregate supplied, traceable lines.
+        cost_items = request.cost_items or []
+        if len(cost_items) > 500:
+            raise HTTPException(status_code=422, detail="Tối đa 500 dòng chi phí mỗi lần phân tích.")
+        for index, item in enumerate(cost_items):
+            if not isinstance(item, dict):
+                raise HTTPException(status_code=422, detail=f"cost_items[{index}] phải là object.")
+            source_quote = str(item.get("source_quote") or "").strip()
+            source_ref = str(item.get("source_ref") or "").strip()
+            if not source_quote and not source_ref:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"cost_items[{index}] thiếu source_quote hoặc source_ref để truy vết.",
+                )
+            if source_quote and source_quote not in request.document_text:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"cost_items[{index}].source_quote không khớp document_text đã gửi.",
+                )
+
+        bhyt = request.bhyt
+        if bhyt is not None:
+            if not isinstance(bhyt, dict):
+                raise HTTPException(status_code=422, detail="bhyt phải là object.")
+            allowed = {"eligible_amount", "coverage_rate", "patient_cap", "currency", "rule_reference"}
+            unknown = set(bhyt) - allowed
+            missing = {"eligible_amount", "coverage_rate"} - set(bhyt)
+            if unknown:
+                raise HTTPException(status_code=422, detail=f"Trường BHYT không hỗ trợ: {', '.join(sorted(unknown))}")
+            if missing:
+                raise HTTPException(status_code=422, detail=f"Thiếu dữ liệu BHYT: {', '.join(sorted(missing))}")
+            bhyt = dict(bhyt)
+            if not bhyt.get("currency"):
+                bhyt["currency"] = "VND"
+
+        medication_items = [item for item in cost_items if str(item.get("category", "")).lower() == "medicine"]
+        lab_items = [item for item in cost_items if str(item.get("category", "")).lower() == "lab"]
+        result["cost_intelligence_report"] = build_cost_intelligence_report(
+            cost_items=cost_items,
+            medication_items=medication_items,
+            lab_items=lab_items,
+            bhyt=bhyt,
+        )
+        return result
+    except HTTPException:
+        raise
+    except (ValueError, CostIntelligenceError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
