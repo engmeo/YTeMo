@@ -74,18 +74,51 @@ class GeminiServiceTests(unittest.TestCase):
         self.assertEqual(client.models.calls, 3)
         self.assertEqual([c.args[0] for c in sleep.call_args_list], [2, 4])
 
-    @patch("gemini_service.genai.Client")
-    def test_client_has_timeout_and_sdk_retry_disabled(self, client_constructor):
+    def test_client_uses_openrouter_key(self):
         previous = gemini_service._client
         gemini_service._client = None
         try:
-            get_gemini_client(api_key="test-key")
-            kwargs = client_constructor.call_args.kwargs
-            options = kwargs["http_options"]
-            self.assertEqual(options.timeout, 30000)
-            self.assertEqual(options.retry_options.attempts, 1)
+            with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"}):
+                client = get_gemini_client()
+                self.assertEqual(client.models.api_key, "test-key")
         finally:
             gemini_service._client = previous
+
+    @patch("gemini_service.requests.post")
+    def test_openrouter_uses_passed_model_when_env_missing(self, post):
+        response = Mock()
+        response.ok = True
+        response.json.return_value = {
+            "choices": [{"message": {"content": "Xin chao"}}]
+        }
+        post.return_value = response
+
+        client = gemini_service._OpenRouterClient("test-key")
+        with patch.dict("os.environ", {}, clear=True):
+            result = client.models.generate_content("agent-model", "hello")
+
+        self.assertEqual(result.text, "Xin chao")
+        kwargs = post.call_args.kwargs
+        self.assertEqual(kwargs["json"]["model"], "agent-model")
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer test-key")
+
+    @patch("gemini_service.requests.post")
+    def test_openrouter_env_model_overrides_passed_model(self, post):
+        response = Mock()
+        response.ok = True
+        response.json.return_value = {
+            "choices": [{"message": {"content": "Xin chao"}}]
+        }
+        post.return_value = response
+
+        client = gemini_service._OpenRouterClient("test-key")
+        with patch.dict("os.environ", {"OPENROUTER_MODEL": "openrouter/free"}):
+            client.models.generate_content("agent-model", "hello")
+
+        self.assertEqual(
+            post.call_args.kwargs["json"]["model"],
+            "openrouter/free",
+        )
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # API Endpoint Reference — Y TẾ MỞ
 
-> Sinh tự động từ docs/api/openapi.json. Không tự suy diễn payload hoặc schema không được khai báo.
+> Generated from openapi.json. Sinh tự động từ docs/api/openapi.json. Không tự suy diễn payload hoặc schema không được khai báo.
 
 ## Tổng quan
 
