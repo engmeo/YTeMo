@@ -14,3 +14,11 @@ build/
 *.sqlite*
 *.pem
 *.key
+
+# Local development backups and reports
+.*_backup_*/
+.*_quarantine_*/
+.*_recovery_*/
+*_REPORT*.txt
+STT*.ps1
+frontend/*.backup-*
