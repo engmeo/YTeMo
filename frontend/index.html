@@ -483,13 +483,15 @@ async function initialize() {
     setAuthStatus('Đã kết nối backend. Đăng nhập bằng tài khoản Supabase của bạn.');
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) await showSignedIn(session.user);
-    supabase.auth.onAuthStateChange((_event, sessionNow) => {
-      if (sessionNow?.user) showSignedIn(sessionNow.user);
-      else {
+    supabase.auth.onAuthStateChange((event, sessionNow) => {
+      if (event === 'SIGNED_OUT') {
         currentUser = null;
         conversationId = null;
+        chatMessages.innerHTML = '';
         chatPanel.hidden = true;
         authPanel.hidden = false;
+        document.getElementById('loginPassword').value = '';
+        setAuthStatus('Bạn đã đăng xuất. Vui lòng đăng nhập lại.');
       }
     });
   } catch (error) {
