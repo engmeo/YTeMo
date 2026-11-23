@@ -158,6 +158,41 @@ const result = await apiRequest(supabase, API_BASE, "/chat", {
 
 Chat là một điểm vào hội thoại. Nó không đồng nghĩa toàn bộ Specialist Agent đã được điều phối. UI cần cho biết khi nào request đang ở luồng chat, khi nào đã tạo task, Agent nào được chọn và trạng thái thực thi nếu Backend cung cấp các dữ liệu đó.
 
+### 5.6 Healthcare document extraction and specialists (STT17)
+
+1. Require an authenticated session and send the current Supabase access token as `Authorization: Bearer <access_token>` to each protected route.
+2. Upload the selected file to `POST /healthcare/documents/extract` as `multipart/form-data` with field name `file`. Supported formats: PDF, DOCX, TXT, Markdown; maximum 10 MB.
+3. Read `response.document.text` and `response.document.extraction_status`. Do not send an empty extraction to the analysis endpoint.
+4. For a text-based PDF, DOCX, TXT, or Markdown file, the Backend extracts text locally. For a scanned PDF with no text layer, OCR is attempted only if local Tesseract + `vie`/`eng` language data and Python OCR dependencies are configured.
+5. For scanned-PDF OCR on the Backend host, install `backend/requirements-ocr.txt`, install Tesseract with `vie` and `eng` language data, and set `TESSERACT_CMD` only when Tesseract is not on `PATH`. This is optional; text-layer PDF and DOCX/TXT/Markdown extraction do not require OCR.
+6. Call `GET /healthcare/agents` to obtain the available agents and `default_agent_keys`.
+7. Call `POST /healthcare/agents/run` with JSON `{ "document_text": "<extracted text>", "agent_keys": ["cost", "medication", "lab", "bhyt"] }`. Omit `agent_keys` to use the Backend defaults.
+8. Render each finding together with its `evidence` line/quote and `missing_information`. Preserve the source document and page/line context; do not present extracted amounts as a verified bill total.
+9. Treat all outputs as information extraction only. Do not use them to diagnose, prescribe, change medication, determine BHYT entitlement, or replace review by qualified healthcare professionals.
+
+Example browser request (the token must come from the authenticated session):
+
+```javascript
+const form = new FormData();
+form.append("file", selectedFile);
+const extracted = await fetch(`${API_BASE}/healthcare/documents/extract`, {
+  method: "POST",
+  headers: { Authorization: `Bearer ${accessToken}` },
+  body: form
+}).then(checkResponse);
+
+const analysis = await fetch(`${API_BASE}/healthcare/agents/run`, {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ document_text: extracted.document.text })
+}).then(checkResponse);
+```
+
+Do not manually set the multipart `Content-Type`; the browser must add its boundary. Do not log document text, access tokens, or identifiable health information.
+
 ## 6. Mapping API → màn hình
 
 | Màn hình | API chính |

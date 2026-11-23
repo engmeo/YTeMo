@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Y TẾ MỞ — Care, without barriers</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+:root{--bg:#f4f1e9;--paper:#fbfaf6;--ink:#182e32;--muted:#697b78;--teal:#087e73;--mint:#b8e3d3;--acid:#d9f36a;--coral:#f17c5b;--blue:#a9c9e8;--line:#d9ded5;--night:#142c31;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Manrope',sans-serif}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow-x:hidden}button{font:inherit;cursor:pointer}a{color:inherit;text-decoration:none}.grain{position:fixed;inset:0;pointer-events:none;opacity:.11;z-index:30;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E")}
+header{height:78px;display:flex;align-items:center;justify-content:space-between;padding:0 5.5vw;border-bottom:1px solid #cfd7ce;background:#f4f1e9eF;backdrop-filter:blur(18px);position:sticky;top:0;z-index:20}.brand{display:flex;gap:12px;align-items:center;font:800 17px var(--display);letter-spacing:-.8px}.brandmark{width:30px;height:30px;border-radius:50% 50% 50% 8px;background:var(--teal);position:relative;transform:rotate(-25deg)}.brandmark:after{content:'';position:absolute;width:9px;height:9px;background:var(--acid);border-radius:50%;top:6px;left:11px}.brand span{color:var(--teal)}nav{display:flex;align-items:center;gap:25px}nav button{border:0;background:none;color:#657572;font-size:12px;font-weight:700;padding:10px 0;position:relative}nav button.active,nav button:hover{color:var(--ink)}nav button.active:after{content:'';height:2px;background:var(--teal);position:absolute;bottom:2px;left:0;right:0}.nav-cta{padding:12px 18px!important;background:var(--ink)!important;color:#fff!important;border-radius:3px}nav button.nav-cta:after{display:none}.menu{display:none;background:none;border:0;font-size:22px}.page{display:none;animation:pagein .5s ease}.page.active{display:block}@keyframes pagein{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}.shell{max-width:1380px;margin:auto;padding:0 5.5vw}.mono{font:10px var(--mono);letter-spacing:1.7px;text-transform:uppercase}.eyebrow{color:var(--teal);font-weight:800}.muted{color:var(--muted)}.display{font:800 clamp(50px,8vw,112px)/.91 var(--display);letter-spacing:-.085em;margin:22px 0}.display i{font-style:normal;color:var(--teal)}.btn{border:0;background:var(--teal);color:white;padding:15px 20px;font-size:12px;font-weight:800;letter-spacing:.2px;border-radius:2px;transition:.2s}.btn:hover{transform:translateY(-3px);box-shadow:0 12px 25px #087e7330}.btn.outline{background:transparent;color:var(--ink);border:1px solid #9eaaa2}.btn.dark{background:var(--ink)}.hero{min-height:670px;padding-top:70px;padding-bottom:50px;display:grid;grid-template-columns:1.02fr .98fr;align-items:center;gap:25px}.hero-copy{position:relative;z-index:2}.hero-copy>p{max-width:480px;line-height:1.8;font-size:15px;color:#60716e}.hero-actions{display:flex;gap:10px;margin-top:30px}.hero-note{margin-top:54px;display:flex;gap:12px;align-items:center;color:#74817b;font:10px var(--mono);letter-spacing:.5px}.live-dot{width:7px;height:7px;background:#62a88d;border-radius:50%;box-shadow:0 0 0 5px #62a88d22}.hero-art{height:530px;position:relative;display:grid;place-items:center;perspective:900px}.orbital{position:absolute;width:440px;height:440px;border:1px solid #a5b9ae;border-radius:50%;transform:rotateX(67deg) rotateZ(-25deg);animation:orbit 18s linear infinite}.orbital.two{width:340px;height:340px;transform:rotateX(68deg) rotateZ(50deg);animation-duration:24s;border-color:#c3b8a0}.orbital.three{width:500px;height:270px;transform:rotateY(64deg) rotateZ(25deg);border-color:#a9c9e8;animation-duration:30s}.@keyframes orbit{to{transform:rotateX(67deg) rotateZ(335deg)}}.cell{width:240px;height:285px;position:relative;transform:rotate(-13deg);filter:drop-shadow(20px 30px 25px #183b3427);animation:float 6s ease-in-out infinite}.cell svg{width:100%;height:100%;overflow:visible}.cell-label{position:absolute;top:40px;right:-75px;background:var(--acid);padding:12px 15px;font:10px var(--mono);transform:rotate(8deg);box-shadow:6px 7px 0 #173b321c}.art-tag{position:absolute;padding:10px 13px;background:var(--paper);border:1px solid #cbd5ca;font:10px var(--mono);box-shadow:5px 6px 0 #d6ded4}.tag-a{left:2%;top:17%}.tag-b{right:0;bottom:18%}.tag-c{left:7%;bottom:8%;background:var(--ink);color:white}.crosshair{position:absolute;width:36px;height:36px;border:1px solid var(--coral);border-radius:50%;right:17%;top:14%}.crosshair:before,.crosshair:after{content:'';position:absolute;background:var(--coral)}.crosshair:before{width:52px;height:1px;top:17px;left:-9px}.crosshair:after{height:52px;width:1px;left:17px;top:-9px}@keyframes float{50%{transform:translateY(-15px) rotate(-8deg)}}.ticker{background:var(--acid);overflow:hidden;white-space:nowrap;padding:13px 0;font:10px var(--mono);letter-spacing:2px}.ticker span{display:inline-block;animation:marquee 28s linear infinite}.ticker b{padding:0 35px;font-weight:400}@keyframes marquee{to{transform:translateX(-50%)}}
+.statement{background:var(--night);color:#f4f1e9;padding:105px 0;position:relative;overflow:hidden}.statement:after{content:'YTM';position:absolute;right:-.04em;bottom:-.43em;font:800 33vw/.8 var(--display);letter-spacing:-.12em;color:#ffffff08}.statement .shell{position:relative;z-index:1}.statement h2{font:700 clamp(34px,5.2vw,68px)/1.08 var(--display);letter-spacing:-.06em;max-width:920px;margin:28px 0}.statement h2 em{color:var(--acid);font-style:normal}.statement p{max-width:560px;color:#b5c5bd;line-height:1.8}.section{padding:100px 0}.section-head{display:flex;justify-content:space-between;align-items:end;gap:25px;margin-bottom:42px}.section-head h2{font:800 clamp(34px,4.5vw,59px)/1 var(--display);letter-spacing:-.07em;margin:13px 0 0}.section-head p{max-width:370px;color:var(--muted);font-size:13px;line-height:1.8}.triad{display:grid;grid-template-columns:1.1fr .9fr .9fr;gap:12px}.tile{min-height:300px;padding:25px;position:relative;overflow:hidden;border:1px solid var(--line);background:var(--paper)}.tile:first-child{background:var(--teal);color:white;min-height:400px}.tile:nth-child(2){background:#e4e9df}.tile:nth-child(3){background:#e6d8c9}.tile .idx{font:10px var(--mono);opacity:.7}.tile h3{font:700 27px/1.08 var(--display);letter-spacing:-1.3px;max-width:250px;position:absolute;left:25px;bottom:58px}.tile p{position:absolute;bottom:15px;left:25px;right:25px;font-size:11px;line-height:1.6;opacity:.8}.tile-art{position:absolute;right:15px;top:42px;font-size:75px;opacity:.65}.tile:first-child .tile-art{font-size:115px;right:24px;top:65px;color:var(--acid)}.bottom-link{display:inline-flex;gap:12px;align-items:center;margin-top:22px;font-size:12px;font-weight:800;color:var(--teal)}.bottom-link span{font-size:20px}
+.page-hero{padding:88px 0 50px;position:relative}.page-hero h1{font:800 clamp(49px,7.4vw,94px)/.95 var(--display);letter-spacing:-.085em;margin:22px 0;max-width:950px}.page-hero h1 i{font-style:normal;color:var(--teal)}.page-hero>p{max-width:610px;line-height:1.8;color:var(--muted);font-size:15px}.hero-index{position:absolute;right:5.5vw;top:100px;font:11px var(--mono);color:#87958c}.system-layout{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;padding-bottom:90px}.graph-panel{background:#e5ebe3;border:1px solid #d1d9d0;min-height:590px;position:relative;overflow:hidden}.graph-top{display:flex;justify-content:space-between;padding:19px 21px;position:relative;z-index:2}.graph-top span{font:10px var(--mono);letter-spacing:1px}.graph-actions{display:flex;gap:7px}.mini-btn{border:1px solid #bdc9bf;background:#f6f6ef;padding:8px 10px;font:10px var(--mono)}.graph-canvas{position:absolute;inset:55px 0 0;width:100%;height:calc(100% - 55px)}.graph-canvas svg{width:100%;height:100%}.edge{stroke:#a4b7a9;stroke-width:1.4;fill:none;stroke-dasharray:5 7}.edge.active{stroke:var(--teal);stroke-width:2.8;stroke-dasharray:7 5;animation:dash 1s linear infinite}@keyframes dash{to{stroke-dashoffset:-24}}.node{cursor:pointer}.node circle{fill:#fbfaf6;stroke:#9db3a5;stroke-width:1.5;transition:.2s}.node.active circle,.node:hover circle{fill:var(--acid);stroke:var(--teal);stroke-width:3}.node text{font:10px var(--mono);fill:#1a3434;text-anchor:middle;pointer-events:none}.node .sub{font:8px var(--sans);fill:#687b73}.node.running circle{fill:#f17c5b;stroke:#fff;stroke-width:3;filter:drop-shadow(0 0 8px #f17c5b)}.graph-legend{position:absolute;bottom:17px;left:20px;display:flex;gap:15px;font:9px var(--mono);color:#687b73}.legend-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal);margin-right:5px}.inspector{background:var(--night);color:#f7f4ec;padding:27px;min-height:590px;display:flex;flex-direction:column}.inspector-top{display:flex;justify-content:space-between;color:#9fb5ab}.inspector h3{font:700 30px/1.04 var(--display);letter-spacing:-1.4px;margin:35px 0 12px}.inspector p{font-size:12px;line-height:1.8;color:#b2c2b9}.inspector .label{font:9px var(--mono);color:var(--acid);letter-spacing:1.5px}.specs{border-top:1px solid #38504d;margin-top:18px;padding-top:18px}.spec{display:flex;justify-content:space-between;padding:8px 0;font-size:11px;border-bottom:1px solid #2b4442}.spec span:first-child{color:#9db1a8}.spec span:last-child{font-family:var(--mono);color:#e6eee7}.inspector-foot{margin-top:auto;padding-top:25px;display:flex;gap:8px}.inspector-foot button{flex:1}.runbar{display:flex;align-items:center;justify-content:space-between;background:#d9e4d9;padding:17px 20px;gap:15px}.runbar p{font-size:11px;margin:0;color:#5c7069}.runbar .btn{padding:12px 17px}.log{background:#132c31;color:#dce9de;padding:18px 21px;font:10px/1.9 var(--mono);min-height:130px}.log .ok{color:var(--acid)}.log .wait{color:#e8a27b}.logline{opacity:.45}.logline.current{opacity:1}
+.agent-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:50px 0}.agent-card{padding:23px;border:1px solid var(--line);background:var(--paper);min-height:200px;transition:.25s;cursor:pointer}.agent-card:hover{transform:translateY(-6px);border-color:var(--teal);box-shadow:10px 12px 0 #dbe5dc}.agent-card .symbol{font-size:27px;color:var(--teal)}.agent-card h3{font:700 20px var(--display);margin:17px 0 8px}.agent-card p{font-size:11px;line-height:1.7;color:var(--muted)}
+.research-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:13px}.research-card{padding:27px;min-height:270px;position:relative;overflow:hidden;border:1px solid var(--line);background:#fbfaf6}.research-card:nth-child(1){grid-column:span 7;background:#dcebe1;min-height:340px}.research-card:nth-child(2){grid-column:span 5;background:#e6d7c8}.research-card:nth-child(3){grid-column:span 4;background:#e5e9d9}.research-card:nth-child(4){grid-column:span 4;background:#d9e5ec}.research-card:nth-child(5){grid-column:span 4;background:#eee6d6}.research-card:nth-child(6){grid-column:span 12;min-height:200px;background:var(--night);color:#f4f1e9}.research-card .n{font:10px var(--mono);opacity:.65}.research-card .glyph{position:absolute;right:22px;top:25px;font-size:64px;opacity:.55}.research-card h3{font:700 26px/1.05 var(--display);letter-spacing:-1px;max-width:320px;margin:70px 0 10px}.research-card p{font-size:12px;line-height:1.7;max-width:440px;color:inherit;opacity:.75}.research-card:nth-child(6) h3{margin-top:25px}.project-table{border-top:1px solid #bfcac0}.project-row{display:grid;grid-template-columns:60px 1.2fr 1fr 130px;gap:20px;padding:25px 10px;border-bottom:1px solid #cbd4ca;align-items:center;transition:.2s}.project-row:hover{background:#e7ece3}.project-row .n{font:11px var(--mono);color:var(--teal)}.project-row h3{font:700 18px var(--display);margin:0}.project-row p{font-size:11px;margin:0;line-height:1.6}.status{font:9px var(--mono);padding:8px;border:1px solid #b7c9ba;text-align:center;color:#416b5e}.community-band{background:var(--teal);color:white;padding:65px;display:grid;grid-template-columns:1fr 1fr;gap:30px;position:relative;overflow:hidden}.community-band:after{content:'∞';position:absolute;right:-20px;bottom:-170px;font:400 390px/.8 var(--display);color:#ffffff12}.community-band h2{font:800 clamp(38px,5vw,65px)/.98 var(--display);letter-spacing:-.07em;max-width:550px;margin:22px 0}.community-band p{color:#d3e7df;font-size:13px;line-height:1.8;max-width:420px}.roles{display:grid;grid-template-columns:1fr 1fr;gap:8px;position:relative;z-index:1;align-content:center}.role{padding:20px;background:#ffffff17;border:1px solid #ffffff40;font-size:12px}.role b{display:block;font:700 16px var(--display);margin-bottom:5px}.contact-form{max-width:700px;margin:70px auto}.field{margin:18px 0}.field label{display:block;font:10px var(--mono);letter-spacing:1px;margin-bottom:9px}.field input,.field textarea,.field select{width:100%;padding:14px;background:transparent;border:1px solid #bfcac0;font:13px var(--sans);color:var(--ink);outline:none}.field input:focus,.field textarea:focus{border-color:var(--teal)}.field textarea{min-height:120px;resize:vertical}.footer{background:#122a30;color:#f5f2e9;padding:45px 5.5vw;display:flex;justify-content:space-between;gap:20px;font-size:11px}.footer p{color:#9fb2aa;line-height:1.7}.toast{position:fixed;bottom:25px;right:25px;background:var(--ink);color:white;padding:14px 18px;font:11px var(--mono);z-index:40;transform:translateY(100px);transition:.3s}.toast.show{transform:translateY(0)}
+
+/* HERO / spatial care journey — layered, transparent, no cursor-follow effect */
+.hero-space{height:570px;display:block;isolation:isolate;perspective:1100px;overflow:visible;}
+.space-caption{position:absolute;top:8px;left:8%;right:7%;display:flex;justify-content:space-between;color:#7c9086;font-size:9px;z-index:8}
+.space-halo{position:absolute;border-radius:50%;filter:blur(2px);pointer-events:none}
+.halo-one{width:390px;height:390px;right:8%;top:12%;background:radial-gradient(circle,#b9dfd1a8 0%,#b9dfd14a 35%,transparent 70%)}
+.halo-two{width:240px;height:240px;left:9%;bottom:13%;background:radial-gradient(circle,#e6cba76b,transparent 70%)}
+.space-grid{position:absolute;inset:12% 3% 12% 2%;opacity:.26;transform:rotateX(62deg) rotateZ(-28deg) scale(1.08);background-image:linear-gradient(#8ba79a 1px,transparent 1px),linear-gradient(90deg,#8ba79a 1px,transparent 1px);background-size:34px 34px;mask-image:radial-gradient(ellipse at center,#000 15%,transparent 73%)}
+.journey-lines{position:absolute;inset:0;width:100%;height:100%;z-index:5;overflow:visible;filter:drop-shadow(0 5px 8px #087e7320)}
+.route-shadow{fill:none;stroke:#fbfaf6;stroke-width:13;stroke-linecap:round;opacity:.85}.route-main{fill:none;stroke:url(#routeGrad);stroke-width:2.2;stroke-linecap:round;stroke-dasharray:4 7;filter:url(#routeGlow)}.route-branch{fill:none;stroke:#91b8a6;stroke-width:1.3;stroke-dasharray:3 7;opacity:.75}.route-pulse{fill:#f17c5b;stroke:#fffaf0;stroke-width:3;filter:drop-shadow(0 0 8px #f17c5b)}
+.space-plane{position:absolute;border:1px solid #fffdf1a8;border-radius:50%;transform-style:preserve-3d;pointer-events:none}
+.plane-back{width:450px;height:330px;left:16%;top:18%;transform:rotateX(67deg) rotateZ(-27deg);background:linear-gradient(135deg,#ffffff35,#8dbca51a);box-shadow:0 35px 60px #355b4b12,inset 0 0 35px #fff8}
+.plane-mid{width:370px;height:260px;left:23%;top:26%;transform:rotateX(67deg) rotateZ(18deg);background:linear-gradient(135deg,#c5e3d348,#fff7);border-color:#b3cfc0a8}
+.plane-front{width:280px;height:190px;left:32%;top:37%;transform:rotateX(67deg) rotateZ(-18deg);background:linear-gradient(135deg,#ffffffa6,#c4ddd18c);border-color:#ffffffd9;box-shadow:0 28px 40px #244c3a20,inset 0 0 28px #fff}
+.journey-node{position:absolute;z-index:7;width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#ffffffed,#dcebe2c9);border:1px solid #fff;box-shadow:0 15px 32px #254a3b24,inset 0 1px 0 #fff;backdrop-filter:blur(14px);color:var(--teal);font:24px var(--display);transition:transform .35s ease,box-shadow .35s ease}
+.journey-node:before{content:"";position:absolute;inset:6px;border:1px solid #a8c8b8;border-radius:50%;opacity:.7}.journey-node:hover{transform:translateY(-7px) scale(1.06);box-shadow:0 22px 40px #254a3b30,inset 0 1px 0 #fff}
+.node-icon{position:relative;z-index:1}.node-index{position:absolute;right:-7px;top:-7px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#fff;font:9px var(--mono);border:2px solid var(--bg)}.node-name{position:absolute;top:72px;white-space:nowrap;font:10px var(--mono);letter-spacing:.2px;color:#38564c;text-shadow:0 1px 8px #f4f1e9}
+.n1{left:8%;top:62%}.n2{left:29%;top:45%}.n3{left:51%;top:53%}.n4{left:70%;top:35%}.n5{right:4%;top:12%;background:linear-gradient(145deg,#f7f7d8,#dce9b5);color:#536c36}
+.space-label{position:absolute;z-index:8;display:flex;flex-direction:column;gap:6px;color:#425e52;text-shadow:0 1px 10px #f4f1e9}.space-label .mono{font-size:8px;letter-spacing:1.1px;color:#718a7c}.space-label b{font:600 11px var(--sans);letter-spacing:-.2px}.label-mark{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 5px #087e7315}.label-mark.amber{background:#d39a55;box-shadow:0 0 0 5px #d39a5518}.label-data{left:2%;top:24%}.label-cost{right:0;bottom:18%;text-align:right;align-items:flex-end}.space-coord{position:absolute;right:5%;bottom:8%;z-index:8;color:#82958a;font-size:8px;line-height:1.9;text-align:right}.space-foot{position:absolute;left:7%;right:7%;bottom:1%;z-index:8;display:flex;align-items:center;gap:12px;color:#84958b;font-size:8px}.space-foot-line{height:1px;flex:1;background:linear-gradient(90deg,#9bb5a7,transparent)}
+/* Remove legacy hero-object motion and keep reduced-motion users comfortable. */
+#heroArt *{animation-play-state:running}#heroArt .space-plane{animation:plane-drift 12s ease-in-out infinite alternate}#heroArt .plane-mid{animation-delay:-4s}#heroArt .plane-front{animation-delay:-8s}@keyframes plane-drift{to{translate:0 -8px}}
+@media(max-width:850px){.hero-space{height:480px;max-width:650px;width:100%;margin:auto}.space-plane{scale:.84}.space-grid{inset:15% 0}.journey-node{width:56px;height:56px}.n1{left:5%;top:63%}.n2{left:25%;top:46%}.n3{left:48%;top:53%}.n4{left:69%;top:34%}.n5{right:3%;top:10%}.label-cost{right:1%;bottom:13%}}
+@media(max-width:520px){.hero-space{height:360px;margin-top:10px}.space-caption{font-size:7px;left:2%;right:2%}.space-grid{background-size:25px 25px}.space-plane{scale:.62}.journey-node{width:43px;height:43px;font-size:18px}.journey-node:before{inset:4px}.node-index{width:18px;height:18px;font-size:7px;right:-5px;top:-5px}.node-name{top:48px;font-size:8px}.n1{left:1%;top:64%}.n2{left:23%;top:46%}.n3{left:46%;top:53%}.n4{left:68%;top:34%}.n5{right:0;top:9%}.space-label b{font-size:9px}.space-label .mono{font-size:7px}.label-data{left:0;top:20%}.label-cost{right:0;bottom:10%}.space-coord{font-size:7px;bottom:2%;right:1%}.space-foot{left:2%;right:2%;bottom:-2%;font-size:6px}.halo-one{width:260px;height:260px}.halo-two{width:150px;height:150px}}
+@media(prefers-reduced-motion:reduce){.route-pulse{display:none}.space-plane{animation:none!important}.page{animation:none}}
+@media(max-width:850px){header{padding:0 5vw}nav{display:none;position:absolute;top:77px;left:0;right:0;padding:20px 5vw;background:var(--bg);flex-direction:column;align-items:stretch;border-bottom:1px solid var(--line)}nav.open{display:flex}.menu{display:block}.shell{padding:0 5vw}.hero{grid-template-columns:1fr;padding-top:55px}.hero-art{height:420px}.triad{grid-template-columns:1fr}.tile,.tile:first-child{min-height:270px}.system-layout{grid-template-columns:1fr}.graph-panel{min-height:500px}.inspector{min-height:430px}.agent-grid{grid-template-columns:1fr 1fr}.research-card:nth-child(n){grid-column:span 6}.research-card:nth-child(6){grid-column:span 12}.community-band{padding:35px;grid-template-columns:1fr}.project-row{grid-template-columns:35px 1fr}.project-row p{grid-column:2}.project-row .status{grid-column:2;justify-self:start}.hero-index{display:none}}
+@media(max-width:520px){.display{font-size:54px}.hero-art{height:340px}.orbital{width:300px;height:300px}.orbital.two{width:240px;height:240px}.orbital.three{width:340px;height:190px}.cell{width:180px;height:220px}.tag-a{left:0}.tag-b{right:0}.section{padding:65px 0}.section-head{display:block}.agent-grid{grid-template-columns:1fr}.research-card:nth-child(n){grid-column:span 12;min-height:240px}.graph-panel{min-height:420px}.graph-canvas{inset:70px 0 0;height:calc(100% - 70px)}.inspector{padding:22px}.roles{grid-template-columns:1fr}.community-band{padding:28px}.footer{display:block}.hero-actions{flex-wrap:wrap}}
+
+/* VISUAL REFINEMENT — preserve the existing page architecture and interactions */
+:root{--line:#cbd5ca}
+.section{padding-top:112px;padding-bottom:112px}
+.section-head{margin-bottom:54px;align-items:flex-end}
+.section-head h2{font-size:clamp(39px,5vw,66px);line-height:.98;max-width:680px}
+.section-head p{font-size:14px;max-width:410px;line-height:1.9}
+
+/* Three capabilities: editorial composition instead of three boxed tiles */
+.triad{grid-template-columns:1.12fr .94fr .94fr;gap:0;align-items:stretch;position:relative;border-top:1px solid #b9c7bd;border-bottom:1px solid #b9c7bd}
+.tile,.tile:first-child{min-height:420px;padding:30px 32px;border:0;border-radius:0;background:transparent;color:var(--ink);overflow:hidden}
+.tile:first-child{background:linear-gradient(145deg,#0d756b 0%,#124b4c 100%);color:#f8f6ed}
+.tile:nth-child(2),.tile:nth-child(3){background:transparent}
+.tile+ .tile{border-left:1px solid #cbd5ca}
+.tile .idx{font-size:10px;letter-spacing:1.6px;position:relative;z-index:2}
+.tile-art{right:24px;top:52px;font-size:105px;opacity:.2;line-height:1;transition:transform .6s cubic-bezier(.2,.7,.2,1),opacity .4s}
+.tile:first-child .tile-art{font-size:150px;right:26px;top:65px;color:var(--acid);opacity:.72}
+.tile:nth-child(2) .tile-art{color:#087e73}.tile:nth-child(3) .tile-art{color:#c06f4f}
+.tile h3{left:32px;right:28px;bottom:91px;max-width:290px;font:750 clamp(27px,2.55vw,37px)/1.04 var(--display);letter-spacing:-1.8px;margin:0;z-index:2}
+.tile p{left:32px;right:30px;bottom:25px;max-width:300px;font-size:14px;line-height:1.75;opacity:.82;margin:0;z-index:2}
+.tile:not(:first-child):after{content:'';position:absolute;width:180px;height:180px;right:-82px;top:110px;border:1px solid #9cb5a6;border-radius:50%;box-shadow:0 0 0 20px #dce8df55,0 0 0 42px #dce8df30;pointer-events:none}
+.tile:nth-child(3):after{border-color:#c9a88d;box-shadow:0 0 0 20px #e8d8c855,0 0 0 42px #e8d8c830}
+.tile:hover .tile-art{transform:translateY(-8px) rotate(-8deg);opacity:.9}
+.bottom-link{margin-top:30px;font-size:13px}
+
+/* Agent execution: readable event stream with a visible sequence */
+.system-layout{grid-template-columns:minmax(0,1.42fr) minmax(320px,.72fr);gap:18px}
+.graph-panel{border:1px solid #c9d7cb;border-radius:3px;background:radial-gradient(ellipse at 50% 42%,#f5f7ef 0%,#e7eee5 58%,#dce6dc 100%);box-shadow:0 22px 55px #24483a12;min-height:610px}
+.graph-top{padding:22px 25px}
+.graph-top span{font-size:11px;letter-spacing:1.35px}
+.mini-btn{border-radius:2px;padding:9px 12px;background:#f8f8f1;transition:.2s}
+.mini-btn:hover{background:var(--ink);color:white}
+.graph-legend{font-size:10px;bottom:21px;left:25px}
+.inspector{border-radius:3px;padding:34px 32px;min-height:610px;background:radial-gradient(circle at 90% 8%,#28504b 0,transparent 34%),linear-gradient(155deg,#17383a,#10272d 72%);box-shadow:0 22px 55px #142c311c}
+.inspector-top{font-size:10px;letter-spacing:1.3px;margin-bottom:34px}
+.inspector .label{font-size:10px;line-height:1.6}
+.inspector h3{font-size:clamp(34px,3vw,43px);line-height:1.02;letter-spacing:-2px;margin:17px 0 16px;max-width:340px}
+.inspector p{font-size:14px;line-height:1.85;color:#c1d0c8}
+.specs{margin-top:26px;padding-top:19px}
+.spec{padding:12px 0;font-size:12px;gap:15px}
+.spec span:last-child{text-align:right;overflow-wrap:anywhere}
+.inspector-foot{gap:10px;padding-top:32px}
+.inspector-foot .btn{padding:13px 12px;font-size:11px}
+.runbar{padding:19px 24px;background:#dce8dc;border:1px solid #c8d8ca;border-top:0}
+.runbar p{font-size:13px;line-height:1.6}
+.runbar .btn{border-radius:2px}
+.log{position:relative;padding:26px 30px 28px 54px;min-height:190px;background:linear-gradient(115deg,#10272d,#173a3b);font:12px/2.05 var(--mono);color:#dce9de;overflow:hidden}
+.log:before{content:'';position:absolute;left:29px;top:32px;bottom:32px;width:1px;background:linear-gradient(#d9f36a66,#8cb8a566,transparent)}
+.log>div{position:relative;padding:4px 0 4px 16px;max-width:1000px;overflow-wrap:anywhere}
+.log>div:before{content:'';position:absolute;left:-29px;top:14px;width:7px;height:7px;border-radius:50%;background:#6f9e8a;box-shadow:0 0 0 4px #6f9e8a20}
+.log .logline{opacity:.62}
+.log .logline.current{opacity:1;color:#fff}
+.log .ok{color:var(--acid)}.log .wait{color:#f1aa82}
+.logline.current:before{background:var(--coral);box-shadow:0 0 0 5px #f17c5b25}
+
+/* Research directions: layered editorial panels, stronger hierarchy and breathing room */
+.research-grid{gap:18px;align-items:stretch}
+.research-card{padding:34px 36px 36px;min-height:310px;border:0;border-radius:3px;isolation:isolate;box-shadow:0 12px 35px #1b39300b;transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s;}
+.research-card:before{content:'';position:absolute;z-index:-1;width:240px;height:240px;right:-90px;bottom:-130px;border:1px solid #496d5b35;border-radius:50%;box-shadow:0 0 0 22px #ffffff18,0 0 0 48px #ffffff12,0 0 0 78px #ffffff0c;transition:transform .6s}
+.research-card:after{content:'';position:absolute;z-index:-1;width:110px;height:110px;right:42px;top:90px;border-radius:50%;background:linear-gradient(145deg,#ffffff55,#ffffff00);filter:blur(1px)}
+.research-card:hover{transform:translateY(-7px);box-shadow:0 24px 45px #1b393018}
+.research-card:hover:before{transform:scale(1.12) translate(-8px,-8px)}
+.research-card:nth-child(1){grid-column:span 7;min-height:380px;padding:38px 42px;background:linear-gradient(135deg,#dcebe1,#c9e0d4)}
+.research-card:nth-child(2){grid-column:span 5;background:linear-gradient(145deg,#eee2d5,#e3d1c0)}
+.research-card:nth-child(3){grid-column:span 4;background:linear-gradient(145deg,#edf0e3,#dce5d3)}
+.research-card:nth-child(4){grid-column:span 4;background:linear-gradient(145deg,#e5edf1,#d4e1e9)}
+.research-card:nth-child(5){grid-column:span 4;background:linear-gradient(145deg,#f1eadb,#e7dcc6)}
+.research-card:nth-child(6){grid-column:span 12;min-height:250px;padding:36px 42px;background:linear-gradient(115deg,#142c31,#1d4444);color:#f4f1e9}
+.research-card .n{font-size:10px;letter-spacing:1.5px;position:relative;z-index:2}
+.research-card .glyph{right:30px;top:28px;font-size:88px;line-height:1;color:#356d5b;opacity:.22;transform:rotate(-10deg);z-index:0}
+.research-card:nth-child(6) .glyph{color:var(--acid);opacity:.22;font-size:115px;right:8%;top:36px}
+.research-card h3{position:relative;z-index:2;font:750 clamp(29px,2.7vw,39px)/1.04 var(--display);letter-spacing:-1.8px;max-width:390px;margin:88px 0 16px}
+.research-card p{position:relative;z-index:2;font-size:14px;line-height:1.85;max-width:500px;opacity:.82}
+.research-card:nth-child(1) h3{font-size:clamp(34px,3.2vw,46px);max-width:470px;margin-top:112px}
+.research-card:nth-child(6){display:grid;grid-template-columns:.8fr 1.2fr;column-gap:50px;align-content:center}
+.research-card:nth-child(6) .n{grid-column:1/-1}
+.research-card:nth-child(6) h3{font-size:clamp(30px,3vw,42px);max-width:440px;margin:28px 0 0}
+.research-card:nth-child(6) p{align-self:end;margin:0 0 3px;max-width:610px;color:#d1dfd7}
+
+/* Give the remaining form and collaboration surfaces more depth without changing fields */
+.agent-grid{gap:0;border-top:1px solid #cbd5ca;border-bottom:1px solid #cbd5ca;margin:34px 0 70px}
+.agent-card{background:transparent;border:0;border-radius:0;min-height:205px;padding:28px 30px;box-shadow:none!important}
+.agent-card:nth-child(3n+2),.agent-card:nth-child(3n+3){border-left:1px solid #cbd5ca}
+.agent-card:nth-child(n+4){border-top:1px solid #cbd5ca}
+.agent-card:hover{transform:translateY(-3px);background:#e9eee6}
+.agent-card .symbol{font-size:32px}
+.agent-card h3{font-size:23px;margin:20px 0 10px;letter-spacing:-.7px}
+.agent-card p{font-size:13px;line-height:1.8;max-width:330px}
+.community-band{border-radius:3px;background:radial-gradient(circle at 85% 20%,#ffffff20,transparent 32%),linear-gradient(125deg,#087e73,#12534f);box-shadow:0 25px 60px #173b3218}
+.role{border:1px solid #ffffff35;border-radius:2px;background:#ffffff12;padding:22px;backdrop-filter:blur(8px);line-height:1.7}
+.contact-form{max-width:760px;margin:90px auto 110px;padding:44px 50px;background:linear-gradient(145deg,#fbfaf6,#f0f0e7);border:1px solid #d8dfd5;border-radius:3px;box-shadow:0 25px 65px #1b393012}
+.contact-form h2{font-size:clamp(34px,4vw,48px)!important;line-height:1.03!important;letter-spacing:-2px!important;max-width:560px}
+.field{margin:25px 0}
+.field label{font-size:10px;letter-spacing:1.4px;color:#61756d}
+.field input,.field textarea,.field select{padding:17px 18px;background:#ffffff9c;border:1px solid #cbd5ca;border-radius:2px;font-size:14px;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--teal);box-shadow:0 0 0 4px #087e7312}
+.field textarea{min-height:150px;line-height:1.7}
+
+@media(max-width:850px){
+ .section{padding-top:75px;padding-bottom:75px}
+ .triad{grid-template-columns:1fr;border-top:1px solid #b9c7bd}
+ .tile,.tile:first-child{min-height:300px;padding:27px 26px}
+ .tile+ .tile{border-left:0;border-top:1px solid #cbd5ca}
+ .tile h3{left:26px;bottom:76px;font-size:32px}
+ .tile p{left:26px;bottom:22px;font-size:13px}
+ .tile-art{font-size:90px;top:35px}
+ .tile:first-child .tile-art{font-size:115px;top:38px}
+ .system-layout{grid-template-columns:1fr}
+ .inspector{min-height:480px}
+ .research-card:nth-child(n){grid-column:span 6;min-height:300px}
+ .research-card:nth-child(1){min-height:340px}
+ .research-card:nth-child(6){grid-column:span 12}
+ .agent-card:nth-child(n){border-left:0}
+ .agent-card:nth-child(2n){border-left:1px solid #cbd5ca}
+ .agent-card:nth-child(n+3){border-top:1px solid #cbd5ca}
+ .contact-form{margin:65px auto 80px;padding:34px}
+}
+@media(max-width:520px){
+ .section-head h2{font-size:39px}
+ .tile,.tile:first-child{min-height:285px}
+ .tile h3{font-size:30px;max-width:260px}
+ .research-card:nth-child(n){grid-column:span 12;min-height:275px;padding:28px}
+ .research-card:nth-child(1){min-height:330px;padding:30px}
+ .research-card h3{font-size:32px;margin-top:75px}
+ .research-card:nth-child(1) h3{font-size:36px;margin-top:95px}
+ .research-card:nth-child(6){display:block;min-height:300px}
+ .research-card:nth-child(6) h3{margin:26px 0 14px}
+ .research-card:nth-child(6) p{margin:0}
+ .graph-panel{min-height:430px}
+ .graph-top{padding:16px}
+ .graph-top span{font-size:9px}
+ .runbar{align-items:flex-start;flex-direction:column}
+ .runbar .btn{width:100%}
+ .log{padding:22px 17px 24px 42px;font-size:10px}
+ .log:before{left:22px}
+ .log>div:before{left:-20px}
+ .agent-grid{grid-template-columns:1fr}
+ .agent-card:nth-child(n){border-left:0;border-top:1px solid #cbd5ca;padding:25px 20px}
+ .contact-form{padding:26px 22px}
+ .inspector{padding:26px 23px}
+ .inspector-foot{flex-direction:column}
+}
+
+
+/* Real AI assistant page */
+.assistant-layout{display:grid;grid-template-columns:.72fr 1.28fr;gap:16px;padding:0 0 100px;align-items:stretch}
+.assistant-info{background:var(--night);color:#f4f1e9;padding:30px;display:flex;flex-direction:column;min-height:590px}
+.assistant-info h2{font:750 clamp(30px,3.5vw,45px)/1.02 var(--display);letter-spacing:-.06em;margin:28px 0 14px}
+.assistant-info p{font-size:13px;line-height:1.85;color:#b9c9c0}
+.assistant-info .safety-note{margin-top:auto;border-top:1px solid #38504d;padding-top:18px;font-size:11px;color:#c4d1c9;line-height:1.8}
+.assistant-info .safety-note b{color:var(--acid)}
+.auth-panel,.chat-panel{background:var(--paper);border:1px solid var(--line);min-height:590px;box-shadow:0 18px 50px #1b39300b}
+.auth-panel{padding:34px;display:flex;flex-direction:column;justify-content:center;max-width:100%}
+.auth-panel h3{font:750 30px var(--display);letter-spacing:-1.2px;margin:12px 0}
+.auth-panel p{font-size:12px;line-height:1.8;color:var(--muted);max-width:440px}
+.auth-panel label{display:block;font:10px var(--mono);letter-spacing:1px;margin:20px 0 8px;color:#60756b}
+.auth-panel input{width:100%;padding:15px 16px;border:1px solid #cbd5ca;background:#fffdf8;font:14px var(--sans);outline:none}
+.auth-panel input:focus{border-color:var(--teal);box-shadow:0 0 0 4px #087e7312}
+.auth-panel .btn{margin-top:22px;width:100%}
+.auth-status{font:11px var(--mono);line-height:1.7;color:#9b593e;min-height:22px;margin-top:12px;overflow-wrap:anywhere}
+.chat-panel{display:flex;flex-direction:column;min-width:0}
+.chat-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 21px;border-bottom:1px solid var(--line);background:#f8f8f1}
+.chat-identity{display:flex;align-items:center;gap:11px;font:700 13px var(--display)}
+.chat-avatar{width:34px;height:34px;border-radius:50% 50% 50% 8px;display:grid;place-items:center;background:var(--teal);color:var(--acid);font-size:18px}
+.chat-identity small{font:10px var(--mono);color:#71847a;display:block;margin-top:3px}
+.chat-tools{display:flex;gap:7px;align-items:center}
+.chat-tools button{padding:8px 10px;font:10px var(--mono);border:1px solid #c6d0c5;background:transparent;color:var(--ink)}
+.chat-tools button:hover{border-color:var(--teal);color:var(--teal)}
+.chat-messages{height:405px;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg,#fbfaf6,#f3f2e9)}
+.chat-msg{max-width:86%;padding:13px 15px;border-radius:3px;font-size:13px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}
+.chat-msg.assistant{align-self:flex-start;background:#e5eee5;color:#29433b;border:1px solid #d5e2d6}
+.chat-msg.user{align-self:flex-end;background:var(--teal);color:white}
+.chat-msg.system{align-self:center;background:#f2e9d9;color:#795f43;font-size:11px;max-width:95%;text-align:center}
+.chat-typing{display:none;align-self:flex-start;color:#70877b;font:10px var(--mono);padding:5px 15px}
+.chat-typing.show{display:block}
+.chat-quick{display:flex;gap:7px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid #e0e4da;background:#f8f8f1}
+.chat-quick button{border:1px solid #c6d4c8;background:transparent;padding:8px 10px;color:#4e6c5d;font-size:10px;border-radius:2px}
+.chat-quick button:hover{background:#e5eee5}
+.chat-compose{display:flex;gap:8px;padding:15px 18px;border-top:1px solid var(--line);background:var(--paper)}
+.chat-compose input{min-width:0;flex:1;padding:14px 15px;border:1px solid #cbd5ca;background:white;font:13px var(--sans);outline:none}
+.chat-compose input:focus{border-color:var(--teal)}
+.chat-compose button{width:48px;border:0;background:var(--teal);color:white;font-size:22px}
+.chat-compose button:disabled{opacity:.45;cursor:not-allowed}
+.chat-foot{padding:0 18px 15px;background:var(--paper);font:9px/1.6 var(--mono);color:#839188}
+.account-line{font:10px var(--mono);color:#74867b;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:850px){.assistant-layout{grid-template-columns:1fr}.assistant-info{min-height:300px}.assistant-info .safety-note{margin-top:25px}.auth-panel,.chat-panel{min-height:520px}}
+@media(max-width:520px){.assistant-info{padding:25px;min-height:0}.auth-panel{padding:25px 20px}.chat-top{padding:14px}.chat-messages{height:390px;padding:15px}.chat-msg{max-width:94%}.chat-tools{flex-direction:column;align-items:flex-end}.account-line{max-width:115px}.chat-compose{padding:12px}.chat-quick{padding:10px}}
+
+
+/* HEALTHCARE WORKSPACE — integrated MVP workflow */
+.health-shell{max-width:1380px;margin:0 auto;padding:0 5.5vw 100px}
+.health-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);gap:16px;align-items:start}
+.health-card{background:var(--paper);border:1px solid var(--line);padding:25px;min-width:0}
+.health-card.dark{background:var(--night);color:#f7f4ec;border-color:var(--night)}
+.health-card h2{font:700 26px/1.1 var(--display);letter-spacing:-1px;margin:10px 0 8px}
+.health-card p{font-size:13px;line-height:1.75;color:var(--muted)}
+.health-card.dark p{color:#b7c6bd}
+.health-upload{display:flex;align-items:center;justify-content:center;text-align:center;min-height:150px;border:1px dashed #91a99b;background:#f1f5ee;padding:20px;cursor:pointer;position:relative}
+.health-upload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.health-upload strong{display:block;font-size:14px;color:var(--ink)}
+.health-upload small{display:block;color:var(--muted);margin-top:7px}
+.health-meta{font:10px var(--mono);color:var(--muted);margin-top:12px;word-break:break-word}
+.health-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}
+.health-actions button{border:0;padding:13px 16px;background:var(--teal);color:#fff;font-size:11px;font-weight:800}
+.health-actions button.secondary{background:transparent;border:1px solid #9eaaa2;color:var(--ink)}
+.health-actions button:disabled{opacity:.45;cursor:not-allowed}
+.health-agent-list{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
+.health-agent{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #d4ddd3;background:#f8f8f2;font-size:12px}
+.health-agent input{accent-color:var(--teal);margin-top:3px}
+.health-agent b{display:block;color:var(--ink);font-size:12px}
+.health-agent small{display:block;color:var(--muted);font-size:10px;line-height:1.5;margin-top:4px}
+.health-status{padding:12px 14px;background:#edf2e9;border-left:3px solid var(--teal);font-size:12px;line-height:1.6;margin-top:15px;color:var(--ink);white-space:pre-wrap}
+.health-status.error{background:#faeee9;border-color:var(--coral)}
+.health-results{margin-top:18px;display:grid;gap:10px}
+.health-result{background:#fff;border:1px solid var(--line);padding:17px}
+.health-result-head{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.health-result h3{margin:0;font:700 17px var(--display)}
+.health-pill{font:9px var(--mono);padding:5px 8px;background:#e8f0e8;color:#28745e}
+.health-finding{padding:11px 0;border-top:1px solid #e7e9e1;margin-top:10px;font-size:12px;line-height:1.6}
+.health-finding blockquote{margin:6px 0 0;padding:8px 10px;background:#f5f5ef;border-left:2px solid var(--teal);color:#52665d;font-size:11px}
+.health-muted{font-size:11px;color:var(--muted)}
+.health-safety{font-size:10px;line-height:1.7;color:#9db3a7;border-top:1px solid #38504d;padding-top:13px;margin-top:20px}
+@media(max-width:850px){.health-grid{grid-template-columns:1fr}.health-shell{padding-left:5vw;padding-right:5vw}}
+@media(max-width:520px){.health-agent-list{grid-template-columns:1fr}.health-card{padding:18px}}
+
+
+</style></head><body><div class="grain"></div>
+<header><a class="brand" href="#" onclick="go('home');return false"><span class="brandmark"></span> Y TẾ <span>MỞ</span></a><button class="menu" onclick="document.querySelector('nav').classList.toggle('open')">☰</button><nav id="nav"><button class="active" data-page="home" onclick="go('home')">Tổng quan</button><button data-page="assistant" onclick="go('assistant')">Trợ lý AI</button><button data-page="healthcare" onclick="go('healthcare')">Hồ sơ y tế</button><button data-page="system" onclick="go('system')">Agent system</button><button data-page="research" onclick="go('research')">Nghiên cứu</button><button data-page="projects" onclick="go('projects')">Dự án</button><button data-page="community" onclick="go('community')">Cộng đồng</button><button class="nav-cta" onclick="go('system')">Khám phá hệ thống ↗</button></nav></header>
+<main>
+<section class="page active" id="home"><div class="shell hero"><div class="hero-copy"><div class="mono eyebrow">CARE, WITHOUT BARRIERS — 01 / 05</div><h1 class="display">Sức khỏe<br>không nên là<br><i>một mê cung.</i></h1><p>Y TẾ MỞ là sáng kiến công nghệ hướng đến việc giúp mọi người hiểu nhu cầu sức khỏe của mình, tìm được con đường chăm sóc phù hợp và giảm những chi phí có thể tránh được.</p><div class="hero-actions"><button class="btn" onclick="go('system')">Khám phá hệ thống ↗</button><button class="btn outline" onclick="go('research')">Các hướng nghiên cứu</button></div><div class="hero-note"><span class="live-dot"></span> LẮNG NGHE NHU CẦU · KẾT NỐI NGUỒN LỰC · ĐỔI MỚI GIẢI PHÁP</div></div><div class="hero-art hero-space" id="heroArt" aria-label="Bản đồ không gian hành trình chăm sóc sức khỏe">
+  <div class="space-caption mono">CARE JOURNEY / SPATIAL MODEL <span>FIG. 01</span></div>
+  <div class="space-halo halo-one"></div><div class="space-halo halo-two"></div>
+  <div class="space-grid"></div>
+  <svg class="journey-lines" viewBox="0 0 640 560" role="presentation" aria-hidden="true">
+    <defs><linearGradient id="routeGrad" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#087e73"/><stop offset=".55" stop-color="#7ab9a5"/><stop offset="1" stop-color="#d4a66d"/></linearGradient><filter id="routeGlow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <path class="route-shadow" d="M94 382 C150 320 175 345 230 286 S326 207 365 246 S438 315 485 218 S535 150 568 112"/>
+    <path class="route-main" d="M94 382 C150 320 175 345 230 286 S326 207 365 246 S438 315 485 218 S535 150 568 112"/>
+    <path class="route-branch" d="M230 286 C220 205 250 150 302 111 M365 246 C390 165 410 122 458 83 M485 218 C520 285 535 340 565 378"/>
+    <circle class="route-pulse" r="5"><animateMotion dur="9s" repeatCount="indefinite" path="M94 382 C150 320 175 345 230 286 S326 207 365 246 S438 315 485 218 S535 150 568 112"/></circle>
+  </svg>
+  <div class="space-plane plane-back"></div><div class="space-plane plane-mid"></div><div class="space-plane plane-front"></div>
+  <div class="journey-node n1"><span class="node-icon">⌕</span><span class="node-index">01</span><span class="node-name">Tiếp cận</span></div>
+  <div class="journey-node n2"><span class="node-icon">⌘</span><span class="node-index">02</span><span class="node-name">Điều phối</span></div>
+  <div class="journey-node n3"><span class="node-icon">✳</span><span class="node-index">03</span><span class="node-name">Điều trị</span></div>
+  <div class="journey-node n4"><span class="node-icon">↗</span><span class="node-index">04</span><span class="node-name">Theo dõi</span></div>
+  <div class="journey-node n5"><span class="node-icon">⌁</span><span class="node-index">05</span><span class="node-name">Dài hạn</span></div>
+  <div class="space-label label-data"><span class="label-mark"></span><span class="mono">PATIENT CONTEXT</span><b>Dữ liệu xuyên suốt</b></div>
+  <div class="space-label label-cost"><span class="label-mark amber"></span><span class="mono">COST INTELLIGENCE</span><b>Chi phí · Quyền lợi · Tiếp cận</b></div>
+  <div class="space-coord mono">X / JOURNEY<br>Y / CONTINUITY<br>Z / OUTCOME</div>
+  <div class="space-foot"><span class="mono">FROM FRAGMENTED CARE</span><span class="space-foot-line"></span><span class="mono">TO CONNECTED JOURNEY</span></div>
+</div></div><div class="ticker"><span><b>✳ ACCESS</b><b>✳ AFFORDABILITY</b><b>✳ CONTINUITY</b><b>✳ PREVENTION</b><b>✳ OPEN COLLABORATION</b><b>✳ ACCESS</b><b>✳ AFFORDABILITY</b><b>✳ CONTINUITY</b><b>✳ PREVENTION</b><b>✳ OPEN COLLABORATION</b></span></div><section class="statement"><div class="shell"><div class="mono" style="color:var(--acid)">THE PROBLEM WE START WITH</div><h2>Không phải ai cũng biết <em>mình cần hỏi gì,</em> bắt đầu từ đâu, hay làm sao để có được sự chăm sóc phù hợp.</h2><p>Rào cản y tế không chỉ nằm ở bệnh viện. Nó có thể bắt đầu từ thông tin khó hiểu, chi phí không dự đoán được, khoảng cách địa lý, quy trình rời rạc hoặc việc không có ai giúp kết nối các mảnh ghép.</p></div></section><div class="shell section"><div class="section-head"><div><div class="mono eyebrow">A connected approach / 03 capabilities</div><h2>Không chỉ trả lời.<br>Giúp hành trình tiến lên.</h2></div><p>Một nền tảng phối hợp nhiều năng lực: khám phá nhu cầu, điều phối dịch vụ và chuyển vấn đề thực tế thành nghiên cứu có thể kiểm chứng.</p></div><div class="triad"><article class="tile"><div class="idx">01 — UNDERSTAND</div><div class="tile-art">◉</div><h3>Hiểu điều chưa được nói thành lời.</h3><p>Chủ động hỏi có mục đích, từng bước làm rõ điều người dùng thực sự cần.</p></article><article class="tile"><div class="idx">02 — COORDINATE</div><div class="tile-art">⌘</div><h3>Kết nối đúng nguồn lực.</h3><p>Điều hướng, chi phí, quyền lợi và tính liên tục của chăm sóc.</p></article><article class="tile"><div class="idx">03 — INNOVATE</div><div class="tile-art">⟡</div><h3>Biến vấn đề thành giải pháp.</h3><p>Kết nối cộng đồng, chuyên gia, nhà nghiên cứu và kỹ sư.</p></article></div><a class="bottom-link" href="#" onclick="go('system');return false">Khám phá kiến trúc hệ thống <span>↗</span></a></div></section>
+
+<section class="page" id="assistant">
+ <div class="shell page-hero">
+  <div class="mono eyebrow">02 / 06 — TRỢ LÝ Y TẾ MỞ</div>
+  <h1>Bạn không cần<br>biết phải hỏi <i>điều gì.</i></h1>
+  <p>Hãy bắt đầu bằng điều đang khiến bạn băn khoăn. Trợ lý sẽ lắng nghe, làm rõ từng bước và ghi nhớ ngữ cảnh trong cuộc trò chuyện. Đây là bản thử nghiệm, không thay thế bác sĩ.</p>
+ </div>
+ <div class="shell assistant-layout">
+  <aside class="assistant-info">
+   <div class="mono" style="color:var(--acid)">PROACTIVE NEED DISCOVERY</div>
+   <h2>Một cuộc trò chuyện. Một nhu cầu được làm rõ.</h2>
+   <p>Không cần chọn đúng chuyên khoa hay biết trước tên dịch vụ. Bạn có thể kể bằng ngôn ngữ đời thường, kể cả khi chưa biết chính xác mình cần gì.</p>
+   <p>Agent sẽ hỏi từng câu một, làm rõ hoàn cảnh và rào cản, sau đó mới xác định hướng hỗ trợ phù hợp.</p>
+   <div class="safety-note"><b>Giới hạn an toàn</b><br>Không tự chẩn đoán, kê đơn hoặc thay thế quyết định của nhân viên y tế. Không nhập thông tin định danh hay hồ sơ bệnh án thật vào bản thử nghiệm.</div>
+  </aside>
+  <div>
+   <div class="auth-panel" id="authPanel">
+    <div class="mono eyebrow">SECURE ACCESS / SUPABASE AUTH</div>
+    <h3>Đăng nhập để bắt đầu</h3>
+    <p>Sử dụng tài khoản thử nghiệm Supabase mà bạn đã tạo. Phiên đăng nhập được quản lý bởi Supabase; mật khẩu không được gửi đến Gemini.</p>
+    <form id="loginForm">
+     <label for="loginEmail">EMAIL</label>
+     <input id="loginEmail" type="email" autocomplete="username" placeholder="email@example.com" required>
+     <label for="loginPassword">MẬT KHẨU</label>
+     <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Mật khẩu Supabase" required>
+     <button class="btn" id="loginBtn" type="submit">ĐĂNG NHẬP ↗</button>
+    </form>
+    <div class="auth-status" id="authStatus" role="status">Đang kết nối cấu hình hệ thống…</div>
+   </div>
+   <div class="chat-panel" id="chatPanel" hidden>
+    <div class="chat-top">
+     <div class="chat-identity"><span class="chat-avatar">✳</span><span>Trợ lý Y TẾ MỞ<small id="chatState">Đang kết nối</small></span></div>
+     <div class="chat-tools"><span class="account-line" id="accountEmail"></span><button id="newChatBtn" type="button">＋ Cuộc mới</button><button id="logoutBtn" type="button">Đăng xuất</button></div>
+    </div>
+    <div class="chat-messages" id="chatMessages" aria-live="polite">
+     <div class="chat-msg assistant">Chào bạn! Bạn không cần phải biết chính xác mình cần dịch vụ hay thiết bị y tế nào.
+
+Gần đây có điều gì về sức khỏe, việc chăm sóc người thân hoặc chi phí khám chữa bệnh khiến bạn băn khoăn không?</div>
+    </div>
+    <div class="chat-typing" id="chatTyping">TRỢ LÝ ĐANG SUY NGHĨ…</div>
+    <div class="chat-quick" id="chatQuick">
+     <button type="button" data-message="Tôi đang lo chi phí khám chữa bệnh quá cao.">Chi phí khám chữa bệnh</button>
+     <button type="button" data-message="Tôi đang chăm sóc người thân tại nhà và không biết bắt đầu từ đâu.">Chăm sóc người thân</button>
+     <button type="button" data-message="Tôi muốn phòng bệnh nhưng không biết cần theo dõi điều gì.">Phòng bệnh</button>
+     <button type="button" data-message="Tôi có một ý tưởng thiết bị y tế giá rẻ.">Ý tưởng công nghệ</button>
+    </div>
+    <form class="chat-compose" id="chatForm">
+     <input id="chatMessage" type="text" maxlength="4000" placeholder="Bạn cứ chia sẻ theo cách của mình…" autocomplete="off" required>
+     <button id="sendMessageBtn" type="submit" aria-label="Gửi tin nhắn">↑</button>
+    </form>
+    <div class="chat-foot">BẢN THỬ NGHIỆM · Không thay thế tư vấn y tế chuyên môn · Không nhập dữ liệu định danh hoặc bệnh án thật.</div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="page" id="healthcare">
+ <div class="shell page-hero"><div class="mono eyebrow">03 / 07 — HEALTHCARE DOCUMENT INTELLIGENCE</div><h1>Đọc hồ sơ.<br><i>Kết nối chuyên môn.</i></h1><p>Tải lên hồ sơ y tế để trích xuất văn bản và điều phối bốn Agent chuyên môn: chi phí, thuốc, xét nghiệm và BHYT. Mỗi phát hiện đều kèm dòng bằng chứng từ tài liệu gốc.</p></div>
+ <div class="health-shell"><div class="health-grid">
+  <div class="health-card"><div class="mono eyebrow">01 / DOCUMENT INTAKE</div><h2>Đưa hồ sơ vào hệ thống</h2><p>Hỗ trợ PDF có lớp văn bản, DOCX, TXT và Markdown. File được xử lý trong bộ nhớ của request; endpoint không lưu file.</p>
+   <label class="health-upload" for="healthFile"><span><strong id="healthFileName">Chọn hồ sơ y tế</strong><small>PDF · DOCX · TXT · MD · Tối đa 10 MB</small></span><input id="healthFile" type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"></label>
+   <div class="health-meta" id="healthFileMeta">Chưa chọn tài liệu</div>
+   <div class="health-actions"><button id="extractBtn" type="button" disabled>TRÍCH XUẤT VĂN BẢN</button><button class="secondary" id="clearHealthBtn" type="button">LÀM MỚI</button></div>
+   <div class="health-status" id="extractStatus" role="status">Đăng nhập bằng tài khoản thử nghiệm tại mục Trợ lý AI để sử dụng tính năng này.</div>
+   <div id="extractedPreview" hidden style="margin-top:16px"><div class="mono eyebrow">EXTRACTED TEXT PREVIEW</div><textarea id="healthText" rows="9" style="width:100%;margin-top:8px;padding:12px;border:1px solid var(--line);font:12px/1.6 var(--sans);resize:vertical"></textarea><div class="health-meta" id="extractMeta"></div></div>
+  </div>
+  <div class="health-card dark"><div class="mono" style="color:var(--acid)">02 / SPECIALIST ORCHESTRATION</div><h2>Điều phối Agent chuyên môn</h2><p>Chọn nhóm thông tin cần rà soát. Có thể chạy tất cả bốn Agent trên cùng văn bản đã trích xuất.</p>
+   <div class="health-agent-list" id="healthAgentList">
+    <label class="health-agent"><input type="checkbox" value="cost" checked><span><b>Chi phí</b><small>Trích xuất khoản tiền được ghi trong hồ sơ.</small></span></label>
+    <label class="health-agent"><input type="checkbox" value="medication" checked><span><b>Thuốc</b><small>Trích xuất tên thuốc, hàm lượng, lịch dùng.</small></span></label>
+    <label class="health-agent"><input type="checkbox" value="lab" checked><span><b>Xét nghiệm</b><small>Nhận diện chỉ số và giá trị được ghi.</small></span></label>
+    <label class="health-agent"><input type="checkbox" value="bhyt" checked><span><b>Bảo hiểm y tế</b><small>Trích xuất thông tin BHYT có trong hồ sơ.</small></span></label>
+   </div>
+   <div class="health-actions"><button id="runHealthBtn" type="button" disabled>CHẠY PHÂN TÍCH</button></div>
+   <div class="health-status" id="runHealthStatus" role="status" style="background:#203b3b;color:#e8eee8;border-color:var(--acid)">Chưa có văn bản để phân tích.</div>
+   <div class="health-safety">GIỚI HẠN AN TOÀN<br>Hệ thống chỉ trích xuất thông tin có bằng chứng. Không chẩn đoán, kê đơn, diễn giải kết quả xét nghiệm, ước tính chi phí còn thiếu hoặc xác định mức hưởng BHYT. Đối chiếu kết quả với hồ sơ gốc và chuyên gia y tế.</div>
+  </div>
+ </div><div id="healthResults" class="health-results" aria-live="polite"></div></div>
+</section>
+
+<section class="page" id="system"><div class="shell page-hero"><div class="mono eyebrow">03 / 06 — AGENT ARCHITECTURE</div><h1>Không phải một chatbot.<br><i>Một hệ thống phối hợp.</i></h1><p>Orchestrator điều phối các Agent chuyên môn, workflow và công cụ dữ liệu. Chọn từng node để xem nhiệm vụ, trạng thái và đầu ra của nó. Chạy thử một luồng mô phỏng để quan sát cách hệ thống phối hợp.</p><div class="hero-index">LANGGRAPH-INSPIRED / INTERACTIVE CONCEPT</div></div><div class="shell"><div class="system-layout"><div><div class="graph-panel"><div class="graph-top"><span>● EXECUTION GRAPH / DEMO</span><div class="graph-actions"><button class="mini-btn" onclick="resetGraph()">RESET</button><button class="mini-btn" onclick="zoomGraph(1)">＋</button><button class="mini-btn" onclick="zoomGraph(-1)">－</button></div></div><div class="graph-canvas"><svg id="graph" viewBox="0 0 720 490" preserveAspectRatio="xMidYMid meet"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#aebdb0"/></pattern><marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 6 3 0 6" fill="none" stroke="#9db1a4"/></marker></defs><rect width="720" height="490" fill="url(#dots)" opacity=".5"/><g id="edges"><path class="edge" id="e1" d="M360 70V125" marker-end="url(#arr)"/><path class="edge" id="e2" d="M360 180C360 220 175 205 175 255" marker-end="url(#arr)"/><path class="edge" id="e3" d="M360 180C360 220 545 205 545 255" marker-end="url(#arr)"/><path class="edge" id="e4" d="M175 310V365H360V400" marker-end="url(#arr)"/><path class="edge" id="e5" d="M545 310V365H360" marker-end="url(#arr)"/><path class="edge" id="e6" d="M360 180V400" marker-end="url(#arr)"/></g><g id="nodes"><g class="node" data-node="orchestrator" transform="translate(360 43)" onclick="inspect('orchestrator')"><circle r="29"/><text y="-3">ORCH</text><text class="sub" y="11">ROUTER</text></g><g class="node active" data-node="discovery" transform="translate(175 282)" onclick="inspect('discovery')"><circle r="38"/><text y="-4">DISCOVERY</text><text class="sub" y="11">AGENT 01</text></g><g class="node" data-node="safety" transform="translate(545 282)" onclick="inspect('safety')"><circle r="38"/><text y="-4">SAFETY</text><text class="sub" y="11">RULE ENGINE</text></g><g class="node" data-node="navigation" transform="translate(100 435)" onclick="inspect('navigation')"><circle r="32"/><text y="-3">CARE</text><text class="sub" y="11">NAVIGATION</text></g><g class="node" data-node="cost" transform="translate(360 435)" onclick="inspect('cost')"><circle r="32"/><text y="-3">COST</text><text class="sub" y="11">INTELLIGENCE</text></g><g class="node" data-node="review" transform="translate(620 435)" onclick="inspect('review')"><circle r="32"/><text y="-3">HUMAN</text><text class="sub" y="11">REVIEW</text></g></g><text x="360" y="112" text-anchor="middle" font-size="9" fill="#71857a" font-family="DM Mono">STATE + ROUTING</text><text x="360" y="225" text-anchor="middle" font-size="9" fill="#71857a" font-family="DM Mono">CONDITIONAL BRANCH</text></svg></div><div class="graph-legend"><span><i class="legend-dot"></i>READY</span><span><i class="legend-dot" style="background:var(--coral)"></i>RUNNING</span><span>— DATA / CONTROL FLOW</span></div></div><div class="runbar"><p><b>Luồng demo:</b> Người dùng cần khám, có rào cản chi phí.</p><button class="btn" id="runBtn" onclick="runDemo()">▶ CHẠY THỬ</button></div><div class="log" id="log"><div class="logline">[SYSTEM] Graph initialized. Awaiting input.</div><div class="logline">[STATE] user_context = null</div><div class="logline">[READY] Select a node or run the scenario.</div></div></div><aside class="inspector" id="inspector"><div class="inspector-top"><span class="mono">NODE INSPECTOR</span><span class="mono" id="nodeNum">01 / 06</span></div><div class="label" id="nodeType">AGENT · LANGUAGE MODEL</div><h3 id="nodeTitle">Discovery Agent</h3><p id="nodeDesc">Làm rõ mục tiêu, hoàn cảnh, rào cản và thông tin còn thiếu thông qua hội thoại có chủ đích. Không chẩn đoán.</p><div class="specs"><div class="spec"><span>Vai trò</span><span id="nodeRole">Need discovery</span></div><div class="spec"><span>Input</span><span id="nodeInput">Natural language</span></div><div class="spec"><span>Output</span><span id="nodeOutput">Structured need</span></div><div class="spec"><span>Execution</span><span id="nodeExec">LLM + state</span></div></div><div class="inspector-foot"><button class="btn outline" onclick="toast('Đây là kiến trúc đề xuất, chưa kết nối backend.')">CHI TIẾT</button><button class="btn" onclick="runDemo()">THỬ LUỒNG ↗</button></div></aside></div></div><div class="shell"><div class="mono eyebrow">AGENT REGISTRY / RESPONSIBILITY MAP</div><div class="agent-grid"><article class="agent-card" onclick="inspect('discovery')"><div class="symbol">⌕</div><h3>Discovery Agent</h3><p>Khám phá mục tiêu, bối cảnh và rào cản. Đặt câu hỏi tiếp theo dựa trên state hiện tại.</p></article><article class="agent-card" onclick="inspect('safety')"><div class="symbol">⬡</div><h3>Safety Triage</h3><p>Luồng kiểm tra dấu hiệu cảnh báo theo quy tắc an toàn đã được chuyên gia xác nhận.</p></article><article class="agent-card" onclick="inspect('navigation')"><div class="symbol">⌖</div><h3>Care Navigation</h3><p>Hỗ trợ tìm cơ sở, chuyên khoa, tuyến chăm sóc và thông tin cần xác minh.</p></article><article class="agent-card" onclick="inspect('cost')"><div class="symbol">◈</div><h3>Cost Intelligence</h3><p>Tổng hợp giá, BHYT và khoản chi từ nguồn dữ liệu có thể truy xuất.</p></article><article class="agent-card" onclick="inspect('orchestrator')"><div class="symbol">⤳</div><h3>Orchestrator</h3><p>Quản lý state, chọn node, xử lý nhánh, retry và bàn giao cho con người.</p></article><article class="agent-card" onclick="inspect('review')"><div class="symbol">◎</div><h3>Human Review</h3><p>Chờ người dùng hoặc chuyên gia xác nhận ở các bước cần thẩm quyền.</p></article></div></div></section>
+<section class="page" id="research"><div class="shell page-hero"><div class="mono eyebrow">04 / 06 — RESEARCH FRONTIERS</div><h1>Giảm chi phí từ<br><i>gốc rễ công nghệ.</i></h1><p>Những hướng nghiên cứu tập trung vào khả năng tạo ra chẩn đoán, vật liệu, thiết bị và mô hình chăm sóc có chi phí tiếp cận thấp hơn. Đây là danh mục định hướng, chưa phải kết quả đã được xác nhận.</p></div><div class="shell section" style="padding-top:25px"><div class="research-grid"><article class="research-card"><div class="n">R / 01 — DIAGNOSTICS</div><div class="glyph">⌁</div><h3>Chẩn đoán siêu chi phí thấp</h3><p>Lab-on-a-chip, microfluidics, biosensors và xét nghiệm tại điểm chăm sóc. Câu hỏi: giảm chi phí mỗi phép đo mà vẫn giữ độ nhạy, độ đặc hiệu và độ tin cậy ra sao?</p></article><article class="research-card"><div class="n">R / 02 — BIOMATERIALS</div><div class="glyph">◌</div><h3>Vật liệu y tế dễ tiếp cận</h3><p>Polymer, hydrogel, vật liệu lọc và chăm sóc vết thương. Đánh giá tương thích sinh học, độ bền, khả năng sản xuất và kiểm soát chất lượng.</p></article><article class="research-card"><div class="n">R / 03 — ROBOTICS</div><div class="glyph">⌘</div><h3>Thiết bị phục hồi</h3><p>Cơ cấu truyền động, cảm biến và điều khiển giá thấp; ưu tiên thiết bị có thể bảo trì và kiểm chứng hiệu quả sử dụng.</p></article><article class="research-card"><div class="n">R / 04 — HOME CARE</div><div class="glyph">⌂</div><h3>Chăm sóc tại nhà</h3><p>Mô hình hỗ trợ người cao tuổi, phục hồi sau đột quỵ và theo dõi bệnh mạn tính dưới hướng dẫn chuyên môn.</p></article><article class="research-card"><div class="n">R / 05 — PREVENTION</div><div class="glyph">✳</div><h3>Phòng ngừa từ môi trường sống</h3><p>Công cụ phát hiện nguy cơ từ nước sinh hoạt, bụi mịn và yếu tố môi trường; phải gắn chỉ số đo với nguy cơ sức khỏe cụ thể.</p></article><article class="research-card"><div class="n">R / 06 — SYSTEM SCIENCE</div><div class="glyph">∞</div><h3>Phân tích toàn bộ hành trình chăm sóc</h3><p>Patient journey modeling, causal cost analysis và điều phối nguồn lực để nhận diện khoản chi có thể tránh được mà không làm giảm chất lượng điều trị.</p></article></div></div></section>
+<section class="page" id="projects"><div class="shell page-hero"><div class="mono eyebrow">05 / 06 — PROJECTS & PROTOTYPES</div><h1>Từ câu hỏi<br>đến <i>bằng chứng.</i></h1><p>Mỗi dự án cần xác định vấn đề, giả thuyết, dữ liệu đầu vào, phương pháp kiểm chứng và tiêu chí thành công. Không đánh đồng ý tưởng với prototype hay hiệu quả thực tế.</p></div><div class="shell section" style="padding-top:15px"><div class="project-table"><div class="project-row"><div class="n">01</div><h3>Patient Journey Cost Intelligence</h3><p>Phân tích chi phí hộ gia đình theo từng giai đoạn chăm sóc; dữ liệu ban đầu có thể dùng bộ dữ liệu tổng hợp.</p><div class="status">ĐỀ XUẤT</div></div><div class="project-row"><div class="n">02</div><h3>Proactive Healthcare Agent</h3><p>Đo chất lượng khám phá nhu cầu: số lượt hỏi, thông tin thiếu được phát hiện và mức độ người dùng xác nhận.</p><div class="status">ĐỀ XUẤT</div></div><div class="project-row"><div class="n">03</div><h3>Low-cost Rehabilitation Device</h3><p>Prototype cơ cấu hỗ trợ vận động; đánh giá chi phí, độ lặp, an toàn cơ khí và khả năng sử dụng.</p><div class="status">ĐỊNH HƯỚNG</div></div><div class="project-row"><div class="n">04</div><h3>Community Diagnostics</h3><p>Khảo sát tính khả thi của thiết bị đo/xét nghiệm giá thấp; cần đối chiếu chuẩn tham chiếu và kiểm định.</p><div class="status">ĐỊNH HƯỚNG</div></div></div><p class="muted" style="font-size:11px;margin-top:20px">Trạng thái trên phản ánh đề xuất ở cấp độ ý tưởng. Không có dự án nào được tuyên bố đã triển khai hoặc chứng minh hiệu quả lâm sàng.</p></div></section>
+<section class="page" id="community"><div class="shell page-hero"><div class="mono eyebrow">06 / 06 — OPEN COLLABORATION</div><h1>Không ai nên<br>giải quyết <i>một mình.</i></h1><p>Người dân hiểu những khó khăn trong cuộc sống. Nhân viên y tế hiểu nhu cầu chuyên môn. Nhà nghiên cứu và kỹ sư có thể cùng phát triển giải pháp. Y TẾ MỞ muốn tạo nơi những góc nhìn ấy gặp nhau.</p></div><div class="shell"><div class="community-band"><div><div class="mono" style="color:var(--acid)">BUILD WITH THE COMMUNITY</div><h2>Một vấn đề thật. Nhiều năng lực cùng giải.</h2><p>Mạng lưới cộng tác mở để ghi nhận vấn đề, đặt câu hỏi nghiên cứu, phát triển prototype và đánh giá trong điều kiện phù hợp.</p></div><div class="roles"><div class="role"><b>♡ Người dân</b>Trải nghiệm và nhu cầu thực tế</div><div class="role"><b>✚ Bác sĩ</b>Kiến thức chuyên môn và an toàn</div><div class="role"><b>⌘ Nhà nghiên cứu</b>Phương pháp và bằng chứng</div><div class="role"><b>⚙ Kỹ sư</b>Thiết kế và chế tạo</div><div class="role" style="grid-column:span 2"><b>◎ Bệnh viện · Trường viện · Nhà sản xuất</b>Hạ tầng thử nghiệm và triển khai có trách nhiệm</div></div></div><div class="contact-form"><div class="mono eyebrow">LET'S START WITH A PROBLEM</div><h2 style="font:800 42px var(--display);letter-spacing:-2px">Bạn muốn cùng giải quyết điều gì?</h2><form onsubmit="event.preventDefault();toast('Đây là bản giao diện tĩnh — biểu mẫu chưa gửi dữ liệu.');"><div class="field"><label>VAI TRÒ CỦA BẠN</label><select><option>Người dân / người chăm sóc</option><option>Bác sĩ / nhân viên y tế</option><option>Nhà nghiên cứu</option><option>Kỹ sư / nhà sản xuất</option><option>Tổ chức / cơ sở y tế</option></select></div><div class="field"><label>EMAIL LIÊN HỆ</label><input type="email" placeholder="ten@email.com"></div><div class="field"><label>VẤN ĐỀ BẠN MUỐN GIẢI QUYẾT</label><textarea placeholder="Hãy mô tả vấn đề, ý tưởng hoặc năng lực bạn muốn đóng góp..."></textarea></div><button class="btn" type="submit">GỬI ĐỀ XUẤT ↗</button></form></div></div></section>
+</main><footer class="footer"><div><b style="font:800 18px var(--display)">Y TẾ MỞ.</b><p>Care, without barriers.</p></div><div><p>Hiểu nhu cầu · Kết nối nguồn lực · Đổi mới giải pháp</p><p>Prototype giao diện — chưa phải dịch vụ y tế.</p></div></footer><div class="toast" id="toast"></div>
+<script>
+const pages=['home','assistant','healthcare','system','research','projects','community'];function go(id){pages.forEach(p=>document.getElementById(p).classList.toggle('active',p===id));document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));document.querySelector('nav').classList.remove('open');window.scrollTo({top:0,behavior:'smooth'});}
+const info={orchestrator:{num:'01 / 06',type:'CONTROL NODE · GRAPH ROUTER',title:'Orchestrator',desc:'Quản lý trạng thái phiên làm việc, quyết định node tiếp theo dựa trên kết quả hiện tại, điều phối nhánh điều kiện và xử lý lỗi. Đây là bộ điều phối, không nhất thiết là một LLM riêng.',role:'Graph orchestration',input:'Shared state',output:'Next node / route',exec:'LangGraph workflow'},discovery:{num:'02 / 06',type:'AGENT · LLM + TOOLS',title:'Discovery Agent',desc:'Làm rõ mục tiêu, hoàn cảnh, rào cản và thông tin còn thiếu thông qua hội thoại có chủ đích. Agent cần hỏi từng câu có giá trị thông tin, không hỏi dồn và không chẩn đoán.',role:'Need discovery',input:'Natural language',output:'Structured need',exec:'LLM + state'},safety:{num:'03 / 06',type:'SAFETY NODE · RULES + CLINICAL REVIEW',title:'Safety Triage',desc:'Kiểm tra dấu hiệu cảnh báo bằng quy tắc được chuyên gia y tế xác nhận. Trường hợp có dấu hiệu khẩn cấp phải ưu tiên hướng dẫn tìm trợ giúp, không chờ hoàn tất luồng thông thường.',role:'Safety screening',input:'Symptoms / context',output:'Risk flags / route',exec:'Rules + approved protocol'},navigation:{num:'04 / 06',type:'AGENT / TOOL-ASSISTED SEARCH',title:'Care Navigation',desc:'Hỗ trợ tra cứu cơ sở, chuyên khoa, tuyến chăm sóc và điều kiện tiếp cận từ nguồn đáng tin cậy. Không tự khẳng định dịch vụ đang có nếu chưa xác minh.',role:'Care access',input:'Confirmed need',output:'Options / next steps',exec:'LLM + search tools'},cost:{num:'05 / 06',type:'DATA / COMPUTATION NODE',title:'Cost Intelligence',desc:'Tổng hợp giá, quyền lợi BHYT và khoản chi từ dữ liệu có nguồn. Phép tính cần thực hiện bằng logic có thể kiểm tra; LLM chỉ giải thích và nêu điểm chưa chắc chắn.',role:'Cost transparency',input:'Price / coverage data',output:'Cost breakdown',exec:'Python + verified data'},review:{num:'06 / 06',type:'HUMAN-IN-THE-LOOP',title:'Human Review',desc:'Tạm dừng luồng để người dùng xác nhận thông tin hoặc chuyên gia xem xét các quyết định cần thẩm quyền chuyên môn. Hệ thống không tự phê duyệt quyết định lâm sàng.',role:'Approval / oversight',input:'Draft recommendation',output:'Confirmed action',exec:'Interrupt + checkpoint'}};
+function inspect(k){let d=info[k];document.querySelectorAll('.node').forEach(n=>n.classList.toggle('active',n.dataset.node===k));document.getElementById('nodeNum').textContent=d.num;document.getElementById('nodeType').textContent=d.type;document.getElementById('nodeTitle').textContent=d.title;document.getElementById('nodeDesc').textContent=d.desc;document.getElementById('nodeRole').textContent=d.role;document.getElementById('nodeInput').textContent=d.input;document.getElementById('nodeOutput').textContent=d.output;document.getElementById('nodeExec').textContent=d.exec;}
+let zoom=1;function zoomGraph(d){zoom=Math.max(.8,Math.min(1.4,zoom+d*.1));document.getElementById('nodes').setAttribute('transform',`translate(${360*(1-zoom)} ${245*(1-zoom)}) scale(${zoom})`);document.getElementById('edges').setAttribute('transform',`translate(${360*(1-zoom)} ${245*(1-zoom)}) scale(${zoom})`)}function resetGraph(){zoom=1;document.getElementById('nodes').removeAttribute('transform');document.getElementById('edges').removeAttribute('transform');document.querySelectorAll('.node').forEach(n=>n.classList.remove('running'));document.querySelectorAll('.edge').forEach(e=>e.classList.remove('active'));document.getElementById('log').innerHTML='<div>[SYSTEM] Graph reset.</div><div>[STATE] Awaiting scenario.</div>';document.getElementById('runBtn').disabled=false;document.getElementById('runBtn').textContent='▶ CHẠY THỬ';}
+const steps=[['orchestrator','[ORCHESTRATOR] Nhận yêu cầu, khởi tạo state và xác định luồng.',['e1']],['discovery','[DISCOVERY] Trích xuất mục tiêu: đưa người thân đi khám; phát hiện rào cản tài chính.',['e2']],['safety','[SAFETY] Kiểm tra dấu hiệu cảnh báo theo quy tắc demo; cần xác minh bằng chuyên gia.',['e3']],['navigation','[CARE NAVIGATION] Xác định thông tin còn thiếu: địa bàn, chuyên khoa, tuyến tiếp cận.',['e4']],['cost','[COST INTELLIGENCE] Yêu cầu dữ liệu giá và quyền lợi BHYT; chưa tự tạo con số.',['e5']],['review','[HUMAN REVIEW] Tạm dừng để người dùng xác nhận dữ liệu và lựa chọn.',['e6']]];
+let running=false;async function runDemo(){if(running)return;running=true;resetGraph();running=true;document.getElementById('runBtn').disabled=true;document.getElementById('runBtn').textContent='ĐANG CHẠY…';let log=document.getElementById('log');for(let i=0;i<steps.length;i++){let [node,msg,edges]=steps[i];document.querySelectorAll('.node').forEach(n=>n.classList.toggle('running',n.dataset.node===node));edges.forEach(id=>document.getElementById(id).classList.add('active'));inspect(node);let line=document.createElement('div');line.className='logline current';line.innerHTML='<span class="wait">[RUNNING]</span> '+msg;log.appendChild(line);await new Promise(r=>setTimeout(r,950));line.classList.remove('current');line.innerHTML='<span class="ok">[DONE]</span> '+msg;document.querySelector(`[data-node="${node}"]`).classList.remove('running');}let done=document.createElement('div');done.innerHTML='<span class="ok">[COMPLETE]</span> Demo flow finished. No real patient data or external services used.';log.appendChild(done);document.getElementById('runBtn').textContent='✓ HOÀN TẤT';running=false;}
+function toast(s){let t=document.getElementById('toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
+
+</script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const API_BASE = window.YTEMO_API_BASE || 'https://ytemo-api.onrender.com';
+const authPanel = document.getElementById('authPanel');
+const chatPanel = document.getElementById('chatPanel');
+const authStatus = document.getElementById('authStatus');
+const loginForm = document.getElementById('loginForm');
+const loginBtn = document.getElementById('loginBtn');
+const chatMessages = document.getElementById('chatMessages');
+const chatForm = document.getElementById('chatForm');
+const chatInput = document.getElementById('chatMessage');
+const sendBtn = document.getElementById('sendMessageBtn');
+const typing = document.getElementById('chatTyping');
+const chatState = document.getElementById('chatState');
+const accountEmail = document.getElementById('accountEmail');
+let supabase = null;
+let currentUser = null;
+let conversationId = null;
+let busy = false;
+
+function setAuthStatus(message, isError=false) {
+  authStatus.textContent = message;
+  authStatus.style.color = isError ? '#a34f37' : '#668071';
+}
+function appendMessage(content, role='assistant') {
+  const node = document.createElement('div');
+  node.className = `chat-msg ${role}`;
+  node.textContent = content;
+  chatMessages.appendChild(node);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return node;
+}
+function clearChat() {
+  chatMessages.innerHTML = '';
+  appendMessage('Chào bạn! Bạn không cần phải biết chính xác mình cần dịch vụ hay thiết bị y tế nào.\n\nGần đây có điều gì về sức khỏe, việc chăm sóc người thân hoặc chi phí khám chữa bệnh khiến bạn băn khoăn không?', 'assistant');
+}
+function storageKey() { return currentUser ? `ytm_conversation_${currentUser.id}` : null; }
+function setBusy(value) {
+  busy = value;
+  sendBtn.disabled = value;
+  chatInput.disabled = value;
+  typing.classList.toggle('show', value);
+  chatState.textContent = value ? 'Đang xử lý tin nhắn…' : 'Đã kết nối với trợ lý';
+}
+async function getAccessToken() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+  return data.session.access_token;
+}
+async function fetchWithAuth(path, options = {}) {
+  const sendRequest = (accessToken) => {
+    const headers = new Headers(options.headers || {});
+    headers.set('Authorization', `Bearer ${accessToken}`);
+    return fetch(`${API_BASE}${path}`, { ...options, headers });
+  };
+
+  const token = await getAccessToken();
+  const response = await sendRequest(token);
+
+  if (response.status !== 401) return response;
+
+  const { data, error } = await supabase.auth.refreshSession();
+  if (error || !data.session?.access_token) return response;
+
+  return sendRequest(data.session.access_token);
+}
+async function showSignedIn(user) {
+  currentUser = user;
+  authPanel.hidden = true;
+  chatPanel.hidden = false;
+  accountEmail.textContent = user.email || 'Tài khoản đã đăng nhập';
+  conversationId = localStorage.getItem(storageKey());
+  clearChat();
+  if (conversationId) {
+    try {
+      const response = await fetchWithAuth(`/conversations/${encodeURIComponent(conversationId)}/messages`);
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.messages) && data.messages.length) {
+          chatMessages.innerHTML = '';
+          data.messages.forEach(item => appendMessage(item.content, item.sender_type === 'user' ? 'user' : 'assistant'));
+        }
+      } else if (response.status === 404) {
+        localStorage.removeItem(storageKey());
+        conversationId = null;
+      }
+    } catch (error) {
+      appendMessage('Chưa tải được lịch sử hội thoại. Bạn vẫn có thể bắt đầu cuộc trò chuyện mới.', 'system');
+    }
+  }
+  chatInput.focus();
+}
+async function initialize() {
+  try {
+    const response = await fetch(`${API_BASE}/public-config`);
+    if (!response.ok) throw new Error(`Backend trả về HTTP ${response.status}`);
+    const config = await response.json();
+    if (!config.supabase_url || !config.supabase_publishable_key) throw new Error('Thiếu cấu hình Supabase công khai ở backend.');
+    supabase = createClient(config.supabase_url, config.supabase_publishable_key);
+    setAuthStatus('Đã kết nối backend. Đăng nhập bằng tài khoản Supabase của bạn.');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) await showSignedIn(session.user);
+    supabase.auth.onAuthStateChange((_event, sessionNow) => {
+      if (sessionNow?.user) showSignedIn(sessionNow.user);
+      else {
+        currentUser = null;
+        conversationId = null;
+        chatPanel.hidden = true;
+        authPanel.hidden = false;
+      }
+    });
+  } catch (error) {
+    setAuthStatus(`Không kết nối được backend: ${error.message}. Hãy kiểm tra Uvicorn tại ${API_BASE}.`, true);
+  }
+}
+
+loginForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!supabase) return setAuthStatus('Backend chưa sẵn sàng. Hãy kiểm tra Uvicorn.', true);
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'ĐANG ĐĂNG NHẬP…';
+  setAuthStatus('Đang xác thực tài khoản…');
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: document.getElementById('loginEmail').value.trim(),
+      password: document.getElementById('loginPassword').value
+    });
+    if (error) throw error;
+    document.getElementById('loginPassword').value = '';
+    await showSignedIn(data.user);
+  } catch (error) {
+    setAuthStatus(`Đăng nhập thất bại: ${error.message}`, true);
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'ĐĂNG NHẬP ↗';
+  }
+});
+
+async function sendMessage(message) {
+  const clean = message.trim();
+  if (!clean || busy || !currentUser) return;
+  appendMessage(clean, 'user');
+  chatInput.value = '';
+  setBusy(true);
+  try {
+    const response = await fetchWithAuth('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: clean, conversation_id: conversationId })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || `HTTP ${response.status}`);
+    conversationId = result.conversation_id;
+    localStorage.setItem(storageKey(), conversationId);
+    appendMessage(result.reply || 'Hệ thống chưa trả về nội dung.', 'assistant');
+  } catch (error) {
+    appendMessage(`Chưa gửi được tin nhắn: ${error.message}. Tin nhắn này có thể đã được lưu ở máy chủ nếu lỗi xảy ra sau khi gửi.`, 'system');
+  } finally {
+    setBusy(false);
+    chatInput.focus();
+  }
+}
+chatForm.addEventListener('submit', event => {
+  event.preventDefault();
+  sendMessage(chatInput.value);
+});
+document.getElementById('chatQuick').addEventListener('click', event => {
+  const button = event.target.closest('button[data-message]');
+  if (button) sendMessage(button.dataset.message);
+});
+document.getElementById('newChatBtn').addEventListener('click', () => {
+  conversationId = null;
+  if (storageKey()) localStorage.removeItem(storageKey());
+  clearChat();
+  chatInput.focus();
+});
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  if (supabase) await supabase.auth.signOut();
+});
+initialize();
+
+// Healthcare document workflow: authenticated calls to the three real backend endpoints.
+const healthFile = document.getElementById('healthFile');
+const extractBtn = document.getElementById('extractBtn');
+const runHealthBtn = document.getElementById('runHealthBtn');
+const healthText = document.getElementById('healthText');
+const extractStatus = document.getElementById('extractStatus');
+const runHealthStatus = document.getElementById('runHealthStatus');
+const healthResults = document.getElementById('healthResults');
+let extractedDocument = null;
+let healthBusy = false;
+function healthStatus(node, message, error=false) { node.textContent = message; node.classList.toggle('error', error); }
+async function healthRequest(path, options={}) {
+  const response = await fetchWithAuth(path, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.detail || `Backend trả về HTTP ${response.status}`);
+  return data;
+}
+healthFile.addEventListener('change', () => {
+  const file = healthFile.files?.[0];
+  document.getElementById('healthFileName').textContent = file ? file.name : 'Chọn hồ sơ y tế';
+  document.getElementById('healthFileMeta').textContent = file ? `${(file.size/1024/1024).toFixed(2)} MB · ${file.type || 'Không rõ MIME type'}` : 'Chưa chọn tài liệu';
+  extractBtn.disabled = !file || !currentUser || healthBusy;
+});
+extractBtn.addEventListener('click', async () => {
+  const file = healthFile.files?.[0]; if (!file || !currentUser || healthBusy) return;
+  if (file.size > 10*1024*1024) return healthStatus(extractStatus,'File vượt giới hạn 10 MB.',true);
+  healthBusy = true; extractBtn.disabled = true; extractBtn.textContent = 'ĐANG TRÍCH XUẤT…';
+  healthStatus(extractStatus,'Đang gửi tài liệu đến Backend để trích xuất trong bộ nhớ…');
+  try {
+    const body = new FormData(); body.append('file',file);
+    const data = await healthRequest('/healthcare/documents/extract',{method:'POST',body});
+    extractedDocument = data.document;
+    healthText.value = extractedDocument.text || '';
+    document.getElementById('extractedPreview').hidden = false;
+    document.getElementById('extractMeta').textContent = `${extractedDocument.character_count} ký tự · ${extractedDocument.page_count ?? '—'} trang · ${extractedDocument.persisted ? 'Có lưu' : 'Không lưu file'}`;
+    runHealthBtn.disabled = !healthText.value.trim();
+    healthStatus(extractStatus,`Trích xuất thành công: ${extractedDocument.filename}. ${extractedDocument.limitations?.join(' ') || ''}`);
+    healthStatus(runHealthStatus,'Đã có văn bản. Chọn Agent và chạy phân tích.');
+  } catch(error) { extractedDocument=null; runHealthBtn.disabled=true; healthStatus(extractStatus,`Không trích xuất được: ${error.message}`,true); }
+  finally { healthBusy=false; extractBtn.disabled=!healthFile.files?.[0] || !currentUser; extractBtn.textContent='TRÍCH XUẤT VĂN BẢN'; }
+});
+healthText.addEventListener('input',()=>{runHealthBtn.disabled=!healthText.value.trim() || !currentUser || healthBusy;});
+document.getElementById('clearHealthBtn').addEventListener('click',()=>{
+  healthFile.value=''; extractedDocument=null; healthText.value=''; document.getElementById('healthFileName').textContent='Chọn hồ sơ y tế'; document.getElementById('healthFileMeta').textContent='Chưa chọn tài liệu'; document.getElementById('extractedPreview').hidden=true; runHealthBtn.disabled=true; extractBtn.disabled=true; healthResults.replaceChildren(); healthStatus(extractStatus,'Đã xóa tài liệu khỏi giao diện.'); healthStatus(runHealthStatus,'Chưa có văn bản để phân tích.');
+});
+function renderHealthResults(data) {
+  healthResults.replaceChildren();
+  const heading=document.createElement('div'); heading.className='mono eyebrow'; heading.textContent=`03 / KẾT QUẢ PHÂN TÍCH · ${data.status || 'completed'}`; healthResults.appendChild(heading);
+  const names={cost:'Chi phí',medication:'Thuốc',lab:'Xét nghiệm',bhyt:'Bảo hiểm y tế'};
+  for (const [key,result] of Object.entries(data.results||{})) {
+    const card=document.createElement('article'); card.className='health-result';
+    const head=document.createElement('div'); head.className='health-result-head';
+    const h=document.createElement('h3'); h.textContent=names[key] || key;
+    const pill=document.createElement('span'); pill.className='health-pill'; pill.textContent=result.status || 'Đã xử lý'; head.append(h,pill); card.append(head);
+    const findings=result.findings || [];
+    if (!findings.length) { const p=document.createElement('p'); p.className='health-muted'; p.textContent=(result.missing_information||[]).join(' ') || 'Không tìm thấy thông tin phù hợp.'; card.append(p); }
+    for (const item of findings) {
+      const box=document.createElement('div'); box.className='health-finding';
+      const label=document.createElement('b'); label.textContent=`Dòng ${item.line ?? '—'} · ${item.category || 'Phát hiện'}`; box.append(label);
+      const details=document.createElement('div');
+      details.textContent=item.amount_raw ? `${item.amount_raw}${item.amount_vnd ? ` (giá trị số: ${Number(item.amount_vnd).toLocaleString('vi-VN')} VND)` : ''}` : (item.raw_text || item.context || JSON.stringify(item)); box.append(details);
+      if(item.source_quote){const q=document.createElement('blockquote');q.textContent=`Bằng chứng: “${item.source_quote}”`;box.append(q);}
+      card.append(box);
+    }
+    healthResults.append(card);
+  }
+  const limits=document.createElement('p'); limits.className='health-muted'; limits.textContent=(data.limitations||[]).join(' · '); healthResults.append(limits);
+}
+runHealthBtn.addEventListener('click',async()=>{
+  const textValue=healthText.value.trim(); if(!textValue || !currentUser || healthBusy) return;
+  const agent_keys=[...document.querySelectorAll('#healthAgentList input:checked')].map(x=>x.value);
+  if(!agent_keys.length) return healthStatus(runHealthStatus,'Hãy chọn ít nhất một Agent.',true);
+  healthBusy=true; runHealthBtn.disabled=true; runHealthBtn.textContent='ĐANG ĐIỀU PHỐI…'; healthStatus(runHealthStatus,'Đang chạy các Specialist Agents và kiểm tra bằng chứng…');
+  try { const data=await healthRequest('/healthcare/agents/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({document_text:textValue,agent_keys})}); renderHealthResults(data); healthStatus(runHealthStatus,`Hoàn tất. ${data.agents_completed?.length||0}/${data.agents_requested?.length||0} Agent đã trả kết quả. Task: ${data.task_id}`); }
+  catch(error){healthStatus(runHealthStatus,`Phân tích thất bại: ${error.message}`,true);}
+  finally{healthBusy=false;runHealthBtn.disabled=!healthText.value.trim() || !currentUser;runHealthBtn.textContent='CHẠY PHÂN TÍCH';}
+});
+// Reflect session state in the document workspace.
+function syncHealthcareAccess(){
+  const signed=!!currentUser;
+  if(!signed){healthStatus(extractStatus,'Bạn cần đăng nhập tại mục Trợ lý AI trước khi tải hồ sơ.');healthStatus(runHealthStatus,'Chưa đăng nhập. Hãy đăng nhập tại mục Trợ lý AI.');}
+  extractBtn.disabled=!healthFile.files?.[0] || !signed;
+  if(!signed) runHealthBtn.disabled=true;
+}
+syncHealthcareAccess();
+initialize();
+
+</script>
+
+</body></html>

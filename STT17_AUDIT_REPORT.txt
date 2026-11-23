@@ -1,0 +1,71 @@
+Y TE MO - STT17 AUDIT
+Timestamp: 2026-11-24 03:40:28
+Project: C:\YTeMo
+
+1. COMPONENT CHECKS
+[FOUND] Document extraction entrypoint - backend/healthcare_documents.py
+[FOUND] PDF text extraction - Text-based PDF support
+[FOUND] DOCX extraction - DOCX support
+[FOUND] TXT and Markdown extraction - TXT/Markdown support
+[FOUND] Document size limit - Maximum upload bytes
+[FOUND] Extracted text limit - Maximum extracted characters
+[MISSING/PARTIAL] Scanned PDF OCR - OCR implementation; a scan rejection message alone is not OCR
+[FOUND] Cost specialist - Cost extraction specialist
+[FOUND] Medication specialist - Medication extraction specialist
+[FOUND] Lab specialist - Lab result specialist
+[FOUND] BHYT specialist - Insurance support specialist
+[FOUND] Evidence trace critic - Evidence trace validation
+[FOUND] Safety boundary critic - Clinical safety boundary
+[FOUND] Document extraction API - POST /healthcare/documents/extract
+[FOUND] Specialist list API - GET /healthcare/agents
+[FOUND] Specialist run API - POST /healthcare/agents/run
+[FOUND] OpenAPI extraction route - docs/api/openapi.json
+[FOUND] OpenAPI specialist run route - docs/api/openapi.json
+[FOUND] Frontend calls extraction/specialist API - frontend/src source scan
+[MISSING/PARTIAL] API docs mention extraction/specialist routes - API documentation scan
+
+2. HEALTHCARE-RELATED TEST FILES
+backend\test_healthcare_companion_phase5_release_gates.py
+
+3. GIT STATUS (READ ONLY)
+M backend/main.py
+ M docs/api/openapi.json
+?? .stt16_backup_20261124_032945/
+?? .stt16_backup_20261124_032948/
+?? .stt16_backup_20261124_032953/
+?? .stt16_backup_20261124_033050/
+?? .stt16_backup_20261124_033200/
+?? .stt16_backup_20261124_033253/
+?? .stt16_backup_20261124_033418/
+?? .stt16_backup_20261124_033551/
+?? .stt16_repair_backup_20261124_033706/
+?? STT15.ps1
+?? STT16.ps1
+?? STT16_REMAINING.ps1
+?? STT16_REMAINING_FIXED.ps1
+?? STT16_REPAIR_REGRESSION.ps1
+?? STT16_REPORT.txt
+?? STT17_AUDIT.ps1
+?? STT17_AUDIT_FIXED.ps1
+?? frontend/index.html.backup-auth-fix
+?? healthcare-api-schema.json
+?? supabase/migrations/202611240001_core_backend_persistence.sql
+?? supabase/migrations/202611240002_healthcare_document_storage.sql
+
+4. BACKEND PYTEST
+Exit code: 0
+........................................................................ [ 13%]
+.................................................................. [ 26%]
+........................................................................ [ 40%]
+........................................................................ [ 54%]
+........................................................................ [ 67%]
+........................................................................ [ 81%]
+.................................................................... [ 94%]
+............................                                             [100%]
+522 passed, 10 subtests passed in 1.68s
+
+
+5. SAFETY
+Audit only. No source files, migrations, environment variables, or database were changed.
+No commit, push, deploy, or Supabase migration was performed.
+Passing software tests do not establish clinical accuracy.

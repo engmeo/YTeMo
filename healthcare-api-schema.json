@@ -1,0 +1,381 @@
+﻿{
+    "AgentTaskRequest":  {
+                             "properties":  {
+                                                "goal":  {
+                                                             "type":  "string",
+                                                             "maxLength":  4000,
+                                                             "minLength":  1,
+                                                             "title":  "Goal"
+                                                         },
+                                                "conversation_id":  {
+                                                                        "anyOf":  [
+                                                                                      {
+                                                                                          "type":  "string"
+                                                                                      },
+                                                                                      {
+                                                                                          "type":  "null"
+                                                                                      }
+                                                                                  ],
+                                                                        "title":  "Conversation Id"
+                                                                    }
+                                            },
+                             "type":  "object",
+                             "required":  [
+                                              "goal"
+                                          ],
+                             "title":  "AgentTaskRequest"
+                         },
+    "Body_extract_healthcare_document_healthcare_documents_extract_post":  {
+                                                                               "properties":  {
+                                                                                                  "file":  {
+                                                                                                               "type":  "string",
+                                                                                                               "contentMediaType":  "application/octet-stream",
+                                                                                                               "title":  "File"
+                                                                                                           }
+                                                                                              },
+                                                                               "type":  "object",
+                                                                               "required":  [
+                                                                                                "file"
+                                                                                            ],
+                                                                               "title":  "Body_extract_healthcare_document_healthcare_documents_extract_post"
+                                                                           },
+    "ChatRequest":  {
+                        "properties":  {
+                                           "message":  {
+                                                           "type":  "string",
+                                                           "maxLength":  4000,
+                                                           "minLength":  1,
+                                                           "title":  "Message"
+                                                       },
+                                           "conversation_id":  {
+                                                                   "anyOf":  [
+                                                                                 {
+                                                                                     "type":  "string"
+                                                                                 },
+                                                                                 {
+                                                                                     "type":  "null"
+                                                                                 }
+                                                                             ],
+                                                                   "title":  "Conversation Id"
+                                                               }
+                                       },
+                        "type":  "object",
+                        "required":  [
+                                         "message"
+                                     ],
+                        "title":  "ChatRequest"
+                    },
+    "ConsentRequest":  {
+                           "properties":  {
+                                              "scope":  {
+                                                            "$ref":  "#/components/schemas/ConsentScope"
+                                                        },
+                                              "granted":  {
+                                                              "type":  "boolean",
+                                                              "title":  "Granted"
+                                                          }
+                                          },
+                           "type":  "object",
+                           "required":  [
+                                            "scope",
+                                            "granted"
+                                        ],
+                           "title":  "ConsentRequest"
+                       },
+    "ConsentScope":  {
+                         "type":  "string",
+                         "enum":  [
+                                      "basic_profile",
+                                      "care_needs",
+                                      "health_context",
+                                      "follow_up",
+                                      "proactive_contact"
+                                  ],
+                         "title":  "ConsentScope"
+                     },
+    "ContextRequest":  {
+                           "properties":  {
+                                              "scope":  {
+                                                            "$ref":  "#/components/schemas/ConsentScope"
+                                                        },
+                                              "category":  {
+                                                               "type":  "string",
+                                                               "maxLength":  100,
+                                                               "minLength":  1,
+                                                               "title":  "Category"
+                                                           },
+                                              "content":  {
+                                                              "type":  "string",
+                                                              "maxLength":  8000,
+                                                              "minLength":  1,
+                                                              "title":  "Content"
+                                                          },
+                                              "source":  {
+                                                             "type":  "string",
+                                                             "maxLength":  100,
+                                                             "title":  "Source",
+                                                             "default":  "user_provided"
+                                                         },
+                                              "expires_at":  {
+                                                                 "anyOf":  [
+                                                                               {
+                                                                                   "type":  "string"
+                                                                               },
+                                                                               {
+                                                                                   "type":  "null"
+                                                                               }
+                                                                           ],
+                                                                 "title":  "Expires At"
+                                                             }
+                                          },
+                           "type":  "object",
+                           "required":  [
+                                            "scope",
+                                            "category",
+                                            "content"
+                                        ],
+                           "title":  "ContextRequest"
+                       },
+    "FollowUpRequest":  {
+                            "properties":  {
+                                               "summary":  {
+                                                               "type":  "string",
+                                                               "maxLength":  2000,
+                                                               "minLength":  1,
+                                                               "title":  "Summary"
+                                                           }
+                                           },
+                            "type":  "object",
+                            "required":  [
+                                             "summary"
+                                         ],
+                            "title":  "FollowUpRequest"
+                        },
+    "HTTPValidationError":  {
+                                "properties":  {
+                                                   "detail":  {
+                                                                  "items":  {
+                                                                                "$ref":  "#/components/schemas/ValidationError"
+                                                                            },
+                                                                  "type":  "array",
+                                                                  "title":  "Detail"
+                                                              }
+                                               },
+                                "type":  "object",
+                                "title":  "HTTPValidationError"
+                            },
+    "HealthcareAnalysisRequest":  {
+                                      "properties":  {
+                                                         "document_text":  {
+                                                                               "type":  "string",
+                                                                               "maxLength":  200000,
+                                                                               "minLength":  1,
+                                                                               "title":  "Document Text"
+                                                                           },
+                                                         "agent_keys":  {
+                                                                            "anyOf":  [
+                                                                                          {
+                                                                                              "items":  {
+                                                                                                            "type":  "string"
+                                                                                                        },
+                                                                                              "type":  "array",
+                                                                                              "minItems":  1
+                                                                                          },
+                                                                                          {
+                                                                                              "type":  "null"
+                                                                                          }
+                                                                                      ],
+                                                                            "title":  "Agent Keys"
+                                                                        }
+                                                     },
+                                      "type":  "object",
+                                      "required":  [
+                                                       "document_text"
+                                                   ],
+                                      "title":  "HealthcareAnalysisRequest"
+                                  },
+    "NeedRequest":  {
+                        "properties":  {
+                                           "title":  {
+                                                         "type":  "string",
+                                                         "maxLength":  200,
+                                                         "minLength":  1,
+                                                         "title":  "Title"
+                                                     },
+                                           "description":  {
+                                                               "type":  "string",
+                                                               "maxLength":  4000,
+                                                               "minLength":  1,
+                                                               "title":  "Description",
+                                                               "default":  "ChÆ°a cÃ³ mÃ´ táº£"
+                                                           },
+                                           "priority":  {
+                                                            "$ref":  "#/components/schemas/UserPriority",
+                                                            "default":  "normal"
+                                                        },
+                                           "next_step":  {
+                                                             "anyOf":  [
+                                                                           {
+                                                                               "type":  "string",
+                                                                               "maxLength":  1000
+                                                                           },
+                                                                           {
+                                                                               "type":  "null"
+                                                                           }
+                                                                       ],
+                                                             "title":  "Next Step"
+                                                         }
+                                       },
+                        "type":  "object",
+                        "required":  [
+                                         "title"
+                                     ],
+                        "title":  "NeedRequest"
+                    },
+    "NeedStatus":  {
+                       "type":  "string",
+                       "enum":  [
+                                    "open",
+                                    "in_progress",
+                                    "waiting",
+                                    "resolved",
+                                    "paused"
+                                ],
+                       "title":  "NeedStatus"
+                   },
+    "NeedUpdateRequest":  {
+                              "properties":  {
+                                                 "status":  {
+                                                                "anyOf":  [
+                                                                              {
+                                                                                  "$ref":  "#/components/schemas/NeedStatus"
+                                                                              },
+                                                                              {
+                                                                                  "type":  "null"
+                                                                              }
+                                                                          ]
+                                                            },
+                                                 "next_step":  {
+                                                                   "anyOf":  [
+                                                                                 {
+                                                                                     "type":  "string",
+                                                                                     "maxLength":  1000
+                                                                                 },
+                                                                                 {
+                                                                                     "type":  "null"
+                                                                                 }
+                                                                             ],
+                                                                   "title":  "Next Step"
+                                                               }
+                                             },
+                              "type":  "object",
+                              "title":  "NeedUpdateRequest"
+                          },
+    "ProactiveEventRequest":  {
+                                  "properties":  {
+                                                     "trigger_type":  {
+                                                                          "$ref":  "#/components/schemas/TriggerType"
+                                                                      },
+                                                     "summary":  {
+                                                                     "type":  "string",
+                                                                     "maxLength":  2000,
+                                                                     "minLength":  1,
+                                                                     "title":  "Summary"
+                                                                 },
+                                                     "source":  {
+                                                                    "type":  "string",
+                                                                    "maxLength":  100,
+                                                                    "title":  "Source",
+                                                                    "default":  "user_action"
+                                                                }
+                                                 },
+                                  "type":  "object",
+                                  "required":  [
+                                                   "trigger_type",
+                                                   "summary"
+                                               ],
+                                  "title":  "ProactiveEventRequest"
+                              },
+    "ProposalStatus":  {
+                           "type":  "string",
+                           "enum":  [
+                                        "proposed",
+                                        "dismissed",
+                                        "accepted",
+                                        "expired"
+                                    ],
+                           "title":  "ProposalStatus"
+                       },
+    "ProposalStatusRequest":  {
+                                  "properties":  {
+                                                     "status":  {
+                                                                    "$ref":  "#/components/schemas/ProposalStatus"
+                                                                }
+                                                 },
+                                  "type":  "object",
+                                  "required":  [
+                                                   "status"
+                                               ],
+                                  "title":  "ProposalStatusRequest"
+                              },
+    "TriggerType":  {
+                        "type":  "string",
+                        "enum":  [
+                                     "user_returned",
+                                     "user_requested_follow_up",
+                                     "scheduled_review",
+                                     "task_completed",
+                                     "need_status_changed"
+                                 ],
+                        "title":  "TriggerType"
+                    },
+    "UserPriority":  {
+                         "type":  "string",
+                         "enum":  [
+                                      "low",
+                                      "normal",
+                                      "high"
+                                  ],
+                         "title":  "UserPriority"
+                     },
+    "ValidationError":  {
+                            "properties":  {
+                                               "loc":  {
+                                                           "items":  {
+                                                                         "anyOf":  [
+                                                                                       {
+                                                                                           "type":  "string"
+                                                                                       },
+                                                                                       {
+                                                                                           "type":  "integer"
+                                                                                       }
+                                                                                   ]
+                                                                     },
+                                                           "type":  "array",
+                                                           "title":  "Location"
+                                                       },
+                                               "msg":  {
+                                                           "type":  "string",
+                                                           "title":  "Message"
+                                                       },
+                                               "type":  {
+                                                            "type":  "string",
+                                                            "title":  "Error Type"
+                                                        },
+                                               "input":  {
+                                                             "title":  "Input"
+                                                         },
+                                               "ctx":  {
+                                                           "type":  "object",
+                                                           "title":  "Context"
+                                                       }
+                                           },
+                            "type":  "object",
+                            "required":  [
+                                             "loc",
+                                             "msg",
+                                             "type"
+                                         ],
+                            "title":  "ValidationError"
+                        }
+}

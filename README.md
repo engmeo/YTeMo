@@ -157,3 +157,11 @@ Các nhóm Frontend, Backend, AI/Agent, Data, Clinical Governance và QA cần l
 ---
 
 **Y TẾ MỞ — Hiểu nhu cầu. Kết nối nguồn lực. Duy trì hành trình chăm sóc.**
+
+## Healthcare Document APIs (STT17)
+
+- `POST /healthcare/documents/extract` — extract text from PDF/DOCX/TXT/Markdown; optional local OCR for scanned PDFs.
+- `GET /healthcare/agents` — list Cost, Medication, Lab, and BHYT specialists.
+- `POST /healthcare/agents/run` — run selected specialists against extracted text.
+
+See [`docs/api/API_ENDPOINTS.md`](docs/api/API_ENDPOINTS.md) and [`docs/API_FRONTEND_INTEGRATION.vi.md`](docs/API_FRONTEND_INTEGRATION.vi.md) for request contracts and integration guidance.

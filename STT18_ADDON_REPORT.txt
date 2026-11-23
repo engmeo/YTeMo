@@ -1,0 +1,17 @@
+﻿STT18 ADDITIVE ORCHESTRATION ADD-ON
+Timestamp: 2026-11-24T03:53:50.8863761+07:00
+Project: C:\YTeMo
+
+Created:
+ - backend\healthcare_orchestration_extension.py
+ - backend\test_healthcare_orchestration_extension.py
+
+Skipped:
+
+Backup directory: C:\YTeMo\.stt18_addon_backup_20261124_035349
+Existing files modified: NO
+AgentCore/AgentRegistry/main.py modified: NO
+Migrations/.env/credentials touched: NO
+Commit/push/deploy performed: NO
+Scope: additive orchestration module and isolated tests only.
+Integration note: inject existing approved specialist callables from the current application; this script intentionally does not rewrite API routes or replace existing orchestration.

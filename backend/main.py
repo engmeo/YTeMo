@@ -404,10 +404,10 @@ def create_agent_task(
     try:
         task = agent_core.create_task(user_id, request.goal, request.conversation_id)
         background_tasks.add_task(_run_agent_task, user_id, task["id"])
-        return {"task": task, "message": "Task đã được tiếp nhận."}
+        return {"task": task, "message": "Task Ä‘Ã£ Ä‘Æ°á»£c tiáº¿p nháº­n."}
     except Exception as e:
         print("CREATE AGENT TASK ERROR:", repr(e), flush=True)
-        raise HTTPException(status_code=503, detail="Không thể tạo task lúc này")
+        raise HTTPException(status_code=503, detail="KhÃ´ng thá»ƒ táº¡o task lÃºc nÃ y")
 
 
 @app.get("/agent/tasks")
@@ -416,7 +416,7 @@ def list_agent_tasks(user=Depends(get_current_user)):
         return {"tasks": agent_core.list_tasks(str(user.id))}
     except Exception as e:
         print("LIST AGENT TASKS ERROR:", repr(e), flush=True)
-        raise HTTPException(status_code=503, detail="Không thể tải danh sách task")
+        raise HTTPException(status_code=503, detail="KhÃ´ng thá»ƒ táº£i danh sÃ¡ch task")
 
 
 @app.get("/agent/tasks/{task_id}")
@@ -434,7 +434,7 @@ def get_agent_task(task_id: str, user=Depends(get_current_user)):
         raise
     except Exception as e:
         print("GET AGENT TASK ERROR:", repr(e), flush=True)
-        raise HTTPException(status_code=503, detail="Không thể tải task")
+        raise HTTPException(status_code=503, detail="KhÃ´ng thá»ƒ táº£i task")
 
 
 @app.post("/agent/tasks/{task_id}/resume", status_code=202)
@@ -448,9 +448,9 @@ def resume_agent_task(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     if task["status"] == "completed":
-        return {"task": task, "message": "Task đã hoàn thành."}
+        return {"task": task, "message": "Task Ä‘Ã£ hoÃ n thÃ nh."}
     background_tasks.add_task(_run_agent_task, user_id, task_id)
-    return {"task_id": task_id, "message": "Đã đưa task vào hàng đợi tiếp tục."}
+    return {"task_id": task_id, "message": "ÄÃ£ Ä‘Æ°a task vÃ o hÃ ng Ä‘á»£i tiáº¿p tá»¥c."}
 
 
 # ---------------------------------------------------------------------------
@@ -473,7 +473,7 @@ class ContextRequest(BaseModel):
 
 class NeedRequest(BaseModel):
     title: str = Field(min_length=1, max_length=200)
-    description: str = Field(default="Chưa có mô tả", min_length=1, max_length=4000)
+    description: str = Field(default="ChÆ°a cÃ³ mÃ´ táº£", min_length=1, max_length=4000)
     priority: UserPriority = UserPriority.NORMAL
     next_step: Optional[str] = Field(default=None, max_length=1000)
 
@@ -508,27 +508,84 @@ class HealthcareAnalysisRequest(BaseModel):
 # Uploaded files are processed in memory; this endpoint does not persist them.
 # ---------------------------------------------------------------------------
 
+# STT16_PERSISTENT_STORAGE: upload file bytes and owner-scoped metadata.
 @app.post("/healthcare/documents/extract")
 async def extract_healthcare_document(
     file: UploadFile = File(...),
     user=Depends(get_current_user),
 ):
-    # Read one byte beyond the limit so oversized uploads are rejected early.
     try:
         data = await file.read(MAX_DOCUMENT_BYTES + 1)
         if len(data) > MAX_DOCUMENT_BYTES:
-            raise HTTPException(status_code=413, detail="File vượt giới hạn 10 MB.")
+            raise HTTPException(status_code=413, detail="File vÆ°á»£t giá»›i háº¡n 10 MB.")
         extracted = extract_medical_document(file.filename or "document", data)
-        return {
-            "document": extracted.to_dict(),
-            "next_step": "Gửi document.text đến POST /healthcare/agents/run để chạy các Specialist Agents.",
-        }
     except DocumentExtractionError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     finally:
         await file.close()
 
+    document_id = str(__import__("uuid").uuid4())
+    storage_path = f"{user.id}/{document_id}/{extracted.filename}"
+    try:
+        db_client.storage.from_("healthcare-documents").upload(
+            storage_path, data,
+            {"content-type": extracted.media_type, "upsert": "false"},
+        )
+        row = {
+            "id": document_id,
+            "user_id": str(user.id),
+            "filename": extracted.filename,
+            "media_type": extracted.media_type,
+            "byte_size": len(data),
+            "storage_path": storage_path,
+            "extraction_status": extracted.extraction_status,
+        }
+        db_client.table("healthcare_documents").insert(row).execute()
+    except Exception as exc:
+        try:
+            db_client.storage.from_("healthcare-documents").remove([storage_path])
+        except Exception:
+            pass
+        print("HEALTHCARE DOCUMENT UPLOAD ERROR:", repr(exc), flush=True)
+        raise HTTPException(status_code=503, detail="KhÃ´ng thá»ƒ lÆ°u há»“ sÆ¡ y táº¿. Kiá»ƒm tra migration vÃ  Storage bucket.") from exc
 
+    document = extracted.to_dict()
+    document.update({"id": document_id, "persisted": True, "byte_size": len(data)})
+    return {
+        "document": document,
+        "next_step": "Gá»­i document.text Ä‘áº¿n POST /healthcare/agents/run Ä‘á»ƒ cháº¡y cÃ¡c Specialist Agents.",
+    }
+
+@app.get("/healthcare/documents")
+def list_healthcare_documents(user=Depends(get_current_user)):
+    try:
+        result = db_client.table("healthcare_documents").select(
+            "id,filename,media_type,byte_size,extraction_status,created_at"
+        ).eq("user_id", str(user.id)).order("created_at", desc=True).execute()
+        return {"documents": result.data or []}
+    except Exception as exc:
+        print("HEALTHCARE DOCUMENT LIST ERROR:", repr(exc), flush=True)
+        raise HTTPException(status_code=503, detail="KhÃ´ng thá»ƒ Ä‘á»c danh sÃ¡ch há»“ sÆ¡.") from exc
+
+@app.delete("/healthcare/documents/{document_id}")
+def delete_healthcare_document(document_id: str, user=Depends(get_current_user)):
+    try:
+        found = db_client.table("healthcare_documents").select(
+            "id,storage_path"
+        ).eq("id", document_id).eq("user_id", str(user.id)).limit(1).execute()
+        if not found.data:
+            raise HTTPException(status_code=404, detail="KhÃ´ng tÃ¬m tháº¥y há»“ sÆ¡.")
+        storage_path = found.data[0]["storage_path"]
+        db_client.storage.from_("healthcare-documents").remove([storage_path])
+        db_client.table("healthcare_documents").delete().eq(
+            "id", document_id
+        ).eq("user_id", str(user.id)).execute()
+        return {"deleted": True, "id": document_id}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print("HEALTHCARE DOCUMENT DELETE ERROR:", repr(exc), flush=True)
+        raise HTTPException(status_code=503, detail="KhÃ´ng thá»ƒ xÃ³a há»“ sÆ¡.") from exc
 @app.get("/healthcare/agents")
 def list_healthcare_agents(user=Depends(get_current_user)):
     return {
@@ -715,3 +772,4 @@ def companion_update_proposal(proposal_id: str, request: ProposalStatusRequest,
         return _serialize(proposal)
     except Exception as exc:
         _companion_error(exc)
+

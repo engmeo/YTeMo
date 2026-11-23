@@ -1,0 +1,31 @@
+Y TE MO - STT17 IMPLEMENTATION REPORT
+Timestamp: 2026-11-24T03:44:54
+Project: C:\YTeMo
+Files changed: 6
+Backup: C:\YTeMo\.stt17_backup_20261124_034450
+Python compile exit code: 0
+Full pytest exit code: 0
+OCR runtime readiness: {"pymupdf": false, "pytesseract": false, "pillow": false, "tesseract_executable": false}
+
+PYTHON COMPILE OUTPUT:
+
+
+
+FULL PYTEST OUTPUT:
+........................................................................ [ 13%]
+.................................................................. [ 26%]
+........................................................................ [ 39%]
+........................................................................ [ 53%]
+........................................................................ [ 67%]
+........................................................................ [ 80%]
+.................................................................... [ 93%]
+................................                                         [100%]
+526 passed, 10 subtests passed in 1.77s
+
+
+
+SAFETY:
+- No git commit, push, deploy, environment, database, or Supabase migration changes.
+- Uploaded documents remain processed in request memory by the existing endpoint.
+- OCR is local and optional; install Tesseract with vie+eng language data plus backend/requirements-ocr.txt.
+- Passing tests do not establish clinical accuracy or production readiness.

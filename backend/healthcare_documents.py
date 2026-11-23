@@ -64,6 +64,55 @@ def _extract_pdf(data: bytes) -> tuple[str, int]:
         raise DocumentExtractionError("PDF không hợp lệ hoặc không thể trích xuất.") from exc
 
 
+def _ocr_pdf(data: bytes) -> str:
+    """OCR a scanned PDF when optional local OCR dependencies are installed."""
+    import os
+    import shutil
+    tesseract_cmd = os.getenv("TESSERACT_CMD") or shutil.which("tesseract")
+    if not tesseract_cmd:
+        raise DocumentExtractionError(
+            "Chua cau hinh Tesseract OCR. Cai Tesseract va ngon ngu vie+eng, sau do thu lai."
+        )
+    try:
+        import fitz
+        import pytesseract
+        from PIL import Image
+        pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+        languages = pytesseract.get_languages(config="")
+        if not {"vie", "eng"}.issubset(set(languages)):
+            raise DocumentExtractionError(
+                "Tesseract thieu vie.traineddata hoac eng.traineddata."
+            )
+    except DocumentExtractionError:
+        raise
+    except ImportError as exc:
+        raise DocumentExtractionError(
+            "Thieu goi OCR. Cai backend/requirements-ocr.txt trong backend virtualenv."
+        ) from exc
+    except Exception as exc:
+        raise DocumentExtractionError(
+            "Khong the khoi dong Tesseract OCR. Kiem tra TESSERACT_CMD va cai dat Tesseract."
+        ) from exc
+    try:
+        pages = []
+        with fitz.open(stream=data, filetype="pdf") as pdf:
+            for index, page in enumerate(pdf):
+                pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+                image = Image.open(BytesIO(pixmap.tobytes("png")))
+                page_text = pytesseract.image_to_string(image, lang="vie+eng").strip()
+                if page_text:
+                    pages.append(f"[Trang {index + 1} - OCR]\n{page_text}")
+                if sum(len(item) for item in pages) >= MAX_EXTRACTED_CHARACTERS:
+                    break
+        return "\n\n".join(pages)[:MAX_EXTRACTED_CHARACTERS]
+    except DocumentExtractionError:
+        raise
+    except Exception as exc:
+        raise DocumentExtractionError(
+            "OCR that bai. Kiem tra Tesseract, vie.traineddata va file PDF."
+        ) from exc
+
+
 def _extract_docx(data: bytes) -> str:
     try:
         from docx import Document
@@ -92,10 +141,14 @@ def extract_medical_document(filename: str, data: bytes) -> DocumentExtraction:
         raise DocumentExtractionError("File vượt giới hạn 10 MB.")
 
     page_count = None
+    ocr_used = False
     if extension == ".pdf":
         if not data.startswith(b"%PDF-"):
             raise DocumentExtractionError("Nội dung file không khớp định dạng PDF.")
         text, page_count = _extract_pdf(data)
+        if not text.strip():
+            text = _ocr_pdf(data)
+            ocr_used = bool(text.strip())
         media_type = "application/pdf"
     elif extension == ".docx":
         if not data.startswith(b"PK"):
@@ -128,7 +181,7 @@ def extract_medical_document(filename: str, data: bytes) -> DocumentExtraction:
     return DocumentExtraction(
         filename=safe_name,
         media_type=media_type,
-        extraction_status="text_extracted",
+        extraction_status="ocr_extracted" if ocr_used else "text_extracted",
         text=text,
         page_count=page_count,
         character_count=len(text),
@@ -136,7 +189,7 @@ def extract_medical_document(filename: str, data: bytes) -> DocumentExtraction:
         persisted=False,
         limitations=(
             "Chỉ trích xuất văn bản; không xác thực tính đúng/sai của hồ sơ.",
-            "Không OCR PDF scan; không suy luận chẩn đoán hoặc khuyến nghị điều trị.",
+            "OCR fallback is available for scanned PDFs when local dependencies are configured.",
             "File được xử lý trong bộ nhớ của request và không được lưu bởi endpoint này.",
         ),
     )

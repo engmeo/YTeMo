@@ -857,6 +857,50 @@
           }
         }
       }
+    },
+    "/healthcare/documents": {
+      "get": {
+        "summary": "List Healthcare Documents",
+        "operationId": "list_healthcare_documents_healthcare_documents_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "503": {
+            "description": "Storage service unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/healthcare/documents/{document_id}": {
+      "delete": {
+        "summary": "Delete Healthcare Document",
+        "operationId": "delete_healthcare_document_healthcare_documents__document_id__delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "503": {
+            "description": "Storage service unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {

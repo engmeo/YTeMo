@@ -27,6 +27,9 @@
 | `PATCH` | `/companion/proactive/proposals/{proposal_id}` | Companion Update Proposal |
 | `GET` | `/conversations/{conversation_id}/messages` | Get Conversation Messages |
 | `GET` | `/health` | Health Check |
+| `POST` | `/healthcare/documents/extract` | Extract PDF/DOCX/TXT/Markdown; optional local OCR for scanned PDF |
+| `GET` | `/healthcare/agents` | List healthcare specialist agents |
+| `POST` | `/healthcare/agents/run` | Run selected healthcare specialist agents |
 | `GET` | `/public-config` | Public Config |
 
 ## Chi tiết theo endpoint
@@ -920,3 +923,28 @@
 - Không tự tạo payload theo phỏng đoán; dùng schema trong phần chi tiết hoặc OpenAPI.
 - API public như health/config không thay thế xác thực người dùng.
 - Có endpoint trong OpenAPI không đồng nghĩa Frontend đã tích hợp hoặc production đã triển khai.
+
+
+## Healthcare document analysis (STT17)
+
+All three routes require the authenticated Bearer token used by the Backend. The upload endpoint processes the file in request memory and does not persist it. Maximum upload size: 10 MB; maximum extracted text: 200,000 characters.
+
+### `POST /healthcare/documents/extract`
+
+- Content type: `multipart/form-data`
+- Required field: `file` (PDF, DOCX, TXT, or Markdown)
+- Success response: `document` object (`filename`, `media_type`, `extraction_status`, `text`, `page_count`, `character_count`, `truncated`, `persisted`, `limitations`) and `next_step`.
+- Scanned PDF: local OCR fallback is attempted only when no text layer is found. Install Python dependencies with `python -m pip install -r backend/requirements-ocr.txt`; also install the Tesseract executable and its `vie` + `eng` language data. Set `TESSERACT_CMD` if `tesseract.exe` is not on `PATH`. If OCR is unavailable, the API returns a validation error; it does not silently return empty text.
+- Common errors: `413` file exceeds 10 MB; `422` unsupported, invalid, encrypted, or unextractable document.
+
+### `GET /healthcare/agents`
+
+- Success response: `agents` and `default_agent_keys`.
+
+### `POST /healthcare/agents/run`
+
+- Content type: `application/json`
+- Request: `{"document_text":"...","agent_keys":["cost","medication","lab","bhyt"]}`. `document_text` is required (1-200,000 characters); `agent_keys` is optional and, when supplied, must contain at least one supported key.
+- Success response: specialist execution results with findings, evidence references, missing information, and safety disclaimers.
+- The specialists extract evidence present in the source; they do not diagnose, prescribe, estimate missing prices, or determine actual insurance eligibility.
+

@@ -1,0 +1,9 @@
+[2026-11-24 03:50:18] STT17 OCR RUNTIME FIX V4 20261124 - MANUAL INSTALLER FALLBACK
+[2026-11-24 03:50:18] Project: C:\YTeMo
+[2026-11-24 03:50:18] Python: C:\YTeMo\backend\.venv\Scripts\python.exe
+[2026-11-24 03:50:18] Tesseract executable: C:\Program Files\Tesseract-OCR\tesseract.exe
+[2026-11-24 03:50:18] Downloading language data: eng
+[2026-11-24 03:50:19] Downloading language data: vie
+[2026-11-24 03:50:19] Installing Python OCR packages into the project virtual environment.
+[2026-11-24 03:50:34] Running OCR image and scanned-PDF smoke tests.
+[2026-11-24 03:50:35] FAIL: OCR smoke test failed.
