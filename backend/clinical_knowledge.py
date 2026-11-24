@@ -122,7 +122,7 @@ class ReviewDecision(BaseModel):
     license_cleared: bool = False
     evidence_assessment: str = Field(default="", max_length=5000)
     limitations: str = Field(default="", max_length=3000)
-    has_conflict_of_interest: bool = False
+    has_conflict_of_interest: bool
     extraction_quality_reviewed: bool = False
 
     @field_validator("scope")
