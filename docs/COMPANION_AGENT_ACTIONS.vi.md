@@ -1,68 +1,73 @@
 # Companion Agent Actions & Temporal Runtime
 
-## What this adds
+## Năng lực đã triển khai
 
-- An allowlisted action proposal API; LLMs cannot execute arbitrary Python, SQL, HTTP, or shell commands.
-- Explicit owner approval before any action enters the worker queue.
-- Owner-scoped Supabase records and idempotency keys.
-- Scheduled execution timestamps; reminders are not claimable before their due time.
-- A separate polling worker. Do not run it inside a FastAPI request or on every web replica.
-- Atomic queue claiming through `claim_companion_action_tasks` using `FOR UPDATE SKIP LOCKED`.
+- Allowlist action; LLM chỉ đề xuất, không tự thực thi.
+- Chủ tài khoản phải phê duyệt trước khi action được đưa vào queue.
+- API đọc/ghi có owner scope; idempotency key theo nội dung đề xuất.
+- Worker riêng, atomic claim bằng FOR UPDATE SKIP LOCKED, chỉ claim action type đã đăng ký.
+- Lease 3 phút, thu hồi task bị worker chết, retry có backoff 15 giây đến tối đa 1 giờ, giới hạn 5 lần.
+- Lease fencing ngăn worker cũ ghi đè kết quả sau khi task đã được worker khác nhận.
+- Email Resend dùng idempotency key theo task ID.
 
 ## API
 
-All endpoints require the user's Supabase access token:
+Tất cả endpoint yêu cầu Supabase access token:
+- POST /companion/actions/propose
+- GET /companion/actions
+- POST /companion/actions/{action_id}/approve
+- POST /companion/actions/{action_id}/reject
 
-- `POST /companion/actions/propose`
-  `{"action":"create_reminder","arguments":{"title":"Tái khám","due_at":"2026-12-01T09:00:00+07:00","delivery_channel":"email"}}`
-- `GET /companion/actions`
-- `POST /companion/actions/{action_id}/approve`
-- `POST /companion/actions/{action_id}/reject`
+Ví dụ tạo reminder (frontend gửi consent boolean từ checkbox):
 
-The current allowlist is intentionally small:
+```json
+{
+  "action": "create_reminder",
+  "arguments": {
+    "title": "Tái khám",
+    "due_at": "2026-12-01T09:00:00+07:00",
+    "delivery_channel": "email",
+    "email_consent": true
+  }
+}
+```
 
-- `create_reminder`
-- `request_clinician_review`
-- `add_timeline_note`
+Backend xác thực email_consent=true, tự ghi timestamp consent, yêu cầu due_at có timezone và nằm trong tương lai. Recipient không nhận từ request/LLM; worker chỉ gửi tới email Supabase Auth đã xác minh.
 
-The last two are proposals only. A handler must be explicitly implemented and registered before a worker can execute an action type. Unknown action types fail closed.
+## Ba handler đã đăng ký
 
-## Apply and operate
+1. create_reminder: gửi email qua Resend nếu RESEND_API_KEY và RESEND_FROM_EMAIL tồn tại. Nếu chưa cấu hình, worker vẫn chạy các handler khác và không claim reminder.
+2. request_clinician_review: tạo nhu cầu review ưu tiên cao trong companion_needs; đây là yêu cầu nội bộ chờ nhân viên y tế tiếp nhận, chưa tự gửi thông báo tới bệnh viện/bác sĩ.
+3. add_timeline_note: ghi sự kiện vào companion_events, lưu cả nội dung và nguồn do người dùng cung cấp.
 
-1. Apply `supabase/migrations/202611240010_healthcare_analysis_history.sql`, then `supabase/migrations/202611240011_companion_action_tasks.sql` in the target Supabase project. Migration `202611240009_clinical_evidence_intelligence.sql` is an existing clinical-knowledge migration; do not re-run it if it has already been applied.
-2. Deploy the backend containing the API routes.
-3. Configure the separate worker service with `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` and optional `YTEMO_ACTION_POLL_SECONDS`.
-4. Run `python companion_action_worker_service.py` from the `backend` directory. It registers the `create_reminder` email handler and refuses to start without Resend configuration.
-5. Configure exactly one worker deployment initially. The database claim RPC prevents two workers from claiming the same queued row concurrently.
+Hai handler nội bộ dùng unique action_task_id để retry không tạo bản ghi trùng. Chúng không thay thế hồ sơ bệnh án đã xác minh.
 
-Do not expose the Supabase service-role key to the browser. The API checks ownership on every action read/update. RLS is enabled and browser roles have no table privileges.
+## Migration prerequisites
 
-## Safety and current limitations
+- 202611180001_companion_persistence.sql phải được áp dụng trước vì tạo companion_needs và companion_events.
+- 202611240011_companion_action_tasks.sql tạo action queue, retry/lease fields, unique effect references và RPC claim.
+- Xem docs/SUPABASE_MIGRATIONS.vi.md để áp dụng theo thứ tự và kiểm tra schema.
+- Worker và backend phải trỏ tới cùng một Supabase project.
 
-- The LLM may suggest an action but never approves it.
-- User approval is persisted separately from proposal creation.
-- Reminders are scheduled at `due_at`. The Resend handler sends email only when the proposal explicitly sets `delivery_channel: "email"` and the owner has a verified Supabase Auth email.
-- Email delivery is implemented as an opt-in Resend worker handler, but it is not active until the worker and provider credentials are configured. No SMS, hospital booking, prescription, medication change, or clinical order handler is enabled.
-- `request_clinician_review` and `add_timeline_note` remain queued proposals until a separately reviewed handler is registered.
-- A failed worker handler is recorded as failed; automatic retries/dead-letter policy and operator dashboard remain follow-up work.
-- This is workflow infrastructure, not clinical validation or autonomous medical decision-making.
+## Vận hành worker
 
-## Quantized inference
+Trong môi trường worker riêng, cấu hình:
+- Bắt buộc: SUPABASE_URL, SUPABASE_SECRET_KEY.
+- Để gửi email: RESEND_API_KEY, RESEND_FROM_EMAIL.
+- Tùy chọn: YTEMO_ACTION_POLL_SECONDS (mặc định 5 giây).
 
-The existing Model Gateway can target OpenAI-compatible local servers. Recommended deployment split:
+Chạy từ thư mục backend:
 
-- API: CPU/lightweight web service; no model weights loaded in FastAPI.
-- Inference: separate GPU/CPU host running llama.cpp server (GGUF Q4_K_M/Q5_K_M) or vLLM with a supported AWQ/GPTQ/FP8 format.
-- Profiles: small fast model for routing/formatting; stronger specialist/reasoning model only for tasks that need it.
-- Benchmark each candidate on Vietnamese quality, tool-call validity, TTFT, inter-token latency, p50/p95 latency, peak VRAM/RAM and clinical safety regression.
+```bash
+python companion_action_worker_service.py
+```
 
-Quantization is not automatically faster on every device. Do not enable a quantized model for clinical use until its quality has been compared against the same model in higher precision on an expert-adjudicated evaluation set.
+Có thể chạy nhiều worker; database lease/skip-locked bảo vệ việc claim đồng thời. Bắt đầu với một worker để theo dõi log, sau đó tăng số lượng khi đã có giám sát. Không chạy trong FastAPI request hoặc Vercel Function.
 
+## An toàn và giới hạn
 
-## Gửi email nhắc lịch bằng Resend
-
-Worker gửi email chỉ xử lý `create_reminder` và chỉ khi request có `delivery_channel: "email"`; lựa chọn kênh phải được người dùng xác nhận trước khi phê duyệt hành động. Worker lấy địa chỉ email từ Supabase Auth, yêu cầu email đã xác minh, không nhận địa chỉ gửi đến tùy ý từ LLM.
-
-Cấu hình ở dịch vụ worker (không đặt trên frontend): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, tùy chọn `YTEMO_ACTION_POLL_SECONDS`. Chạy `python -m backend.companion_action_worker_service` từ thư mục gốc repo hoặc `python companion_action_worker_service.py` trong `backend`.
-
-Các action `request_clinician_review` và `add_timeline_note` chưa có handler thực thi; worker sẽ fail-closed, không giả lập thành công. Không bật worker trước khi migration được áp dụng và Resend domain/from address được xác minh.
+- Không có SMS, đặt lịch bệnh viện, kê đơn, thay đổi thuốc hay chỉ định cận lâm sàng.
+- Email chỉ gửi sau khi người dùng chọn email, xác nhận consent, phê duyệt action và tài khoản có email đã xác minh.
+- Resend idempotency bảo vệ retry trong khoảng thời gian provider lưu key; worker lease và DB uniqueness bổ sung bảo vệ nội bộ.
+- Request clinician review chỉ tạo yêu cầu nội bộ, chưa có tích hợp clinician inbox/paging.
+- Không coi worker thành công hoặc test pass là xác nhận lâm sàng.
