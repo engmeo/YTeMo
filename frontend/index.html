@@ -541,6 +541,11 @@ async function sendMessage(message) {
   const clean = message.trim();
   if (!currentUser) { document.getElementById('loginScreen').hidden = false; return; }
   if (!clean || busy) return;
+  if (document.getElementById('evidenceLookupEnabled')?.checked && !document.getElementById('evidencePopulation').value.trim()) {
+    toast('Hãy nhập đối tượng áp dụng trước khi tra cứu bằng chứng.');
+    document.getElementById('evidencePopulation').focus();
+    return;
+  }
   chatMessages.querySelector('.companion-empty')?.remove();
   appendMessage(clean, 'user');
   chatInput.value = '';
