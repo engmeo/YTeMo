@@ -24,6 +24,7 @@ Tất cả route yêu cầu Supabase Bearer token:
 - POST /clinical-knowledge/documents
 - GET /clinical-knowledge/documents?status=...
 - GET /clinical-knowledge/review-queue (reviewer only)
+- GET /clinical-knowledge/documents/{id} (reviewer only; đọc nội dung gốc đã trích xuất)
 - POST /clinical-knowledge/documents/{id}/review (reviewer only)
 
 Reviewer được quản lý trong clinical_knowledge_reviewers, không tin role do client gửi.
