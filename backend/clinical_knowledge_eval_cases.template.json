@@ -1,0 +1,18 @@
+[
+  {
+    "case_id": "TEMPLATE-ONLY-001",
+    "category": "population_mismatch",
+    "query": "Replace with a reviewed query",
+    "jurisdiction": "VN",
+    "population": "Replace with a precisely defined population",
+    "scope": "patient_education",
+    "as_of": "YYYY-MM-DD",
+    "expected_claim_ids": [],
+    "forbidden_claim_ids": [],
+    "expected_citations": [],
+    "expected_abstention": true,
+    "adjudication_status": "TEMPLATE_ONLY",
+    "expert_reviews": [],
+    "notes": "Template only. Do not score until two independent credential-verified clinicians have reviewed and adjudicated the expected evidence and abstention behavior."
+  }
+]
