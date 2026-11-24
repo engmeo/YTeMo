@@ -669,6 +669,7 @@ class ProposalStatusRequest(BaseModel):
 
 class HealthcareAnalysisRequest(BaseModel):
     document_text: str = Field(min_length=1, max_length=200000)
+    document_id: Optional[str] = None
     agent_keys: Optional[list[str]] = Field(default=None, min_length=1)
     # Structured financial inputs are optional and must be explicitly supplied.
     cost_items: Optional[list[dict]] = None
@@ -770,6 +771,44 @@ def list_healthcare_agents(user=Depends(get_current_user)):
     }
 
 
+@app.get("/healthcare/analysis-runs")
+def list_healthcare_analysis_runs(limit: int = 30, user=Depends(get_current_user)):
+    try:
+        result = (
+            db_client.table("healthcare_analysis_runs")
+            .select("id,source_document_id,agent_keys,status,created_at")
+            .eq("user_id", str(user.id))
+            .order("created_at", desc=True)
+            .limit(max(1, min(int(limit), 100)))
+            .execute()
+        )
+        return {"runs": result.data or []}
+    except Exception as exc:
+        print("HEALTHCARE ANALYSIS HISTORY ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=503, detail="Lịch sử phân tích chưa sẵn sàng. Kiểm tra migration healthcare_analysis_runs.") from exc
+
+
+@app.get("/healthcare/analysis-runs/{run_id}")
+def get_healthcare_analysis_run(run_id: str, user=Depends(get_current_user)):
+    try:
+        result = (
+            db_client.table("healthcare_analysis_runs")
+            .select("id,source_document_id,agent_keys,status,result,created_at")
+            .eq("id", run_id)
+            .eq("user_id", str(user.id))
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Không tìm thấy lần phân tích.")
+        return {"run": result.data[0]}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print("HEALTHCARE ANALYSIS DETAIL ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=503, detail="Không thể tải lần phân tích.") from exc
+
+
 @app.post("/healthcare/agents/run")
 def run_healthcare_agents(
     request: HealthcareAnalysisRequest,
@@ -848,6 +887,35 @@ def run_healthcare_agents(
             result["llm_multi_agent_analysis"] = {
                 "status": "not_requested",
                 "message": "Chưa gửi nội dung hồ sơ tới LLM. Chỉ chạy các extractor và phép tính xác định hiện có.",
+            }
+        source_document_id = request.document_id
+        if source_document_id:
+            owned_document = (
+                db_client.table("healthcare_documents").select("id")
+                .eq("id", source_document_id).eq("user_id", str(user.id))
+                .limit(1).execute()
+            )
+            if not owned_document.data:
+                raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ thuộc tài khoản.")
+        try:
+            history_insert = db_client.table("healthcare_analysis_runs").insert({
+                "user_id": str(user.id),
+                "source_document_id": source_document_id,
+                "agent_keys": request.agent_keys or list(DEFAULT_AGENT_KEYS),
+                "status": "completed",
+                "result": result,
+            }).execute()
+            history_row = (history_insert.data or [{}])[0]
+            result["analysis_history"] = {
+                "persisted": bool(history_row.get("id")),
+                "id": history_row.get("id"),
+            }
+        except Exception as history_error:
+            print("HEALTHCARE ANALYSIS NOT PERSISTED:", type(history_error).__name__, flush=True)
+            result["analysis_history"] = {
+                "persisted": False,
+                "reason": "MIGRATION_REQUIRED",
+                "message": "Kết quả hiện chỉ có trong phiên này; cần áp dụng migration 202611240010_healthcare_analysis_history.sql để lưu lịch sử.",
             }
         return result
     except HTTPException:
