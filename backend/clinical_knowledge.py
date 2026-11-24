@@ -37,6 +37,10 @@ def initial_document_status(source_domain_matched: bool, checks_passed: bool) ->
     return "DISCOVERED"
 
 
+def is_reviewable_status(status: str) -> bool:
+    return status in {"DISCOVERED", "SOURCE_VERIFIED", "AI_REVIEWED"}
+
+
 def automated_document_checks(metadata: dict, extracted_text: str | None = None) -> dict:
     """Conservative metadata/extraction checks; never a clinical review."""
     issues = []
@@ -219,6 +223,8 @@ def build_router(db, auth_dependency):
         if not found.data:
             raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
         doc = found.data[0]
+        if not is_reviewable_status(str(doc.get("status") or "")):
+            raise HTTPException(status_code=409, detail="Tài liệu ở trạng thái không cho phép thẩm định lại.")
         if request.decision == "APPROVED":
             if not request.source_document_verified or not request.version_current or not request.license_cleared:
                 raise HTTPException(status_code=409, detail="Reviewer phải xác minh tài liệu gốc, phiên bản hiện hành và quyền sử dụng trước khi phê duyệt.")
