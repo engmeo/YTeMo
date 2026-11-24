@@ -734,7 +734,10 @@ async function initialize() {
       }
     });
   } catch (error) {
-    supabase = null;\n    const reason = error.name === 'AbortError' ? 'Backend không phản hồi trong 12 giây (có thể Render đang cold start).' : error.message;\n    setAuthStatus(`✕ Không kết nối được Backend: ${reason} · URL: ${API_BASE}. Bạn có thể thử lại hoặc cấu hình URL Backend.`, true);\n    installBackendActions();
+    supabase = null;
+    const reason = error.name === 'AbortError' ? 'Backend không phản hồi trong 12 giây (có thể Render đang cold start).' : error.message;
+    setAuthStatus(`✕ Không kết nối được Backend: ${reason} · URL: ${API_BASE}. Bạn có thể thử lại hoặc cấu hình URL Backend.`, true);
+    installBackendActions();
   }
 }
 
