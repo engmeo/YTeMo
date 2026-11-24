@@ -299,7 +299,18 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
   <div class="companion-workspace" id="chatPanel">
    <div class="companion-top"><div><div class="mono eyebrow">PERSONAL HEALTHCARE COMPANION</div><h2>Hôm nay bạn cần hỗ trợ điều gì?</h2><p id="companionWelcome">Đăng nhập để bắt đầu một phiên đồng hành được quản lý an toàn.</p></div><span class="companion-mark">✳</span></div>
    <div class="companion-prompts" id="chatQuick"><button type="button" data-message="Tôi muốn tìm hiểu nên bắt đầu chăm sóc sức khỏe từ đâu."><span>01</span> Tôi cần định hướng chăm sóc sức khỏe</button><button type="button" data-message="Tôi đang lo lắng về chi phí khám chữa bệnh và quyền lợi BHYT."><span>02</span> Tôi cần làm rõ chi phí và BHYT</button><button type="button" data-message="Tôi muốn hiểu hồ sơ y tế và các thông tin cần theo dõi."><span>03</span> Tôi cần hiểu hồ sơ y tế</button><button type="button" data-message="Tôi đang chăm sóc người thân và cần một kế hoạch phù hợp."><span>04</span> Tôi đang chăm sóc người thân</button></div>
-   <div class="companion-input-area"><label for="chatMessage">MÔ TẢ ĐIỀU BẠN ĐANG CẦN</label><form class="chat-compose" id="chatForm"><textarea id="chatMessage" maxlength="4000" placeholder="Ví dụ: Tôi đang chăm sóc bố sau xuất viện, chưa rõ cần theo dõi những gì…" required></textarea><button id="sendMessageBtn" type="submit">Gửi yêu cầu ↗</button></form><div class="companion-foot"><span id="chatTyping" class="chat-typing">COMPANION ĐANG PHÂN TÍCH…</span><span id="companionAuthHint">Bạn cần đăng nhập để gửi yêu cầu.</span></div></div>
+   <div class="companion-input-area"><label for="chatMessage">MÔ TẢ ĐIỀU BẠN ĐANG CẦN</label><form class="chat-compose" id="chatForm"><textarea id="chatMessage" maxlength="4000" placeholder="Ví dụ: Tôi đang chăm sóc bố sau xuất viện, chưa rõ cần theo dõi những gì…" required></textarea><button id="sendMessageBtn" type="submit">Gửi yêu cầu ↗</button></form><div class="companion-foot"><span id="chatTyping" class="chat-typing">COMPANION ĐANG PHÂN TÍCH…</span><span id="companionAuthHint">Bạn cần đăng nhập để gửi yêu cầu.</span></div>
+   <details style="margin-top:14px;border:1px solid var(--line);background:#f8f7f1;padding:12px 14px">
+    <summary style="cursor:pointer;font-size:11px;font-weight:800;color:var(--teal)">TRA CỨU BẰNG CHỨNG ĐÃ ĐƯỢC THẨM ĐỊNH (TÙY CHỌN)</summary>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+     <label style="font-size:11px;display:flex;align-items:center;gap:8px;grid-column:1/-1"><input id="evidenceLookupEnabled" type="checkbox"> Chỉ tìm nguồn bằng chứng đã được reviewer phê duyệt</label>
+     <label style="font-size:10px">ĐỐI TƯỢNG ÁP DỤNG<input id="evidencePopulation" type="text" placeholder="Ví dụ: người trưởng thành mắc tăng huyết áp" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid var(--line);background:white"></label>
+     <label style="font-size:10px">PHẠM VI ĐƯỢC PHÉP<select id="evidenceScope" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid var(--line);background:white"><option value="patient_education">Giáo dục người bệnh</option><option value="self_care">Tự chăm sóc</option><option value="prevention">Dự phòng</option><option value="screening">Sàng lọc</option><option value="diagnostic_reference">Tham khảo chẩn đoán</option><option value="treatment_reference">Tham khảo điều trị</option><option value="medication_safety">An toàn thuốc</option><option value="professional_decision_support">Hỗ trợ chuyên môn cho nhân viên y tế</option><option value="public_health">Y tế công cộng</option></select></label>
+     <label style="font-size:10px;grid-column:1/-1">CHUYÊN KHOA (NẾU CẦN)<input id="evidenceSpecialty" type="text" placeholder="Ví dụ: cardiology; để trống nếu không giới hạn" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid var(--line);background:white"></label>
+    </div>
+    <p style="font-size:10px;line-height:1.6;color:var(--muted);margin:10px 0 0">Chỉ trả về bằng chứng đã duyệt, đúng đối tượng và phạm vi. Không có kết quả phù hợp thì Companion phải nói rõ không đủ căn cứ. Công cụ này không chẩn đoán hoặc kê đơn.</p>
+   </details>
+  </div>
    <div class="companion-output"><div class="companion-output-head"><div><div class="mono eyebrow">YOUR CARE PATHWAY</div><h3>Hướng dẫn và bước tiếp theo</h3></div><button id="newChatBtn" type="button" class="reset-companion">Làm mới phiên</button></div><div class="chat-messages" id="chatMessages" aria-live="polite"><div class="companion-empty"><span>✳</span><b>Lộ trình của bạn sẽ xuất hiện tại đây</b><p>Companion sẽ tóm tắt điều đã hiểu, thông tin còn thiếu và bước tiếp theo có thể thực hiện.</p></div></div></div>
    <div class="chat-foot">Thông tin chỉ hỗ trợ định hướng và phối hợp chăm sóc; quyết định y khoa cần được xác nhận bởi nhân viên y tế có thẩm quyền.</div>
   </div>
@@ -540,7 +551,20 @@ async function sendMessage(message) {
     const response = await fetchWithAuth('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: clean, conversation_id: conversationId }),
+      body: JSON.stringify({
+        message: clean,
+        conversation_id: conversationId,
+        ...(document.getElementById('evidenceLookupEnabled')?.checked ? {
+          evidence_request: {
+            query: clean,
+            jurisdiction: 'VN',
+            population: document.getElementById('evidencePopulation').value.trim(),
+            scope: document.getElementById('evidenceScope').value,
+            specialty: document.getElementById('evidenceSpecialty').value.trim() || null,
+            limit: 8
+          }
+        } : {})
+      }),
       signal: controller.signal
     });
     const result = await response.json().catch(() => ({}));
@@ -549,6 +573,18 @@ async function sendMessage(message) {
     conversationId = result.conversation_id;
     if (conversationId) localStorage.setItem(storageKey(), conversationId);
     appendMessage(result.reply, 'assistant');
+    if (result.evidence_retrieval) {
+      const evidence = result.evidence_retrieval;
+      if (evidence.abstention) {
+        appendMessage('Tra cứu bằng chứng: Không tìm thấy claim đã được thẩm định phù hợp với đối tượng, phạm vi và bối cảnh đã chọn. Không sử dụng phản hồi này làm căn cứ cho quyết định lâm sàng.', 'system');
+      } else {
+        const refs = (evidence.evidence || []).map(item => {
+          const citation = item.citation || {};
+          return (citation.document_title || 'Tài liệu') + ' — trang ' + (citation.page || '?') + (citation.version ? ' — phiên bản ' + citation.version : '');
+        });
+        appendMessage('Nguồn bằng chứng đã truy xuất:\\n' + refs.join('\\n'), 'system');
+      }
+    }
   } catch (error) {
     const message = error.name === 'AbortError' ? 'Yêu cầu đã quá 25 giây và được dừng để tránh chờ vô hạn. Dịch vụ AI có thể đang quá tải; hãy thử gửi lại sau ít phút.' : error.message;
     appendMessage('Chưa nhận được phản hồi: ' + message, 'system');
