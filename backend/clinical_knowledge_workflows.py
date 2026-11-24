@@ -138,10 +138,17 @@ class EvidenceRetrievalRequest(BaseModel):
     as_of: str | None = None
     limit: int = Field(default=10, ge=1, le=30)
 
+    @field_validator("scope")
+    @classmethod
+    def valid_scope(cls, value):
+        if value not in ALLOWED_APPROVED_SCOPES:
+            raise ValueError("scope không nằm trong danh mục được phê duyệt")
+        return value
+
 
 def retrieve_approved_evidence(db, request: EvidenceRetrievalRequest) -> dict:
     as_of = parse_iso_date(request.as_of) or date.today()
-    terms = [term for term in re.findall(r"[\\w-]{3,}", request.query.casefold())]
+    terms = [term for term in re.findall(r"[\w-]{3,}", request.query.casefold())]
     if not terms:
         raise HTTPException(status_code=422, detail="Query cần ít nhất một từ khóa có nghĩa.")
     claim_result = db.table("clinical_evidence_claims").select("*").eq(
