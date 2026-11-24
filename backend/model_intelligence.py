@@ -176,11 +176,14 @@ def generate(
     profile: str = "fast",
     max_tokens: int = 700,
     temperature: float = 0.2,
+    model_override: str | None = None,
 ) -> dict[str, Any]:
     if profile not in {"fast", "reasoning", "medical"}:
         raise ValueError("Unknown model profile.")
     backend, endpoint, key = _endpoint_config(profile)
-    model = _model_for_profile(profile)
+    model = (model_override or _model_for_profile(profile)).strip()
+    if not model or len(model) > 200:
+        raise ValueError("Invalid model override.")
     timeout = max(5, min(int(os.getenv("YTEMO_MODEL_TIMEOUT_SECONDS", "18")), 30))
     payload = {
         "model": model,
