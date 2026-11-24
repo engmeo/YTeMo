@@ -86,7 +86,7 @@ def _governed_candidates(db, request) -> list[dict[str, Any]]:
         "resolution_status", ["OPEN", "UNDER_REVIEW", "UNRESOLVED"]
     ).limit(500).execute()
     blocked = {cid for row in (conflicts.data or []) for cid in (row.get("claim_ids") or [])}
-    as_of = date.today()
+    as_of = date.fromisoformat(request.as_of) if getattr(request, "as_of", None) else date.today()
     candidates = []
     for claim in claims:
         if claim["id"] in blocked:
@@ -104,8 +104,8 @@ def _governed_candidates(db, request) -> list[dict[str, Any]]:
         claim_population = normalize(claim.get("population", ""))
         if requested_population not in claim_population:
             continue
-        doc_tokens = set(re.findall(r"[\\w-]{3,}", normalize(doc.get("target_population", ""))))
-        requested_tokens = set(re.findall(r"[\\w-]{3,}", requested_population))
+        doc_tokens = set(re.findall(r"[\w-]{3,}", normalize(doc.get("target_population", ""))))
+        requested_tokens = set(re.findall(r"[\w-]{3,}", requested_population))
         if not doc_tokens.issubset(requested_tokens):
             continue
         try:
@@ -184,6 +184,7 @@ def build_router(db, auth_dependency):
              "lexical_score": lexical_score(request.query, item["claim"].get("claim_text", "") + " " + item["claim"].get("exact_quote", ""))}
             for item in eligible
         ]
+        lexical_ranked = [item for item in lexical_ranked if item["lexical_score"] > 0]
         lexical_ranked.sort(key=lambda item: item["lexical_score"], reverse=True)
         fused = reciprocal_rank_fusion(vector_ranked, lexical_ranked)
         output = []
