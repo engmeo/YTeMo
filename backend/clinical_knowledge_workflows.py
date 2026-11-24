@@ -113,7 +113,7 @@ class ClaimReview(BaseModel):
     appraisal_framework: str
     appraisal: dict = Field(min_length=1)
     rationale: str = Field(min_length=20, max_length=5000)
-    has_conflict_of_interest: bool = False
+    has_conflict_of_interest: bool
     source_quote_verified: bool = False
 
 
@@ -128,7 +128,7 @@ class ConflictCreate(BaseModel):
 class ConflictReview(BaseModel):
     decision: str = Field(pattern="^(RESOLVE|UNRESOLVED)$")
     rationale: str = Field(min_length=20, max_length=5000)
-    has_conflict_of_interest: bool = False
+    has_conflict_of_interest: bool
 
 
 class VersionRelationRequest(BaseModel):
@@ -136,6 +136,7 @@ class VersionRelationRequest(BaseModel):
     relation_type: str = Field(pattern="^(SUPERSEDES|UPDATE_OF|CORRECTION_OF|TRANSLATION_OF)$")
     rationale: str = Field(min_length=20, max_length=5000)
     decision: str = Field(pattern="^(CONFIRM|REJECT)$")
+    has_conflict_of_interest: bool
 
 
 class EvidenceRetrievalRequest(BaseModel):
@@ -760,6 +761,7 @@ VĂN BẢN NGUỒN KẾT THÚC.
         db.table("clinical_evidence_conflict_reviews").insert({
             "conflict_id": conflict_id, "reviewer_id": str(user.id),
             "decision": request.decision, "rationale": request.rationale,
+            "has_conflict_of_interest": request.has_conflict_of_interest,
         }).execute()
         reviews = db.table("clinical_evidence_conflict_reviews").select("reviewer_id,decision").eq(
             "conflict_id", conflict_id
@@ -842,6 +844,7 @@ VĂN BẢN NGUỒN KẾT THÚC.
         db.table("clinical_knowledge_document_relation_reviews").insert({
             "relation_id": relation["id"], "reviewer_id": str(user.id),
             "decision": request.decision, "rationale": request.rationale,
+            "has_conflict_of_interest": request.has_conflict_of_interest,
         }).execute()
         confirmations = db.table("clinical_knowledge_document_relation_reviews").select("reviewer_id,decision").eq(
             "relation_id", relation["id"]
