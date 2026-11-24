@@ -42,6 +42,18 @@ alter table public.companion_action_tasks enable row level security;
 revoke all on public.companion_action_tasks from public, anon, authenticated;
 grant all on public.companion_action_tasks to service_role;
 
+-- Approved review requests and timeline notes are persisted exactly once per action.
+alter table public.companion_needs
+    add column if not exists action_task_id uuid
+    references public.companion_action_tasks(id) on delete cascade;
+alter table public.companion_events
+    add column if not exists action_task_id uuid
+    references public.companion_action_tasks(id) on delete cascade;
+create unique index if not exists companion_needs_action_task_id_uidx
+    on public.companion_needs(action_task_id) where action_task_id is not null;
+create unique index if not exists companion_events_action_task_id_uidx
+    on public.companion_events(action_task_id) where action_task_id is not null;
+
 create or replace function public.claim_companion_action_tasks(p_now timestamptz, p_limit integer default 10)
 returns setof public.companion_action_tasks
 language plpgsql
