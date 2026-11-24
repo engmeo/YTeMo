@@ -121,7 +121,10 @@ class EvidenceStore:
             )
             if not same_identity:
                 raise ValueError("Evidence ID collision")
-            return existing
+            # Keep the most recently recorded representation for identical
+            # evidence identity (e.g. refreshed metadata/recorded_at).
+            self._items[evidence.evidence_id] = evidence
+            return evidence
         self._items[evidence.evidence_id] = evidence
         return evidence
 
