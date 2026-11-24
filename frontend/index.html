@@ -699,54 +699,6 @@ window.ytemoRunBackendDemo = async function () {
 };
 
 async function showSignedIn(user) {
-window.ytemoRunBackendDemo = async function () {
-  if (!currentUser) {
-    document.getElementById('loginScreen').hidden = false;
-    toast('Đăng nhập trước khi gửi yêu cầu thử nghiệm.');
-    return;
-  }
-  const button = document.getElementById('runBtn');
-  const log = document.getElementById('log');
-  const originalLabel = button ? button.textContent : 'GỬI YÊU CẦU THỬ';
-  if (button) { button.disabled = true; button.textContent = 'ĐANG GỌI BACKEND…'; }
-  log.replaceChildren();
-  const status = document.createElement('div');
-  status.className = 'logline current';
-  status.textContent = '[REQUEST] POST /chat — gửi yêu cầu thử nghiệm tới Companion backend…';
-  log.appendChild(status);
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 60000);
-  try {
-    const response = await fetchWithAuth('/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'Hãy giới thiệu ngắn gọn cách Companion của Y TẾ MỞ hỗ trợ người dùng xác định nhu cầu và bước chăm sóc tiếp theo. Nêu rõ giới hạn, không đưa ra chẩn đoán hoặc kê đơn.' }),
-      signal: controller.signal
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.detail || ('Backend HTTP ' + response.status));
-    status.classList.remove('current');
-    status.textContent = '[HTTP ' + response.status + '] Backend đã trả về dữ liệu thật.';
-    const reply = document.createElement('pre');
-    reply.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.7 var(--sans);margin:12px 0;color:inherit';
-    reply.textContent = data.reply || 'Backend không trả về nội dung.';
-    log.append(status, reply);
-    const meta = document.createElement('div');
-    meta.textContent = '[CONVERSATION] ' + (data.conversation_id || 'Không có ID');
-    log.appendChild(meta);
-    toast('Đã nhận phản hồi thật từ Companion backend.');
-  } catch (error) {
-    status.classList.remove('current');
-    status.textContent = '[API ERROR] ' + (error.name === 'AbortError' ? 'Quá thời gian chờ 60 giây.' : error.message);
-    log.appendChild(status);
-    toast('Không chạy được yêu cầu thử nghiệm.');
-  } finally {
-    window.clearTimeout(timeout);
-    if (button) { button.disabled = false; button.textContent = originalLabel; }
-  }
-};
-
-async function showSignedIn(user) {
   currentUser = user;
   authPanel.hidden = true;
   document.getElementById('loginScreen').hidden = true;
