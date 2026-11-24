@@ -41,6 +41,10 @@ def is_reviewable_status(status: str) -> bool:
     return status in {"DISCOVERED", "SOURCE_VERIFIED", "AI_REVIEWED"}
 
 
+def reviewer_is_independent(document_creator_id: str | None, reviewer_id: str) -> bool:
+    return not document_creator_id or str(document_creator_id) != str(reviewer_id)
+
+
 def automated_document_checks(metadata: dict, extracted_text: str | None = None) -> dict:
     """Conservative metadata/extraction checks; never a clinical review."""
     issues = []
@@ -112,6 +116,7 @@ class ReviewDecision(BaseModel):
     license_cleared: bool = False
     evidence_assessment: str = Field(default="", max_length=5000)
     limitations: str = Field(default="", max_length=3000)
+    has_conflict_of_interest: bool = False
 
 
 def build_router(db, auth_dependency):
@@ -225,6 +230,10 @@ def build_router(db, auth_dependency):
         doc = found.data[0]
         if not is_reviewable_status(str(doc.get("status") or "")):
             raise HTTPException(status_code=409, detail="Tài liệu ở trạng thái không cho phép thẩm định lại.")
+        if not reviewer_is_independent(doc.get("created_by"), str(user.id)):
+            raise HTTPException(status_code=403, detail="Người đăng ký tài liệu không được tự thẩm định tài liệu đó.")
+        if request.decision == "APPROVED" and request.has_conflict_of_interest:
+            raise HTTPException(status_code=409, detail="Reviewer có xung đột lợi ích không được phê duyệt tài liệu.")
         if request.decision == "APPROVED":
             if not request.source_document_verified or not request.version_current or not request.license_cleared:
                 raise HTTPException(status_code=409, detail="Reviewer phải xác minh tài liệu gốc, phiên bản hiện hành và quyền sử dụng trước khi phê duyệt.")
@@ -256,6 +265,7 @@ def build_router(db, auth_dependency):
                 "version_current": request.version_current, "license_cleared": request.license_cleared,
                 "evidence_assessment": request.evidence_assessment,
                 "limitations": request.limitations,
+                "has_conflict_of_interest": request.has_conflict_of_interest,
             }).execute()
             updated = db.table("clinical_knowledge_documents").update({
                 "status": new_status, "reviewed_at": utc_now(),
@@ -267,7 +277,8 @@ def build_router(db, auth_dependency):
                 "action": "CLINICAL_REVIEW_" + request.decision,
                 "details": {"status": new_status, "scope": request.scope, "rationale": request.rationale,
                             "evidence_assessment": request.evidence_assessment,
-                            "limitations": request.limitations},
+                            "limitations": request.limitations,
+                            "has_conflict_of_interest": request.has_conflict_of_interest},
             }).execute()
             return {"document": updated.data[0] if updated.data else None, "status": new_status,
                     "notice": "Tài liệu thuộc nhóm tác động cao chỉ được phê duyệt sau hai reviewer độc lập." if new_status == "AI_REVIEWED" else "Phê duyệt chỉ có hiệu lực trong approved_scope; không thay thế đánh giá lâm sàng tại từng ca."}
