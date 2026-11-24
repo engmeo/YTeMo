@@ -97,6 +97,15 @@ Dùng nguồn có API hoặc OA collection. Lưu metadata, license, provenance, 
 
 ### 3. Instruction–response
 
+Tạo instruction–response draft từ claim đã có cấu trúc:
+```bash
+cd backend
+python -m clinical_training.draft_sft_examples --input path/to/reviewed_claims.jsonl --output artifacts/clinical_sft_drafts.jsonl
+```
+
+Script tạo ví dụ cho STRONG/WEAK/CONFLICTING/INSUFFICIENT và giữ source/version/license. Tất cả đầu ra vẫn là `DRAFT`, chưa được phép training; phải có clinical review, source verification và privacy review trước khi đưa qua `prepare_dataset.py`.
+
+
 Không tự động biến toàn bộ tài liệu thành câu trả lời huấn luyện. Tạo ví dụ từ claim/tình huống đã được review, kèm source, license, evidence locator, reviewer và trạng thái.
 
 ### 4. Evidence-state training
