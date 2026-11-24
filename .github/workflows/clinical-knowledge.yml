@@ -159,7 +159,9 @@ jobs:
           from pathlib import Path
           files = sorted(Path("supabase/migrations").glob("*.sql"))
           versions = [path.name.split("_", 1)[0] for path in files]
-          if len(versions) != len(set(versions)):
-              raise SystemExit("Duplicate Supabase migration version prefix found")
+          duplicates = sorted({version for version in versions if versions.count(version) > 1})
+          if duplicates:
+              details = {version: [path.name for path in files if path.name.startswith(version + "_")] for version in duplicates}
+              raise SystemExit(f"Duplicate Supabase migration version prefixes: {details}")
           print(f"Validated {len(files)} unique migration versions")
           PY
