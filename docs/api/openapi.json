@@ -1473,6 +1473,11 @@
               }
             ],
             "title": "BHYT"
+          },
+          "persist_history": {
+            "type": "boolean",
+            "title": "Persist History",
+            "default": false
           }
         },
         "type": "object",
