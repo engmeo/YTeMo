@@ -82,6 +82,7 @@ jobs:
             backend/clinical_training/draft_sft_examples.py \
             backend/clinical_training/train_lora.py \
             backend/clinical_training/benchmark.py \
+            backend/clinical_training/score_benchmark.py \
             backend/clinical_training/download_models.py \
             backend/clinical_training/collect_europe_pmc.py
       - name: Run clinical governance and model gateway tests
@@ -97,7 +98,7 @@ jobs:
       - name: Run training data governance tests
         working-directory: backend/clinical_training
         run: |
-          python -m unittest -v test_prepare_dataset test_collect_europe_pmc test_draft_sft_examples
+          python -m unittest -v test_prepare_dataset test_collect_europe_pmc test_draft_sft_examples test_score_benchmark
       - name: Syntax-check frontend JavaScript
         run: |
           python - <<'PY'
