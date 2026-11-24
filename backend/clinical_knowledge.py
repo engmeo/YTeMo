@@ -32,10 +32,16 @@ def host_is_within(host: str, base_host: str) -> bool:
     return host == base_host or host.endswith("." + base_host)
 
 
+def initial_document_status(source_domain_matched: bool, checks_passed: bool) -> str:
+    """Domain match and extraction checks never authenticate a clinical document."""
+    return "DISCOVERED"
+
+
 def automated_document_checks(metadata: dict, extracted_text: str | None = None) -> dict:
     """Conservative metadata/extraction checks; never a clinical review."""
     issues = []
-    for key in ("title", "publisher", "document_type", "source_url", "published_at"):
+    for key in ("title", "publisher", "document_type", "source_url", "published_at",
+                "knowledge_domain", "jurisdiction", "target_population"):
         if not str(metadata.get(key) or "").strip():
             issues.append(f"MISSING_{key.upper()}")
     source_url = str(metadata.get("source_url") or "")
@@ -129,7 +135,7 @@ def build_router(db, auth_dependency):
         source_domain_matched = bool(matched)
         # A matching domain does not authenticate a particular document, its version,
         # legal status, or clinical correctness. Never promote on host match alone.
-        status = "DISCOVERED"
+        status = initial_document_status(source_domain_matched, checks["passed"])
         row = {
             **metadata,
             "source_url": source_url,
