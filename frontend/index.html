@@ -1109,6 +1109,7 @@ async function loadAnalysisHistory() {
     meta.style.cssText = 'display:block;color:var(--muted);margin-top:4px';
     meta.textContent = (run.created_at ? new Date(run.created_at).toLocaleString('vi-VN') : '') + ' · ' + (run.agent_keys || []).join(', ');
     info.append(title, meta);
+    const actions = document.createElement('div'); actions.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
     const view = document.createElement('button'); view.type = 'button'; view.className = 'secondary'; view.textContent = 'Xem kết quả';
     view.addEventListener('click', async () => {
       view.disabled = true;
@@ -1119,7 +1120,18 @@ async function loadAnalysisHistory() {
       } catch (error) { healthStatus(runHealthStatus, 'Không tải được kết quả: ' + error.message, true); }
       finally { view.disabled = false; }
     });
-    row.append(info, view); analysisHistoryHost.appendChild(row);
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'secondary'; remove.textContent = 'Xóa';
+    remove.addEventListener('click', async () => {
+      if (!window.confirm('Xóa kết quả phân tích đã lưu? Thao tác không thể hoàn tác.')) return;
+      remove.disabled = true;
+      try {
+        await healthRequest('/healthcare/analysis-runs/' + encodeURIComponent(run.id), { method: 'DELETE' });
+        await loadAnalysisHistory();
+        healthStatus(runHealthStatus, 'Đã xóa kết quả khỏi lịch sử tài khoản.');
+      } catch (error) { remove.disabled = false; healthStatus(runHealthStatus, 'Không xóa được kết quả: ' + error.message, true); }
+    });
+    actions.append(view, remove);
+    row.append(info, actions); analysisHistoryHost.appendChild(row);
   });
 }
 analysisHistoryButton.addEventListener('click', async () => {
