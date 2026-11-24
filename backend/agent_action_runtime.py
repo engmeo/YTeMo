@@ -75,7 +75,8 @@ def propose_action(db, user_id: str, action: str, arguments: dict[str, Any]) -> 
         "arguments": arguments,
         "status": "awaiting_approval" if spec["approval_required"] else "queued",
         "requires_approval": spec["approval_required"],
-        "idempotency_key": idem,\n        "scheduled_at": arguments.get("due_at") if action == "create_reminder" else datetime.now(timezone.utc).isoformat(),
+        "idempotency_key": idem,
+        "scheduled_at": arguments.get("due_at") if action == "create_reminder" else datetime.now(timezone.utc).isoformat(),
     }
     result = db.table("companion_action_tasks").insert(row).execute()
     if not result.data:
