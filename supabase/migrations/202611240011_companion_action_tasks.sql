@@ -93,7 +93,7 @@ begin
        and (t.approved_at is not null or t.requires_approval = false)
      order by t.created_at
      for update skip locked
-     limit pg_catalog.greatest(1, pg_catalog.least(p_limit, 50))
+     limit case when p_limit is null or p_limit < 1 then 1 when p_limit > 50 then 50 else p_limit end
   )
   update public.companion_action_tasks as t
      set status = 'running',
