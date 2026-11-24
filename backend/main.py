@@ -35,6 +35,7 @@ from healthcare_specialists import (
 from healthcare_cost_intelligence import (
     CostIntelligenceError, build_cost_intelligence_report,
 )
+from clinical_knowledge import build_router as build_clinical_knowledge_router
 
 load_dotenv()
 
