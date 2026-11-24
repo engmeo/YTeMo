@@ -2,7 +2,7 @@
 
 ## Mục tiêu
 
-Y TẾ MỞ giữ parser nhẹ hiện tại cho request thông thường. Khi cần đọc PDF scan, bảng biểu và tài liệu có bố cục phức tạp, có thể bật **Docling** trong một document worker riêng.
+Y TẾ MỞ giữ parser nhẹ hiện tại cho request thông thường. Khi cần đọc PDF scan, bảng biểu và tài liệu có bố cục phức tạp, có thể bật adapter **Docling**. Ở phiên bản hiện tại, adapter vẫn chạy trong tiến trình FastAPI; worker tách biệt là bước triển khai tiếp theo, chưa được xây xong.
 
 - Dự án: [docling-project/docling](https://github.com/docling-project/docling)
 - Giấy phép mã nguồn: MIT (kiểm tra lại license của từng model/artifact được tải kèm trước khi phân phối).
@@ -11,23 +11,20 @@ Y TẾ MỞ giữ parser nhẹ hiện tại cho request thông thường. Khi c�
 
 Tài liệu API chính thức: https://docling-project.github.io/docling/
 
-## Cài đặt tách biệt
+## Cài đặt tùy chọn
 
-Không thêm Docling vào `backend/requirements.txt` của API chính. Docling tải model và có thể tiêu tốn RAM/CPU đáng kể. Cài trong môi trường worker:
+Không thêm Docling vào `backend/requirements.txt` của API chính. Nếu muốn thử adapter, cài `requirements-document-ai.txt` trong **chính môi trường Python chạy backend**; cài ở virtualenv khác sẽ không làm API nhìn thấy thư viện. Docling tải model và có thể tiêu tốn RAM/CPU đáng kể:
 
 ```powershell
 cd backend
-python -m venv .venv-document-ai
-.\.venv-document-ai\Scripts\Activate.ps1
-python -m pip install --upgrade pip
 python -m pip install -r requirements-document-ai.txt
 ```
 
-Lần chạy đầu có thể cần tải model artifacts. Hãy kiểm thử trên bản sao hồ sơ giả lập/đã khử định danh, đo RAM, thời gian xử lý và độ chính xác tiếng Việt trước khi mở cho người dùng.
+Docling OCR được cấu hình dùng Tesseract CLI với `vie` + `eng`. Máy chạy backend phải có Tesseract và hai bộ `traineddata` tương ứng. Nếu thiếu, xử lý PDF scan sẽ báo lỗi rõ ràng. Lần chạy đầu có thể cần tải model artifacts. Hãy thử bằng hồ sơ giả lập/đã khử định danh, đo RAM, thời gian xử lý và độ chính xác tiếng Việt.
 
 ## Bật chế độ Docling
 
-Chỉ bật trên môi trường đã cài Docling:
+Chỉ bật trên môi trường backend đã cài Docling và Tesseract CLI:
 
 ```env
 YTEMO_DOCUMENT_ENGINE=docling
@@ -43,7 +40,11 @@ Mặc định không đặt biến này: API tiếp tục dùng parser hiện c�
 4. Lưu provenance theo trang, đoạn/bảng và file gốc ở tầng workflow; yêu cầu con người đối chiếu ảnh gốc khi OCR không chắc chắn.
 5. Dữ liệu scan, bảng xét nghiệm và thuốc cần bộ test chuyên gia riêng; không lấy việc parser chạy thành công làm bằng chứng chính xác lâm sàng.
 
-## Tiêu chí nghiệm thu trước production
+## Trạng thái triển khai và tiêu chí nghiệm thu trước production
+
+**Chưa bật trên production.** Vì adapter hiện chạy đồng bộ trong tiến trình API, không được bật trên Render production trước khi tách thành worker có giới hạn concurrency, timeout, RAM và hàng đợi. Việc bật biến môi trường một mình không tạo ra worker riêng.
+
+
 
 - Bộ test PDF điện tử, PDF scan tiếng Việt, DOCX có bảng, file lỗi, file mã hóa và file >10 MB.
 - Đo tỷ lệ trích xuất đúng theo trường (tên xét nghiệm, kết quả, đơn vị, khoảng tham chiếu, ngày, tên thuốc, hàm lượng).
