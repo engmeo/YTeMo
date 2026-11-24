@@ -57,8 +57,8 @@ class DB:
 def test_proposal_requires_explicit_approval_and_is_idempotent():
     db = DB()
     due = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-    first = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email"})
-    second = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email"})
+    first = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email", "email_consent": True})
+    second = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email", "email_consent": True})
     assert first["status"] == "awaiting_approval"
     assert second["id"] == first["id"]
     assert len(db.rows) == 1
@@ -69,7 +69,7 @@ def test_proposal_requires_explicit_approval_and_is_idempotent():
 def test_cannot_approve_another_users_action():
     db = DB()
     due = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-    action = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email"})
+    action = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email", "email_consent": True})
     with pytest.raises(LookupError):
         approve_action(db, "owner-b", action["id"])
 
@@ -81,20 +81,20 @@ def test_unknown_action_is_rejected():
 
 def test_reminder_requires_timezone_aware_timestamp():
     with pytest.raises(ActionValidationError):
-        propose_action(DB(), "owner-a", "create_reminder", {"title": "Tái khám", "due_at": "2026-12-01T09:00:00", "delivery_channel": "email"})
+        propose_action(DB(), "owner-a", "create_reminder", {"title": "Tái khám", "due_at": "2026-12-01T09:00:00", "delivery_channel": "email", "email_consent": True})
 
 
 def test_reminder_requires_explicit_email_channel():
     due = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
     with pytest.raises(ActionValidationError, match="delivery_channel"):
         propose_action(DB(), "owner-a", "create_reminder", {
-            "title": "Tái khám", "due_at": due, "delivery_channel": "in_app"
+            "title": "Tái khám", "due_at": due, "delivery_channel": "in_app", "email_consent": True
         })
 
 
 def test_rejection_closes_pending_proposal():
     db = DB()
     due = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-    action = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email"})
+    action = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email", "email_consent": True})
     rejected = reject_action(db, "owner-a", action["id"])
     assert rejected["status"] == "rejected"
