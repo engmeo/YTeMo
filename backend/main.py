@@ -377,13 +377,13 @@ def chat_endpoint(request: ChatRequest, stream: bool = False, user=Depends(get_c
                 for item in chat_events(request.message, history, evidence_context):
                     event_name = item.get("event", "token")
                     if event_name == "status":
-                        yield "event: status\\ndata: " + json.dumps({"message": item.get("message", "")}, ensure_ascii=False) + "\\n\\n"
+                        yield "event: status\ndata: " + json.dumps({"message": item.get("message", "")}, ensure_ascii=False) + "\n\n"
                         continue
                     token = item.get("token", "")
                     if not token:
                         continue
                     chunks.append(token)
-                    yield "event: token\\ndata: " + json.dumps({"token": token}, ensure_ascii=False) + "\\n\\n"
+                    yield "event: token\ndata: " + json.dumps({"token": token}, ensure_ascii=False) + "\n\n"
                 streamed_reply = "".join(chunks).strip()
                 if not streamed_reply:
                     raise RuntimeError("AI returned an empty streamed response.")
@@ -395,15 +395,15 @@ def chat_endpoint(request: ChatRequest, stream: bool = False, user=Depends(get_c
                 db_client.table("conversations").update({
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 }).eq("id", conversation_id).eq("user_id", user_id).execute()
-                yield "event: done\\ndata: " + json.dumps({
+                yield "event: done\ndata: " + json.dumps({
                     "conversation_id": conversation_id,
                     "evidence_retrieval": evidence_result,
-                }, ensure_ascii=False, default=str) + "\\n\\n"
+                }, ensure_ascii=False, default=str) + "\n\n"
             except Exception as stream_error:
                 print("CHAT STREAM ERROR:", type(stream_error).__name__, flush=True)
-                yield "event: error\\ndata: " + json.dumps({
+                yield "event: error\ndata: " + json.dumps({
                     "detail": "Dịch vụ AI bị gián đoạn. Nội dung chưa hoàn tất không được lưu thành câu trả lời."
-                }, ensure_ascii=False) + "\\n\\n"
+                }, ensure_ascii=False) + "\n\n"
 
         return StreamingResponse(
             event_stream(),
