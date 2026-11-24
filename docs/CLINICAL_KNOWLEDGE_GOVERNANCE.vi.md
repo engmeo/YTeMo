@@ -114,6 +114,20 @@ Trong code hiện tại, trạng thái mới đăng ký luôn là DISCOVERED. C�
 
 Các domain có `required_reviewers = 2` (guideline, specialty, medication, diagnostics) cần hai reviewer độc lập. Reviewer phải có hồ sơ chuyên môn được xác minh ngoài hệ thống; chỉ bật `credential_verified` sau khi tổ chức xác thực giấy phép/chứng chỉ, phạm vi hành nghề và chuyên khoa. Tài khoản `knowledge_admin` không có quyền phê duyệt lâm sàng.
 
+Sau khi tổ chức xác minh độc lập giấy phép/chứng chỉ, quản trị viên có thể cấp quyền bằng SQL (thay các placeholder bằng hồ sơ đã xác minh; không tự đặt `credential_verified=true`):
+
+```sql
+insert into public.clinical_knowledge_reviewers
+  (user_id, role, specialties, credential_type, credential_identifier,
+   credential_verified, credential_verified_at, credential_verified_by, is_active)
+values
+  ('<REVIEWER_AUTH_UUID>', 'physician', array['cardiology'],
+   '<LICENSE_TYPE>', '<VERIFIED_LICENSE_NUMBER>',
+   true, now(), '<VERIFYING_ADMIN_AUTH_UUID>', true);
+```
+
+Đây là thao tác quản trị có trách nhiệm pháp lý/tổ chức; phần mềm hiện không kết nối cơ quan cấp phép để tự xác minh credential.
+
 Reviewer phải ghi:
 - Xác minh bản tài liệu gốc.
 - Xác minh phiên bản/hiệu lực hiện hành.
