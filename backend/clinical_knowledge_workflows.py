@@ -215,7 +215,7 @@ def retrieve_approved_evidence(db, request: EvidenceRetrievalRequest) -> dict:
         doc = docs.get(claim["document_id"])
         if not doc or request.scope not in (doc.get("approved_scope") or []):
             continue
-        if request.jurisdiction not in {doc.get("jurisdiction"), "GLOBAL"}:
+        if doc.get("jurisdiction") not in {request.jurisdiction, "GLOBAL"}:
             continue
         if claim.get("jurisdiction") and claim["jurisdiction"] not in {request.jurisdiction, "GLOBAL"}:
             continue
