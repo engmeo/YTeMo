@@ -26,6 +26,7 @@ on:
       - "backend/agent.py"
       - "backend/multi_agent_orchestrator.py"
       - "backend/test_multi_agent_orchestrator.py"
+      - "docs/MULTI_AGENT_LLM_ARCHITECTURE.vi.md"
       - "backend/test_model_intelligence.py"
       - "backend/test_agent_orchestration.py"
       - "backend/memory_conflict_engine.py"
