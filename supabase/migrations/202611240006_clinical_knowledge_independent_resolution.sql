@@ -1,3 +1,7 @@
+alter table public.clinical_knowledge_document_relations
+  add column if not exists review_status text not null default 'UNDER_REVIEW'
+    check (review_status in ('UNDER_REVIEW','CONFIRMED','REJECTED'));
+
 -- Independent confirmation for document-version links and evidence-conflict resolution.
 create table if not exists public.clinical_knowledge_document_relation_reviews (
   id uuid primary key default gen_random_uuid(),
