@@ -11,12 +11,13 @@ Migration history của project trả về rỗng dù một số bảng nền đ
 1. 202611240002_healthcare_document_storage.sql — tạo bảng metadata hồ sơ y tế và private Storage bucket healthcare-documents.
 2. 202611240010_healthcare_analysis_history.sql — tạo lịch sử phân tích; FK tham chiếu healthcare_documents từ migration 002.
 3. 202611240011_companion_action_tasks.sql — tạo action queue, retry/lease fields, RPC claim; bổ sung unique action_task_id vào companion_needs và companion_events.
+4. 202611240012_lockdown_rls_auto_enable.sql — thu hồi EXECUTE của public/anon/authenticated trên hàm event-trigger rls_auto_enable nếu hàm tồn tại.
 
 Migration nền 202611180001_companion_persistence.sql phải có hai bảng companion_needs và companion_events trước khi chạy migration 011. Hai bảng này đã được xác nhận tồn tại trên project beta.
 
 ## Đã thực hiện
 
-Chưa áp dụng migration nào trong lần kiểm tra này. Đây là tài liệu và kế hoạch an toàn; thay đổi DB chỉ chạy sau khi xác nhận đúng project và dependency state.
+Các migration 002, 010, 011 và 012 là phần đang cần triển khai trên beta. Chưa áp dụng trong lần kiểm tra này; chỉ chạy sau khi xác nhận đúng project và dependency state.
 
 ## Quy trình CLI
 
@@ -35,6 +36,7 @@ Mở Supabase Dashboard của đúng project y-te-mo-beta → SQL Editor. Chạy
 1. supabase/migrations/202611240002_healthcare_document_storage.sql
 2. supabase/migrations/202611240010_healthcare_analysis_history.sql
 3. supabase/migrations/202611240011_companion_action_tasks.sql
+4. supabase/migrations/202611240012_lockdown_rls_auto_enable.sql
 
 Không chạy song song. Không chạy file nếu bảng prerequisite không tồn tại hoặc nếu bảng đã tồn tại với schema khác. Không chạy các file 003–009 trong cùng lượt này.
 
