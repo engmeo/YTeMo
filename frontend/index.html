@@ -517,19 +517,19 @@ window.ytemoApiHealth = async function () {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 12000);
   try {
-    const response = await fetch(\`\${API_BASE}/health\`, {
+    const response = await fetch(API_BASE + '/health', {
       headers: { 'Accept': 'application/json' }, cache: 'no-store', signal: controller.signal
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.status !== 'healthy') throw new Error(data.detail || \`Backend HTTP \${response.status}\`);
+    if (!response.ok || data.status !== 'healthy') throw new Error(data.detail || ('Backend HTTP ' + response.status));
     return { ...data, api_base: API_BASE };
   } finally { window.clearTimeout(timer); }
 };
 window.ytemoShowApiStatus = async function () {
   try {
     const health = await window.ytemoApiHealth();
-    const configResponse = await fetch(\`\${API_BASE}/public-config\`, { cache: 'no-store' });
-    if (!configResponse.ok) throw new Error(\`public-config HTTP \${configResponse.status}\`);
+    const configResponse = await fetch(API_BASE + '/public-config', { cache: 'no-store' });
+    if (!configResponse.ok) throw new Error('public-config HTTP ' + configResponse.status);
     const config = await configResponse.json();
     const panel = document.createElement('section');
     panel.style.cssText = 'position:fixed;z-index:1000;inset:10% 8%;overflow:auto;background:#fbfaf6;border:1px solid #9eaaa2;box-shadow:0 20px 80px #142c3160;padding:28px;border-radius:8px';
