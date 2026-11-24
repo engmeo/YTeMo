@@ -129,7 +129,7 @@ values
 
 Đây là thao tác quản trị có trách nhiệm pháp lý/tổ chức; phần mềm hiện không kết nối cơ quan cấp phép để tự xác minh credential.
 
-Reviewer phải độc lập với người đăng ký tài liệu và khai báo xung đột lợi ích; reviewer có xung đột lợi ích không được phê duyệt.
+Reviewer phải độc lập với người đăng ký tài liệu và khai báo xung đột lợi ích trong từng quyết định; reviewer có xung đột lợi ích không được thực hiện quyết định thẩm định.
 
 Reviewer phải ghi:
 - Xác minh bản tài liệu gốc.
@@ -245,6 +245,7 @@ Các migration phải chạy đúng thứ tự, dùng version duy nhất:
 5. `202611240005_clinical_knowledge_ingestion_evidence_workflows.sql`
 6. `202611240006_clinical_knowledge_independent_resolution.sql`
 7. `202611240007_clinical_knowledge_review_state_precision.sql`
+8. `202611240008_clinical_knowledge_conflict_declarations.sql`
 
 Hai migration Clinical Knowledge ban đầu từng bị trùng version với migration core/document storage; đã đổi thành 003 và 004 để tránh xung đột version của Supabase CLI. Không chạy các file cũ có tên 001/002 của Clinical Knowledge nếu chúng còn tồn tại trong bản checkout cũ.
 
