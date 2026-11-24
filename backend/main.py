@@ -7,13 +7,15 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, UploadFile, File
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from dataclasses import asdict
 from supabase import create_client
 
-from agent import chat
+from agent import chat, chat_stream, chat_events
+from multi_agent_orchestrator import run_multi_agent
 from agent_core import AgentCore, AgentCoreError
 from companion_core import (
     CompanionCore, ConsentScope, NeedStatus, UserPriority,
@@ -32,6 +34,9 @@ from healthcare_documents import (
 )
 from healthcare_specialists import (
     DEFAULT_AGENT_KEYS, HealthcareAgentService,
+)
+from agent_action_runtime import (
+    ActionValidationError, propose_action, approve_action, reject_action, list_actions,
 )
 from healthcare_cost_intelligence import (
     CostIntelligenceError, build_cost_intelligence_report,
@@ -112,6 +117,10 @@ app.add_middleware(
 security = HTTPBearer()
 
 
+class AgentActionProposalRequest(BaseModel):
+    action: str = Field(min_length=1, max_length=80)
+    arguments: dict = Field(default_factory=dict)
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     conversation_id: Optional[str] = None
@@ -138,6 +147,50 @@ app.include_router(build_clinical_knowledge_workflow_router(db_client, db_client
 app.include_router(build_clinical_intelligence_router(db_client, get_current_user))
 
 
+@app.post("/companion/actions/propose")
+def propose_companion_action(request: AgentActionProposalRequest, user=Depends(get_current_user)):
+    try:
+        return {"action": propose_action(db_client, str(user.id), request.action, request.arguments)}
+    except ActionValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except Exception as exc:
+        print("ACTION PROPOSAL ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=500, detail="Could not create action proposal")
+
+
+@app.get("/companion/actions")
+def get_companion_actions(limit: int = 50, user=Depends(get_current_user)):
+    try:
+        return {"actions": list_actions(db_client, str(user.id), limit)}
+    except Exception as exc:
+        print("ACTION LIST ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=500, detail="Could not load action proposals")
+
+
+@app.post("/companion/actions/{action_id}/approve")
+def approve_companion_action(action_id: str, user=Depends(get_current_user)):
+    try:
+        return {"action": approve_action(db_client, str(user.id), action_id)}
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Action proposal not found")
+    except ActionValidationError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except Exception as exc:
+        print("ACTION APPROVAL ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=500, detail="Could not approve action")
+
+
+@app.post("/companion/actions/{action_id}/reject")
+def reject_companion_action(action_id: str, user=Depends(get_current_user)):
+    try:
+        return {"action": reject_action(db_client, str(user.id), action_id)}
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Pending action proposal not found")
+    except Exception as exc:
+        print("ACTION REJECTION ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=500, detail="Could not reject action")
+
+
 @app.get("/")
 def root():
     return {"platform": "Y TE MO", "status": "running", "version": "0.5.0"}
@@ -159,6 +212,26 @@ def public_config():
         "supabase_url": SUPABASE_URL,
         "supabase_publishable_key": SUPABASE_PUBLISHABLE_KEY
     }
+
+
+@app.get("/conversations")
+def list_conversations(limit: int = 30, user=Depends(get_current_user)):
+    """List only the authenticated user's conversation summaries."""
+    user_id = str(user.id)
+    bounded_limit = max(1, min(int(limit), 100))
+    try:
+        result = (
+            db_client.table("conversations")
+            .select("id,title,status,created_at,updated_at")
+            .eq("user_id", user_id)
+            .order("updated_at", desc=True)
+            .limit(bounded_limit)
+            .execute()
+        )
+        return {"conversations": result.data or []}
+    except Exception as exc:
+        print("CONVERSATION LIST ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=503, detail="Không thể tải lịch sử hội thoại.") from exc
 
 
 @app.get("/conversations/{conversation_id}/messages")
@@ -190,7 +263,7 @@ def get_conversation_messages(
 
 
 @app.post("/chat")
-def chat_endpoint(request: ChatRequest, user=Depends(get_current_user)):
+def chat_endpoint(request: ChatRequest, stream: bool = False, user=Depends(get_current_user)):
     user_id = str(user.id)
 
     # 1. Find or create a conversation owned by the authenticated user.
@@ -315,7 +388,54 @@ def chat_endpoint(request: ChatRequest, user=Depends(get_current_user)):
         "content": request.message
     }).execute()
 
-    # 4. Call the discovery agent.
+    # 4. Stream provider deltas when requested. The non-streaming JSON contract
+    # remains unchanged for existing clients and automated integrations.
+    if stream:
+        def event_stream():
+            chunks = []
+            try:
+                for item in chat_events(request.message, history, evidence_context):
+                    event_name = item.get("event", "token")
+                    if event_name == "status":
+                        yield "event: status\ndata: " + json.dumps({"message": item.get("message", "")}, ensure_ascii=False) + "\n\n"
+                        continue
+                    token = item.get("token", "")
+                    if not token:
+                        continue
+                    chunks.append(token)
+                    yield "event: token\ndata: " + json.dumps({"token": token}, ensure_ascii=False) + "\n\n"
+                streamed_reply = "".join(chunks).strip()
+                if not streamed_reply:
+                    raise RuntimeError("AI returned an empty streamed response.")
+                db_client.table("messages").insert({
+                    "conversation_id": conversation_id,
+                    "sender_type": "assistant",
+                    "content": streamed_reply
+                }).execute()
+                db_client.table("conversations").update({
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }).eq("id", conversation_id).eq("user_id", user_id).execute()
+                yield "event: done\ndata: " + json.dumps({
+                    "conversation_id": conversation_id,
+                    "evidence_retrieval": evidence_result,
+                }, ensure_ascii=False, default=str) + "\n\n"
+            except Exception as stream_error:
+                print("CHAT STREAM ERROR:", type(stream_error).__name__, flush=True)
+                yield "event: error\ndata: " + json.dumps({
+                    "detail": "Dịch vụ AI bị gián đoạn. Nội dung chưa hoàn tất không được lưu thành câu trả lời."
+                }, ensure_ascii=False) + "\n\n"
+
+        return StreamingResponse(
+            event_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache, no-transform",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+            },
+        )
+
+    # 5. Compatibility JSON response.
     try:
         reply = chat(request.message, history, evidence_context)
     except Exception as e:
@@ -547,19 +667,24 @@ class ProposalStatusRequest(BaseModel):
     status: ProposalStatus
 
 
+# Analysis output is persisted only after the authenticated user explicitly opts in.
 class HealthcareAnalysisRequest(BaseModel):
     document_text: str = Field(min_length=1, max_length=200000)
+    document_id: Optional[str] = None
+    persist_history: bool = False
     agent_keys: Optional[list[str]] = Field(default=None, min_length=1)
     # Structured financial inputs are optional and must be explicitly supplied.
     cost_items: Optional[list[dict]] = None
     # BHYT is arithmetic only; eligibility/rate must be verified by the caller.
     bhyt: Optional[dict] = None
+    # Explicit opt-in: document text will be sent to the configured external/local LLM provider.
+    allow_external_llm_analysis: bool = False
 
 
 
 # ---------------------------------------------------------------------------
 # Healthcare document extraction and specialist-agent orchestration.
-# Uploaded files are processed in memory; this endpoint does not persist them.
+# Uploaded files are validated in memory, then stored in the private owner-scoped healthcare-documents bucket.
 # ---------------------------------------------------------------------------
 
 # STT16_PERSISTENT_STORAGE: upload file bytes and owner-scoped metadata.
@@ -648,12 +773,80 @@ def list_healthcare_agents(user=Depends(get_current_user)):
     }
 
 
+@app.get("/healthcare/analysis-runs")
+def list_healthcare_analysis_runs(limit: int = 30, user=Depends(get_current_user)):
+    try:
+        result = (
+            db_client.table("healthcare_analysis_runs")
+            .select("id,source_document_id,agent_keys,status,created_at")
+            .eq("user_id", str(user.id))
+            .order("created_at", desc=True)
+            .limit(max(1, min(int(limit), 100)))
+            .execute()
+        )
+        return {"runs": result.data or []}
+    except Exception as exc:
+        print("HEALTHCARE ANALYSIS HISTORY ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=503, detail="Lịch sử phân tích chưa sẵn sàng. Kiểm tra migration healthcare_analysis_runs.") from exc
+
+
+@app.get("/healthcare/analysis-runs/{run_id}")
+def get_healthcare_analysis_run(run_id: str, user=Depends(get_current_user)):
+    try:
+        result = (
+            db_client.table("healthcare_analysis_runs")
+            .select("id,source_document_id,agent_keys,status,result,created_at")
+            .eq("id", run_id)
+            .eq("user_id", str(user.id))
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Không tìm thấy lần phân tích.")
+        return {"run": result.data[0]}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print("HEALTHCARE ANALYSIS DETAIL ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=503, detail="Không thể tải lần phân tích.") from exc
+
+
+@app.delete("/healthcare/analysis-runs/{run_id}")
+def delete_healthcare_analysis_run(run_id: str, user=Depends(get_current_user)):
+    try:
+        deleted = (
+            db_client.table("healthcare_analysis_runs")
+            .delete()
+            .eq("id", run_id)
+            .eq("user_id", str(user.id))
+            .select("id")
+            .execute()
+        )
+        if not deleted.data:
+            raise HTTPException(status_code=404, detail="Không tìm thấy lần phân tích.")
+        return {"deleted": True, "id": run_id}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print("HEALTHCARE ANALYSIS DELETE ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=503, detail="Không thể xóa lần phân tích.") from exc
+
+
 @app.post("/healthcare/agents/run")
 def run_healthcare_agents(
     request: HealthcareAnalysisRequest,
     user=Depends(get_current_user),
 ):
     try:
+        source_document_id = request.document_id
+        if source_document_id:
+            owned_document = (
+                db_client.table("healthcare_documents").select("id")
+                .eq("id", source_document_id).eq("user_id", str(user.id))
+                .limit(1).execute()
+            )
+            if not owned_document.data:
+                raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ thuộc tài khoản.")
         result = healthcare_agent_service.run(
             request.document_text,
             request.agent_keys,
@@ -702,6 +895,61 @@ def run_healthcare_agents(
             lab_items=lab_items,
             bhyt=bhyt,
         )
+
+        if request.allow_external_llm_analysis:
+            if os.getenv("YTEMO_ALLOW_EXTERNAL_DOCUMENT_LLM", "false").strip().lower() not in {"1", "true", "yes", "on"}:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Phân tích LLM hồ sơ chưa được quản trị viên bật. Dữ liệu hồ sơ chưa được gửi tới nhà cung cấp AI.",
+                )
+            if not (os.getenv("YTEMO_MODEL_BACKEND") or os.getenv("OPENROUTER_API_KEY")):
+                raise HTTPException(status_code=503, detail="Model Gateway chưa được cấu hình.")
+            aliases = {"lab": "laboratory", "bhyt": "insurance"}
+            requested = request.agent_keys or list(DEFAULT_AGENT_KEYS)
+            llm_agents = [aliases.get(key, key) for key in requested]
+            llm_result = run_multi_agent(
+                message="Phân tích hồ sơ y tế người dùng cung cấp. Chỉ trích xuất, đối chiếu và nêu giới hạn theo từng chuyên môn.",
+                evidence_context="KHÔNG CÓ CLINICAL KNOWLEDGE CLAIM ĐÃ ĐƯỢC DUYỆT CHO LƯỢT PHÂN TÍCH NÀY.",
+                document_context=request.document_text,
+                requested_agents=llm_agents,
+            )
+            result["llm_multi_agent_analysis"] = llm_result
+            result["llm_multi_agent_analysis"]["external_provider_opt_in"] = True
+        else:
+            result["llm_multi_agent_analysis"] = {
+                "status": "not_requested",
+                "message": "Chưa gửi nội dung hồ sơ tới LLM. Chỉ chạy các extractor và phép tính xác định hiện có.",
+            }
+        if request.persist_history:
+            try:
+                run_status = result.get("status")
+                if run_status not in {"completed", "partial", "failed"}:
+                    run_status = "completed"
+                history_insert = db_client.table("healthcare_analysis_runs").insert({
+                    "user_id": str(user.id),
+                    "source_document_id": source_document_id,
+                    "agent_keys": request.agent_keys or list(DEFAULT_AGENT_KEYS),
+                    "status": run_status,
+                    "result": result,
+                }).select("id").execute()
+                history_row = (history_insert.data or [{}])[0]
+                result["analysis_history"] = {
+                    "persisted": bool(history_row.get("id")),
+                    "id": history_row.get("id"),
+                }
+            except Exception as history_error:
+                print("HEALTHCARE ANALYSIS NOT PERSISTED:", type(history_error).__name__, flush=True)
+                result["analysis_history"] = {
+                    "persisted": False,
+                    "reason": "MIGRATION_REQUIRED",
+                    "message": "Kết quả hiện chỉ có trong phiên này; cần áp dụng migration 202611240010_healthcare_analysis_history.sql để lưu lịch sử.",
+                }
+        else:
+            result["analysis_history"] = {
+                "persisted": False,
+                "reason": "NOT_REQUESTED",
+                "message": "Bạn chưa chọn lưu kết quả vào lịch sử tài khoản.",
+            }
         return result
     except HTTPException:
         raise

@@ -185,13 +185,28 @@ Backend đã có các workflow kỹ thuật cho source discovery, bản gốc b�
 Tài liệu kiến trúc, quy trình, API và giới hạn: [docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md](docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md).
 Evaluation protocol và deterministic harness: [docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md](docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md). Chưa có expert-adjudicated clinical gold dataset hoặc external clinical validation.
 
-Migrations (chạy theo thứ tự):
+Migrations (kiểm tra dependency trước khi áp dụng; xem [hướng dẫn Supabase](docs/SUPABASE_MIGRATIONS.vi.md)):
+- `202611180001_companion_persistence.sql`
+- `202611180002_agent_memory_engine.sql`
+- `202611180003_memory_intelligence_layer.sql`
+- `202611190001_memory_transactional_write.sql`
+- `202611190002_memory_transactional_review_delete.sql`
+- `202611240001_core_backend_persistence.sql`
+- `202611240002_healthcare_document_storage.sql`
 - `202611240003_clinical_knowledge_governance.sql`
 - `202611240004_evidence_grade_clinical_knowledge.sql`
 - `202611240005_clinical_knowledge_ingestion_evidence_workflows.sql`
 - `202611240006_clinical_knowledge_independent_resolution.sql`
 - `202611240007_clinical_knowledge_review_state_precision.sql`
 - `202611240008_clinical_knowledge_conflict_declarations.sql`
+- `202611240009_clinical_evidence_intelligence.sql`
+- `202611240010_healthcare_analysis_history.sql`
+- `202611240011_companion_action_tasks.sql`
+- `202611240012_lockdown_rls_auto_enable.sql`
+- `202611240013_healthcare_document_service_grants.sql`
+- `202611240014_fix_action_claim_batch_bound.sql`
+
+Không chạy `supabase db push` hàng loạt khi remote migration history chưa đồng bộ với schema thực tế.
 
 
 ## 10. Đóng góp

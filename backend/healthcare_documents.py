@@ -140,6 +140,45 @@ def extract_medical_document(filename: str, data: bytes) -> DocumentExtraction:
     if len(data) > MAX_DOCUMENT_BYTES:
         raise DocumentExtractionError("File vượt giới hạn 10 MB.")
 
+    # Optional layout-aware extraction. Keep the lightweight parser as the
+    # default for API latency and small-memory deployments; Docling belongs in
+    # an isolated worker and is enabled explicitly per deployment.
+    import os
+    if os.getenv("YTEMO_DOCUMENT_ENGINE", "builtin").strip().lower() == "docling":
+        if extension not in {".pdf", ".docx", ".txt", ".md"}:
+            raise DocumentExtractionError("Docling không hỗ trợ định dạng file này.")
+        try:
+            from document_ai_adapter import extract_document_with_docling
+            parsed = extract_document_with_docling(safe_name, data)
+        except Exception as exc:
+            raise DocumentExtractionError(
+                f"Docling không thể xử lý hồ sơ: {type(exc).__name__}: {str(exc)[:300]}"
+            ) from exc
+        parsed_text = parsed.text[:MAX_EXTRACTED_CHARACTERS]
+        truncated = len(parsed.text) > MAX_EXTRACTED_CHARACTERS
+        media_types = {
+            ".pdf": "application/pdf",
+            ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".txt": "text/plain",
+            ".md": "text/markdown",
+        }
+        return DocumentExtraction(
+            filename=safe_name,
+            media_type=media_types[extension],
+            extraction_status="docling_extracted",
+            text=parsed_text,
+            page_count=parsed.page_count,
+            character_count=len(parsed_text),
+            truncated=truncated,
+            persisted=False,
+            limitations=(
+                "Docling trích xuất bố cục/bảng biểu; không xác thực nội dung y khoa.",
+                "OCR có thể sai; phải đối chiếu với ảnh/trang hồ sơ gốc.",
+                "Kết quả không tự động trở thành dữ liệu huấn luyện hoặc clinical evidence đã duyệt.",
+                *parsed.warnings[:5],
+            ),
+        )
+
     page_count = None
     ocr_used = False
     if extension == ".pdf":

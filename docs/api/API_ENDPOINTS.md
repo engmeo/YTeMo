@@ -955,3 +955,23 @@ All three routes require the authenticated Bearer token used by the Backend. The
 - Success response: specialist execution results with findings, evidence references, missing information, and safety disclaimers.
 - The specialists extract evidence present in the source; they do not diagnose, prescribe, estimate missing prices, or determine actual insurance eligibility.
 
+
+
+## Companion Action Runtime
+
+| Method | Endpoint | Mục đích |
+|---|---|---|
+| POST | `/companion/actions/propose` | Tạo đề xuất hành động; chưa thực thi |
+| GET | `/companion/actions` | Liệt kê đề xuất/hành động của người dùng đăng nhập |
+| POST | `/companion/actions/{action_id}/approve` | Người dùng xác nhận đề xuất |
+| POST | `/companion/actions/{action_id}/reject` | Người dùng từ chối đề xuất |
+
+Các endpoint yêu cầu Bearer token. Owner ID luôn lấy từ phiên đăng nhập, không nhận từ request body. Cần áp dụng migration `202611240009_companion_action_tasks.sql` trước khi bật nhóm API này. Worker và kênh gửi thông báo chưa được cấu hình trong môi trường triển khai.
+
+
+| GET | `/conversations?limit=30` | Liệt kê hội thoại của người dùng đăng nhập; giới hạn tối đa 100 bản ghi. |
+
+| GET | `/healthcare/analysis-runs?limit=30` | Liệt kê lịch sử phân tích của người dùng đăng nhập. Cần migration `202611240010_healthcare_analysis_history.sql`. |
+| GET | `/healthcare/analysis-runs/{run_id}` | Tải chi tiết kết quả phân tích đã lưu, có kiểm tra quyền sở hữu. |
+
+| DELETE | `/healthcare/analysis-runs/{run_id}` | Xóa kết quả phân tích đã lưu của chính người dùng đăng nhập. |

@@ -1,6 +1,8 @@
 import unittest
+from unittest.mock import Mock, patch
 
-from model_intelligence import choose_profile, model_catalog
+import model_intelligence
+from model_intelligence import choose_profile, model_catalog, route_request
 
 
 class ModelIntelligenceTests(unittest.TestCase):
@@ -16,10 +18,91 @@ class ModelIntelligenceTests(unittest.TestCase):
     def test_explicit_profile_is_respected(self):
         self.assertEqual(choose_profile("Xin chào", requested_profile="reasoning"), "reasoning")
 
+    def test_router_detects_vietnamese_medical_intent_with_or_without_diacritics(self):
+        self.assertEqual(choose_profile("Tôi muốn hỏi về thuốc"), "medical")
+        self.assertEqual(choose_profile("toi muon hoi ve thuoc"), "medical")
+
+    def test_router_escalates_multi_domain_requests_to_reasoning(self):
+        route = route_request("Tổng hợp kết quả xét nghiệm và chi phí điều trị")
+        self.assertEqual(route["profile"], "reasoning")
+        self.assertIn("laboratory", route["intents"])
+        self.assertIn("cost", route["intents"])
+
+    def test_emergency_signals_use_fast_profile_and_are_flagged(self):
+        route = route_request("Tôi đang khó thở")
+        self.assertEqual(route["profile"], "fast")
+        self.assertTrue(route["emergency_signal"])
+
+    def test_negated_emergency_phrase_does_not_trigger_emergency_route(self):
+        route = route_request("Tôi không bị khó thở, chỉ muốn hỏi lịch khám")
+        self.assertFalse(route["emergency_signal"])
+
     def test_catalog_marks_models_as_not_default_enabled(self):
         catalog = model_catalog()
         self.assertGreaterEqual(len(catalog["models"]), 4)
         self.assertTrue(all(item["default_enabled"] is False for item in catalog["models"]))
+
+    @patch("model_intelligence.requests.post")
+    def test_generate_uses_explicit_per_agent_model_override(self, post):
+        response = Mock()
+        response.raise_for_status = Mock()
+        response.json.return_value = {
+            "choices": [{"message": {"content": "verified"}}],
+            "model": "org/specialist-model",
+        }
+        post.return_value = response
+        with patch.dict("os.environ", {
+            "YTEMO_MODEL_BACKEND": "openrouter",
+            "OPENROUTER_API_KEY": "test-key",
+        }):
+            result = model_intelligence.generate(
+                [{"role": "user", "content": "test"}],
+                profile="medical",
+                model_override="org/specialist-model",
+            )
+        self.assertEqual(result["model"], "org/specialist-model")
+        self.assertEqual(post.call_args.kwargs["json"]["model"], "org/specialist-model")
+
+    @patch("model_intelligence.requests.post")
+    def test_stream_yields_text_deltas_without_buffering(self, post):
+        response = Mock()
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        response.raise_for_status = Mock()
+        response.iter_lines.return_value = [
+            b'data: {"choices":[{"delta":{"content":"Xin "}}]}',
+            b'data: {"choices":[{"delta":{"content":"chao"}}]}',
+            b'data: [DONE]',
+        ]
+        post.return_value = response
+
+        with patch.dict("os.environ", {
+            "YTEMO_MODEL_BACKEND": "openrouter",
+            "OPENROUTER_API_KEY": "test-key",
+            "YTEMO_FAST_MODEL": "test-model",
+        }):
+            chunks = list(model_intelligence.generate_stream(
+                [{"role": "user", "content": "hello"}],
+                profile="fast",
+            ))
+
+        self.assertEqual(chunks, ["Xin ", "chao"])
+        self.assertTrue(post.call_args.kwargs["stream"])
+        self.assertTrue(post.call_args.kwargs["json"]["stream"])
+
+    @patch("model_intelligence.requests.post")
+    def test_stream_converts_provider_timeout_to_gateway_error(self, post):
+        import requests
+        post.side_effect = requests.Timeout("provider timeout")
+        with patch.dict("os.environ", {
+            "YTEMO_MODEL_BACKEND": "openrouter",
+            "OPENROUTER_API_KEY": "test-key",
+        }):
+            with self.assertRaises(model_intelligence.ModelGatewayError):
+                list(model_intelligence.generate_stream(
+                    [{"role": "user", "content": "hello"}],
+                    profile="fast",
+                ))
 
 
 if __name__ == "__main__":

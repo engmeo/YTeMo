@@ -311,7 +311,7 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
     <p style="font-size:10px;line-height:1.6;color:var(--muted);margin:10px 0 0">Chỉ trả về bằng chứng đã duyệt, đúng đối tượng và phạm vi. Không có kết quả phù hợp thì Companion phải nói rõ không đủ căn cứ. Công cụ này không chẩn đoán hoặc kê đơn.</p>
    </details>
   </div>
-   <div class="companion-output"><div class="companion-output-head"><div><div class="mono eyebrow">YOUR CARE PATHWAY</div><h3>Hướng dẫn và bước tiếp theo</h3></div><button id="newChatBtn" type="button" class="reset-companion">Làm mới phiên</button></div><div class="chat-messages" id="chatMessages" aria-live="polite"><div class="companion-empty"><span>✳</span><b>Lộ trình của bạn sẽ xuất hiện tại đây</b><p>Companion sẽ tóm tắt điều đã hiểu, thông tin còn thiếu và bước tiếp theo có thể thực hiện.</p></div></div></div>
+   <div class="companion-output"><div class="companion-output-head"><div><div class="mono eyebrow">YOUR CARE PATHWAY</div><h3>Hướng dẫn và bước tiếp theo</h3></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button id="conversationHistoryBtn" type="button" class="reset-companion">Lịch sử hội thoại</button><button id="newChatBtn" type="button" class="reset-companion">Làm mới phiên</button></div></div><div id="conversationHistoryPanel" hidden style="display:grid;gap:7px;padding:12px;background:#f3f5ef;border:1px solid var(--line);margin-bottom:12px"></div><div class="chat-messages" id="chatMessages" aria-live="polite"><div class="companion-empty"><span>✳</span><b>Lộ trình của bạn sẽ xuất hiện tại đây</b><p>Companion sẽ tóm tắt điều đã hiểu, thông tin còn thiếu và bước tiếp theo có thể thực hiện.</p></div></div></div>
    <div class="chat-foot">Thông tin chỉ hỗ trợ định hướng và phối hợp chăm sóc; quyết định y khoa cần được xác nhận bởi nhân viên y tế có thẩm quyền.</div>
   </div>
  </div>
@@ -320,11 +320,11 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
 <section class="page" id="healthcare">
  <div class="shell page-hero"><div class="mono eyebrow">03 / 07 — HEALTHCARE DOCUMENT INTELLIGENCE</div><h1>Đọc hồ sơ.<br><i>Kết nối chuyên môn.</i></h1><p>Tải lên hồ sơ y tế để trích xuất văn bản và điều phối bốn Agent chuyên môn: chi phí, thuốc, xét nghiệm và BHYT. Mỗi phát hiện đều kèm dòng bằng chứng từ tài liệu gốc.</p></div>
  <div class="health-shell"><div class="health-grid">
-  <div class="health-card"><div class="mono eyebrow">01 / DOCUMENT INTAKE</div><h2>Đưa hồ sơ vào hệ thống</h2><p>Hỗ trợ PDF có lớp văn bản, DOCX, TXT và Markdown. File được xử lý trong bộ nhớ của request; endpoint không lưu file.</p>
+  <div class="health-card"><div class="mono eyebrow">01 / DOCUMENT INTAKE</div><h2>Đưa hồ sơ vào hệ thống</h2><p>Hỗ trợ PDF có lớp văn bản, DOCX, TXT và Markdown. File gốc được lưu trong vùng lưu trữ riêng theo tài khoản; người dùng có thể xem danh sách hồ sơ đã lưu và xóa hồ sơ của mình.</p>
    <label class="health-upload" for="healthFile"><span><strong id="healthFileName">Chọn hồ sơ y tế</strong><small>PDF · DOCX · TXT · MD · Tối đa 10 MB</small></span><input id="healthFile" type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"></label>
    <div class="health-meta" id="healthFileMeta">Chưa chọn tài liệu</div>
-   <div class="health-actions"><button id="extractBtn" type="button" disabled>TRÍCH XUẤT VĂN BẢN</button><button class="secondary" id="clearHealthBtn" type="button">LÀM MỚI</button></div>
-   <div class="health-status" id="extractStatus" role="status">Đăng nhập bằng tài khoản thử nghiệm tại mục Trợ lý AI để sử dụng tính năng này.</div>
+   <div class="health-actions"><button id="extractBtn" type="button" disabled>TRÍCH XUẤT VĂN BẢN</button><button class="secondary" id="clearHealthBtn" type="button">XÓA KHỎI PHIÊN</button></div>
+   <div class="health-actions"><button id="loadHealthDocumentsBtn" class="secondary" type="button">LỊCH SỬ HỒ SƠ ĐÃ LƯU</button></div><div id="healthDocumentHistory" class="health-status" role="status" hidden style="margin-top:10px"></div><div class="health-status" id="extractStatus" role="status">Đăng nhập để tải lên và quản lý hồ sơ thuộc tài khoản của bạn.</div>
    <div id="extractedPreview" hidden style="margin-top:16px"><div class="mono eyebrow">EXTRACTED TEXT PREVIEW</div><textarea id="healthText" rows="9" style="width:100%;margin-top:8px;padding:12px;border:1px solid var(--line);font:12px/1.6 var(--sans);resize:vertical"></textarea><div class="health-meta" id="extractMeta"></div></div>
   </div>
   <div class="health-card dark"><div class="mono" style="color:var(--acid)">02 / SPECIALIST ORCHESTRATION</div><h2>Điều phối Agent chuyên môn</h2><p>Chọn nhóm thông tin cần rà soát. Có thể chạy tất cả bốn Agent trên cùng văn bản đã trích xuất.</p>
@@ -334,7 +334,7 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
     <label class="health-agent"><input type="checkbox" value="lab" checked><span><b>Xét nghiệm</b><small>Nhận diện chỉ số và giá trị được ghi.</small></span></label>
     <label class="health-agent"><input type="checkbox" value="bhyt" checked><span><b>Bảo hiểm y tế</b><small>Trích xuất thông tin BHYT có trong hồ sơ.</small></span></label>
    </div>
-   <div class="health-actions"><button id="runHealthBtn" type="button" disabled>CHẠY PHÂN TÍCH</button></div>
+   <div class="health-actions"><button id="runHealthBtn" type="button" disabled>CHẠY PHÂN TÍCH</button></div><label style="display:flex;align-items:flex-start;gap:9px;margin-top:12px;font-size:11px;line-height:1.6"><input id="persistAnalysisHistory" type="checkbox" style="margin-top:2px"> Lưu kết quả phân tích vào lịch sử tài khoản. Chỉ lưu khi tôi bật lựa chọn này; có thể mở lại từ lịch sử sau.</label>
    <div class="health-status" id="runHealthStatus" role="status" style="background:#203b3b;color:#e8eee8;border-color:var(--acid)">Chưa có văn bản để phân tích.</div>
     <details class="health-safety" style="margin-top:14px;padding:14px;border:1px solid var(--line)">
      <summary style="cursor:pointer;font-weight:800">BỔ SUNG DỮ LIỆU CHI PHÍ / BHYT ĐÃ XÁC MINH</summary>
@@ -351,13 +351,13 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
     </details>
    <div class="health-safety">GIỚI HẠN AN TOÀN<br>Hệ thống chỉ trích xuất thông tin có bằng chứng. Không chẩn đoán, kê đơn, diễn giải kết quả xét nghiệm, ước tính chi phí còn thiếu hoặc xác định mức hưởng BHYT. Đối chiếu kết quả với hồ sơ gốc và chuyên gia y tế.</div>
   </div>
- </div><div id="healthResults" class="health-results" aria-live="polite"></div></div>
+ </div><div class="health-actions" style="margin-top:18px"><button id="loadAnalysisHistoryBtn" class="secondary" type="button">LỊCH SỬ PHÂN TÍCH</button></div><div id="healthAnalysisHistory" class="health-status" role="status" hidden style="margin-top:10px"></div><div id="healthResults" class="health-results" aria-live="polite"></div></div>
 </section>
 
-<section class="page" id="system"><div class="shell page-hero"><div class="mono eyebrow">03 / 06 — AGENT ARCHITECTURE</div><h1>Không phải một chatbot.<br><i>Một hệ thống phối hợp.</i></h1><p>Orchestrator điều phối các Agent chuyên môn, workflow và công cụ dữ liệu. Chọn từng node để xem nhiệm vụ, trạng thái và đầu ra của nó. Chạy thử một luồng mô phỏng để quan sát cách hệ thống phối hợp.</p><div class="hero-index">LANGGRAPH-INSPIRED / INTERACTIVE CONCEPT</div></div><div class="shell"><div class="system-layout"><div><div class="graph-panel"><div class="graph-top"><span>● EXECUTION GRAPH / DEMO</span><div class="graph-actions"><button class="mini-btn" onclick="resetGraph()">RESET</button><button class="mini-btn" onclick="zoomGraph(1)">＋</button><button class="mini-btn" onclick="zoomGraph(-1)">－</button></div></div><div class="graph-canvas"><svg id="graph" viewBox="0 0 720 490" preserveAspectRatio="xMidYMid meet"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#aebdb0"/></pattern><marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 6 3 0 6" fill="none" stroke="#9db1a4"/></marker></defs><rect width="720" height="490" fill="url(#dots)" opacity=".5"/><g id="edges"><path class="edge" id="e1" d="M360 70V125" marker-end="url(#arr)"/><path class="edge" id="e2" d="M360 180C360 220 175 205 175 255" marker-end="url(#arr)"/><path class="edge" id="e3" d="M360 180C360 220 545 205 545 255" marker-end="url(#arr)"/><path class="edge" id="e4" d="M175 310V365H360V400" marker-end="url(#arr)"/><path class="edge" id="e5" d="M545 310V365H360" marker-end="url(#arr)"/><path class="edge" id="e6" d="M360 180V400" marker-end="url(#arr)"/></g><g id="nodes"><g class="node" data-node="orchestrator" transform="translate(360 43)" onclick="inspect('orchestrator')"><circle r="29"/><text y="-3">ORCH</text><text class="sub" y="11">ROUTER</text></g><g class="node active" data-node="discovery" transform="translate(175 282)" onclick="inspect('discovery')"><circle r="38"/><text y="-4">DISCOVERY</text><text class="sub" y="11">AGENT 01</text></g><g class="node" data-node="safety" transform="translate(545 282)" onclick="inspect('safety')"><circle r="38"/><text y="-4">SAFETY</text><text class="sub" y="11">RULE ENGINE</text></g><g class="node" data-node="navigation" transform="translate(100 435)" onclick="inspect('navigation')"><circle r="32"/><text y="-3">CARE</text><text class="sub" y="11">NAVIGATION</text></g><g class="node" data-node="cost" transform="translate(360 435)" onclick="inspect('cost')"><circle r="32"/><text y="-3">COST</text><text class="sub" y="11">INTELLIGENCE</text></g><g class="node" data-node="review" transform="translate(620 435)" onclick="inspect('review')"><circle r="32"/><text y="-3">HUMAN</text><text class="sub" y="11">REVIEW</text></g></g><text x="360" y="112" text-anchor="middle" font-size="9" fill="#71857a" font-family="DM Mono">STATE + ROUTING</text><text x="360" y="225" text-anchor="middle" font-size="9" fill="#71857a" font-family="DM Mono">CONDITIONAL BRANCH</text></svg></div><div class="graph-legend"><span><i class="legend-dot"></i>READY</span><span><i class="legend-dot" style="background:var(--coral)"></i>RUNNING</span><span>— DATA / CONTROL FLOW</span></div></div><div class="runbar"><p><b>Luồng demo:</b> Người dùng cần khám, có rào cản chi phí.</p><button class="btn" id="runBtn" onclick="runDemo()">▶ CHẠY THỬ</button></div><div class="log" id="log"><div class="logline">[SYSTEM] Graph initialized. Awaiting input.</div><div class="logline">[STATE] user_context = null</div><div class="logline">[READY] Select a node or run the scenario.</div></div></div><aside class="inspector" id="inspector"><div class="inspector-top"><span class="mono">NODE INSPECTOR</span><span class="mono" id="nodeNum">01 / 06</span></div><div class="label" id="nodeType">AGENT · LANGUAGE MODEL</div><h3 id="nodeTitle">Discovery Agent</h3><p id="nodeDesc">Làm rõ mục tiêu, hoàn cảnh, rào cản và thông tin còn thiếu thông qua hội thoại có chủ đích. Không chẩn đoán.</p><div class="specs"><div class="spec"><span>Vai trò</span><span id="nodeRole">Need discovery</span></div><div class="spec"><span>Input</span><span id="nodeInput">Natural language</span></div><div class="spec"><span>Output</span><span id="nodeOutput">Structured need</span></div><div class="spec"><span>Execution</span><span id="nodeExec">LLM + state</span></div></div><div class="inspector-foot"><button class="btn outline" onclick="window.ytemoShowApiStatus()">CHI TIẾT</button><button class="btn" onclick="runDemo()">THỬ LUỒNG ↗</button></div></aside></div></div><div class="shell"><div class="mono eyebrow">AGENT REGISTRY / RESPONSIBILITY MAP</div><div class="agent-grid"><article class="agent-card" onclick="inspect('discovery')"><div class="symbol">⌕</div><h3>Discovery Agent</h3><p>Khám phá mục tiêu, bối cảnh và rào cản. Đặt câu hỏi tiếp theo dựa trên state hiện tại.</p></article><article class="agent-card" onclick="inspect('safety')"><div class="symbol">⬡</div><h3>Safety Triage</h3><p>Luồng kiểm tra dấu hiệu cảnh báo theo quy tắc an toàn đã được chuyên gia xác nhận.</p></article><article class="agent-card" onclick="inspect('navigation')"><div class="symbol">⌖</div><h3>Care Navigation</h3><p>Hỗ trợ tìm cơ sở, chuyên khoa, tuyến chăm sóc và thông tin cần xác minh.</p></article><article class="agent-card" onclick="inspect('cost')"><div class="symbol">◈</div><h3>Cost Intelligence</h3><p>Tổng hợp giá, BHYT và khoản chi từ nguồn dữ liệu có thể truy xuất.</p></article><article class="agent-card" onclick="inspect('orchestrator')"><div class="symbol">⤳</div><h3>Orchestrator</h3><p>Quản lý state, chọn node, xử lý nhánh, retry và bàn giao cho con người.</p></article><article class="agent-card" onclick="inspect('review')"><div class="symbol">◎</div><h3>Human Review</h3><p>Chờ người dùng hoặc chuyên gia xác nhận ở các bước cần thẩm quyền.</p></article></div></div></section>
+<section class="page" id="system"><div class="shell page-hero"><div class="mono eyebrow">03 / 06 — AGENT ARCHITECTURE</div><h1>Không phải một chatbot.<br><i>Một hệ thống phối hợp.</i></h1><p>Orchestrator điều phối các Agent chuyên môn, workflow và công cụ dữ liệu. Chọn từng node để xem nhiệm vụ, trạng thái và đầu ra của nó. Chạy thử một luồng mô phỏng để quan sát cách hệ thống phối hợp.</p><div class="hero-index">LANGGRAPH-INSPIRED / INTERACTIVE CONCEPT</div></div><div class="shell"><div class="system-layout"><div><div class="graph-panel"><div class="graph-top"><span>● EXECUTION GRAPH / DEMO</span><div class="graph-actions"><button class="mini-btn" onclick="resetGraph()">RESET</button><button class="mini-btn" onclick="zoomGraph(1)">＋</button><button class="mini-btn" onclick="zoomGraph(-1)">－</button></div></div><div class="graph-canvas"><svg id="graph" viewBox="0 0 720 490" preserveAspectRatio="xMidYMid meet"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#aebdb0"/></pattern><marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 6 3 0 6" fill="none" stroke="#9db1a4"/></marker></defs><rect width="720" height="490" fill="url(#dots)" opacity=".5"/><g id="edges"><path class="edge" id="e1" d="M360 70V125" marker-end="url(#arr)"/><path class="edge" id="e2" d="M360 180C360 220 175 205 175 255" marker-end="url(#arr)"/><path class="edge" id="e3" d="M360 180C360 220 545 205 545 255" marker-end="url(#arr)"/><path class="edge" id="e4" d="M175 310V365H360V400" marker-end="url(#arr)"/><path class="edge" id="e5" d="M545 310V365H360" marker-end="url(#arr)"/><path class="edge" id="e6" d="M360 180V400" marker-end="url(#arr)"/></g><g id="nodes"><g class="node" data-node="orchestrator" transform="translate(360 43)" onclick="inspect('orchestrator')"><circle r="29"/><text y="-3">ORCH</text><text class="sub" y="11">ROUTER</text></g><g class="node active" data-node="discovery" transform="translate(175 282)" onclick="inspect('discovery')"><circle r="38"/><text y="-4">DISCOVERY</text><text class="sub" y="11">AGENT 01</text></g><g class="node" data-node="safety" transform="translate(545 282)" onclick="inspect('safety')"><circle r="38"/><text y="-4">SAFETY</text><text class="sub" y="11">RULE ENGINE</text></g><g class="node" data-node="navigation" transform="translate(100 435)" onclick="inspect('navigation')"><circle r="32"/><text y="-3">CARE</text><text class="sub" y="11">NAVIGATION</text></g><g class="node" data-node="cost" transform="translate(360 435)" onclick="inspect('cost')"><circle r="32"/><text y="-3">COST</text><text class="sub" y="11">INTELLIGENCE</text></g><g class="node" data-node="review" transform="translate(620 435)" onclick="inspect('review')"><circle r="32"/><text y="-3">HUMAN</text><text class="sub" y="11">REVIEW</text></g></g><text x="360" y="112" text-anchor="middle" font-size="9" fill="#71857a" font-family="DM Mono">STATE + ROUTING</text><text x="360" y="225" text-anchor="middle" font-size="9" fill="#71857a" font-family="DM Mono">CONDITIONAL BRANCH</text></svg></div><div class="graph-legend"><span><i class="legend-dot"></i>READY</span><span><i class="legend-dot" style="background:var(--coral)"></i>RUNNING</span><span>— DATA / CONTROL FLOW</span></div></div><div class="runbar"><p><b>Luồng demo:</b> Người dùng cần khám, có rào cản chi phí.</p><button class="btn" id="runBtn" onclick="runDemo()">▶ GỬI YÊU CẦU THỬ</button></div><div class="log" id="log"><div class="logline">[SYSTEM] Graph initialized. Awaiting input.</div><div class="logline">[STATE] user_context = null</div><div class="logline">[READY] Select a node or run the scenario.</div></div></div><aside class="inspector" id="inspector"><div class="inspector-top"><span class="mono">NODE INSPECTOR</span><span class="mono" id="nodeNum">01 / 06</span></div><div class="label" id="nodeType">AGENT · LANGUAGE MODEL</div><h3 id="nodeTitle">Discovery Agent</h3><p id="nodeDesc">Làm rõ mục tiêu, hoàn cảnh, rào cản và thông tin còn thiếu thông qua hội thoại có chủ đích. Không chẩn đoán.</p><div class="specs"><div class="spec"><span>Vai trò</span><span id="nodeRole">Need discovery</span></div><div class="spec"><span>Input</span><span id="nodeInput">Natural language</span></div><div class="spec"><span>Output</span><span id="nodeOutput">Structured need</span></div><div class="spec"><span>Execution</span><span id="nodeExec">LLM + state</span></div></div><div class="inspector-foot"><button class="btn outline" onclick="window.ytemoShowApiStatus()">CHI TIẾT</button><button class="btn" onclick="runDemo()">GỬI YÊU CẦU ↗</button></div></aside></div></div><div class="shell"><div class="mono eyebrow">AGENT REGISTRY / RESPONSIBILITY MAP</div><div class="agent-grid"><article class="agent-card" onclick="inspect('discovery')"><div class="symbol">⌕</div><h3>Discovery Agent</h3><p>Khám phá mục tiêu, bối cảnh và rào cản. Đặt câu hỏi tiếp theo dựa trên state hiện tại.</p></article><article class="agent-card" onclick="inspect('safety')"><div class="symbol">⬡</div><h3>Safety Triage</h3><p>Luồng kiểm tra dấu hiệu cảnh báo theo quy tắc an toàn đã được chuyên gia xác nhận.</p></article><article class="agent-card" onclick="inspect('navigation')"><div class="symbol">⌖</div><h3>Care Navigation</h3><p>Hỗ trợ tìm cơ sở, chuyên khoa, tuyến chăm sóc và thông tin cần xác minh.</p></article><article class="agent-card" onclick="inspect('cost')"><div class="symbol">◈</div><h3>Cost Intelligence</h3><p>Tổng hợp giá, BHYT và khoản chi từ nguồn dữ liệu có thể truy xuất.</p></article><article class="agent-card" onclick="inspect('orchestrator')"><div class="symbol">⤳</div><h3>Orchestrator</h3><p>Quản lý state, chọn node, xử lý nhánh, retry và bàn giao cho con người.</p></article><article class="agent-card" onclick="inspect('review')"><div class="symbol">◎</div><h3>Human Review</h3><p>Chờ người dùng hoặc chuyên gia xác nhận ở các bước cần thẩm quyền.</p></article></div></div></section>
 <section class="page" id="research"><div class="shell page-hero"><div class="mono eyebrow">04 / 06 — RESEARCH FRONTIERS</div><h1>Giảm chi phí từ<br><i>gốc rễ công nghệ.</i></h1><p>Những hướng nghiên cứu tập trung vào khả năng tạo ra chẩn đoán, vật liệu, thiết bị và mô hình chăm sóc có chi phí tiếp cận thấp hơn. Đây là danh mục định hướng, chưa phải kết quả đã được xác nhận.</p></div><div class="shell section" style="padding-top:25px"><div class="research-grid"><article class="research-card"><div class="n">R / 01 — DIAGNOSTICS</div><div class="glyph">⌁</div><h3>Chẩn đoán siêu chi phí thấp</h3><p>Lab-on-a-chip, microfluidics, biosensors và xét nghiệm tại điểm chăm sóc. Câu hỏi: giảm chi phí mỗi phép đo mà vẫn giữ độ nhạy, độ đặc hiệu và độ tin cậy ra sao?</p></article><article class="research-card"><div class="n">R / 02 — BIOMATERIALS</div><div class="glyph">◌</div><h3>Vật liệu y tế dễ tiếp cận</h3><p>Polymer, hydrogel, vật liệu lọc và chăm sóc vết thương. Đánh giá tương thích sinh học, độ bền, khả năng sản xuất và kiểm soát chất lượng.</p></article><article class="research-card"><div class="n">R / 03 — ROBOTICS</div><div class="glyph">⌘</div><h3>Thiết bị phục hồi</h3><p>Cơ cấu truyền động, cảm biến và điều khiển giá thấp; ưu tiên thiết bị có thể bảo trì và kiểm chứng hiệu quả sử dụng.</p></article><article class="research-card"><div class="n">R / 04 — HOME CARE</div><div class="glyph">⌂</div><h3>Chăm sóc tại nhà</h3><p>Mô hình hỗ trợ người cao tuổi, phục hồi sau đột quỵ và theo dõi bệnh mạn tính dưới hướng dẫn chuyên môn.</p></article><article class="research-card"><div class="n">R / 05 — PREVENTION</div><div class="glyph">✳</div><h3>Phòng ngừa từ môi trường sống</h3><p>Công cụ phát hiện nguy cơ từ nước sinh hoạt, bụi mịn và yếu tố môi trường; phải gắn chỉ số đo với nguy cơ sức khỏe cụ thể.</p></article><article class="research-card"><div class="n">R / 06 — SYSTEM SCIENCE</div><div class="glyph">∞</div><h3>Phân tích toàn bộ hành trình chăm sóc</h3><p>Patient journey modeling, causal cost analysis và điều phối nguồn lực để nhận diện khoản chi có thể tránh được mà không làm giảm chất lượng điều trị.</p></article></div></div></section>
 <section class="page" id="projects"><div class="shell page-hero"><div class="mono eyebrow">05 / 06 — PROJECTS & PROTOTYPES</div><h1>Từ câu hỏi<br>đến <i>bằng chứng.</i></h1><p>Mỗi dự án cần xác định vấn đề, giả thuyết, dữ liệu đầu vào, phương pháp kiểm chứng và tiêu chí thành công. Không đánh đồng ý tưởng với prototype hay hiệu quả thực tế.</p></div><div class="shell section" style="padding-top:15px"><div class="project-table"><div class="project-row"><div class="n">01</div><h3>Patient Journey Cost Intelligence</h3><p>Phân tích chi phí hộ gia đình theo từng giai đoạn chăm sóc; dữ liệu ban đầu có thể dùng bộ dữ liệu tổng hợp.</p><div class="status">ĐỀ XUẤT</div></div><div class="project-row"><div class="n">02</div><h3>Proactive Healthcare Agent</h3><p>Đo chất lượng khám phá nhu cầu: số lượt hỏi, thông tin thiếu được phát hiện và mức độ người dùng xác nhận.</p><div class="status">ĐỀ XUẤT</div></div><div class="project-row"><div class="n">03</div><h3>Low-cost Rehabilitation Device</h3><p>Prototype cơ cấu hỗ trợ vận động; đánh giá chi phí, độ lặp, an toàn cơ khí và khả năng sử dụng.</p><div class="status">ĐỊNH HƯỚNG</div></div><div class="project-row"><div class="n">04</div><h3>Community Diagnostics</h3><p>Khảo sát tính khả thi của thiết bị đo/xét nghiệm giá thấp; cần đối chiếu chuẩn tham chiếu và kiểm định.</p><div class="status">ĐỊNH HƯỚNG</div></div></div><p class="muted" style="font-size:11px;margin-top:20px">Trạng thái trên phản ánh đề xuất ở cấp độ ý tưởng. Không có dự án nào được tuyên bố đã triển khai hoặc chứng minh hiệu quả lâm sàng.</p></div></section>
-<section class="page" id="community"><div class="shell page-hero"><div class="mono eyebrow">06 / 06 — OPEN COLLABORATION</div><h1>Không ai nên<br>giải quyết <i>một mình.</i></h1><p>Người dân hiểu những khó khăn trong cuộc sống. Nhân viên y tế hiểu nhu cầu chuyên môn. Nhà nghiên cứu và kỹ sư có thể cùng phát triển giải pháp. Y TẾ MỞ muốn tạo nơi những góc nhìn ấy gặp nhau.</p></div><div class="shell"><div class="community-band"><div><div class="mono" style="color:var(--acid)">BUILD WITH THE COMMUNITY</div><h2>Một vấn đề thật. Nhiều năng lực cùng giải.</h2><p>Mạng lưới cộng tác mở để ghi nhận vấn đề, đặt câu hỏi nghiên cứu, phát triển prototype và đánh giá trong điều kiện phù hợp.</p></div><div class="roles"><div class="role"><b>♡ Người dân</b>Trải nghiệm và nhu cầu thực tế</div><div class="role"><b>✚ Bác sĩ</b>Kiến thức chuyên môn và an toàn</div><div class="role"><b>⌘ Nhà nghiên cứu</b>Phương pháp và bằng chứng</div><div class="role"><b>⚙ Kỹ sư</b>Thiết kế và chế tạo</div><div class="role" style="grid-column:span 2"><b>◎ Bệnh viện · Trường viện · Nhà sản xuất</b>Hạ tầng thử nghiệm và triển khai có trách nhiệm</div></div></div><div class="contact-form"><div class="mono eyebrow">LET'S START WITH A PROBLEM</div><h2 style="font:800 42px var(--display);letter-spacing:-2px">Bạn muốn cùng giải quyết điều gì?</h2><form onsubmit="event.preventDefault();toast('Đây là bản giao diện tĩnh — biểu mẫu chưa gửi dữ liệu.');"><div class="field"><label>VAI TRÒ CỦA BẠN</label><select><option>Người dân / người chăm sóc</option><option>Bác sĩ / nhân viên y tế</option><option>Nhà nghiên cứu</option><option>Kỹ sư / nhà sản xuất</option><option>Tổ chức / cơ sở y tế</option></select></div><div class="field"><label>EMAIL LIÊN HỆ</label><input type="email" placeholder="ten@email.com"></div><div class="field"><label>VẤN ĐỀ BẠN MUỐN GIẢI QUYẾT</label><textarea placeholder="Hãy mô tả vấn đề, ý tưởng hoặc năng lực bạn muốn đóng góp..."></textarea></div><button class="btn" type="submit">GỬI ĐỀ XUẤT ↗</button></form></div></div></section>
+<section class="page" id="community"><div class="shell page-hero"><div class="mono eyebrow">06 / 06 — OPEN COLLABORATION</div><h1>Không ai nên<br>giải quyết <i>một mình.</i></h1><p>Người dân hiểu những khó khăn trong cuộc sống. Nhân viên y tế hiểu nhu cầu chuyên môn. Nhà nghiên cứu và kỹ sư có thể cùng phát triển giải pháp. Y TẾ MỞ muốn tạo nơi những góc nhìn ấy gặp nhau.</p></div><div class="shell"><div class="community-band"><div><div class="mono" style="color:var(--acid)">BUILD WITH THE COMMUNITY</div><h2>Một vấn đề thật. Nhiều năng lực cùng giải.</h2><p>Mạng lưới cộng tác mở để ghi nhận vấn đề, đặt câu hỏi nghiên cứu, phát triển prototype và đánh giá trong điều kiện phù hợp.</p></div><div class="roles"><div class="role"><b>♡ Người dân</b>Trải nghiệm và nhu cầu thực tế</div><div class="role"><b>✚ Bác sĩ</b>Kiến thức chuyên môn và an toàn</div><div class="role"><b>⌘ Nhà nghiên cứu</b>Phương pháp và bằng chứng</div><div class="role"><b>⚙ Kỹ sư</b>Thiết kế và chế tạo</div><div class="role" style="grid-column:span 2"><b>◎ Bệnh viện · Trường viện · Nhà sản xuất</b>Hạ tầng thử nghiệm và triển khai có trách nhiệm</div></div></div><div class="contact-form"><div class="mono eyebrow">LET'S START WITH A PROBLEM</div><h2 style="font:800 42px var(--display);letter-spacing:-2px">Bạn muốn cùng giải quyết điều gì?</h2><div role="status" style="padding:18px;background:#f2f5ed;border:1px solid var(--line);font-size:12px;line-height:1.8;color:var(--muted)">Kênh tiếp nhận đề xuất cộng đồng chưa được mở vì backend chưa có cơ chế chống spam, quản lý đồng ý xử lý thông tin liên hệ và phân quyền người tiếp nhận. Biểu mẫu gửi dữ liệu đang tạm ẩn để tránh tạo cảm giác đề xuất đã được gửi thành công. Tính năng sẽ được mở sau khi hoàn thiện quy trình tiếp nhận và bảo vệ dữ liệu.</div></div></div></section>
 </main><section class="page" id="clinical">
  <div class="shell page-hero">
   <div class="mono eyebrow">08 / EVIDENCE GOVERNANCE</div>
@@ -451,7 +451,7 @@ const info={orchestrator:{num:'01 / 06',type:'CONTROL NODE · GRAPH ROUTER',titl
 function inspect(k){let d=info[k];document.querySelectorAll('.node').forEach(n=>n.classList.toggle('active',n.dataset.node===k));document.getElementById('nodeNum').textContent=d.num;document.getElementById('nodeType').textContent=d.type;document.getElementById('nodeTitle').textContent=d.title;document.getElementById('nodeDesc').textContent=d.desc;document.getElementById('nodeRole').textContent=d.role;document.getElementById('nodeInput').textContent=d.input;document.getElementById('nodeOutput').textContent=d.output;document.getElementById('nodeExec').textContent=d.exec;}
 let zoom=1;function zoomGraph(d){zoom=Math.max(.8,Math.min(1.4,zoom+d*.1));document.getElementById('nodes').setAttribute('transform',`translate(${360*(1-zoom)} ${245*(1-zoom)}) scale(${zoom})`);document.getElementById('edges').setAttribute('transform',`translate(${360*(1-zoom)} ${245*(1-zoom)}) scale(${zoom})`)}function resetGraph(){zoom=1;document.getElementById('nodes').removeAttribute('transform');document.getElementById('edges').removeAttribute('transform');document.querySelectorAll('.node').forEach(n=>n.classList.remove('running'));document.querySelectorAll('.edge').forEach(e=>e.classList.remove('active'));document.getElementById('log').innerHTML='<div>[SYSTEM] Graph reset.</div><div>[STATE] Awaiting scenario.</div>';document.getElementById('runBtn').disabled=false;document.getElementById('runBtn').textContent='▶ CHẠY THỬ';}
 const steps=[['orchestrator','[ORCHESTRATOR] Nhận yêu cầu, khởi tạo state và xác định luồng.',['e1']],['discovery','[DISCOVERY] Trích xuất mục tiêu: đưa người thân đi khám; phát hiện rào cản tài chính.',['e2']],['safety','[SAFETY] Kiểm tra dấu hiệu cảnh báo theo quy tắc demo; cần xác minh bằng chuyên gia.',['e3']],['navigation','[CARE NAVIGATION] Xác định thông tin còn thiếu: địa bàn, chuyên khoa, tuyến tiếp cận.',['e4']],['cost','[COST INTELLIGENCE] Yêu cầu dữ liệu giá và quyền lợi BHYT; chưa tự tạo con số.',['e5']],['review','[HUMAN REVIEW] Tạm dừng để người dùng xác nhận dữ liệu và lựa chọn.',['e6']]];
-let running=false;async function runDemo(){if(running)return;running=true;let backendHealth=null;try{backendHealth=await window.ytemoApiHealth();}catch(error){document.getElementById('log').innerHTML='<div class="logline">[BACKEND ERROR] '+error.message+'</div><div class="logline">Không chạy mô phỏng khi chưa xác nhận backend.</div>';toast('Không thể chạy: Backend chưa sẵn sàng.');running=false;return;}resetGraph();running=true;let log=document.getElementById('log');let apiLine=document.createElement('div');apiLine.className='logline';apiLine.textContent='[API CONNECTED] FastAPI '+backendHealth.status+' · '+backendHealth.timestamp;log.appendChild(apiLine);document.getElementById('runBtn').disabled=true;document.getElementById('runBtn').textContent='ĐANG CHẠY…';for(let i=0;i<steps.length;i++){let [node,msg,edges]=steps[i];document.querySelectorAll('.node').forEach(n=>n.classList.toggle('running',n.dataset.node===node));edges.forEach(id=>document.getElementById(id).classList.add('active'));inspect(node);let line=document.createElement('div');line.className='logline current';line.textContent='[RUNNING] '+msg;log.appendChild(line);await new Promise(r=>setTimeout(r,950));line.classList.remove('current');line.textContent='[DONE] '+msg;document.querySelector('[data-node="'+node+'"]').classList.remove('running');}let done=document.createElement('div');done.textContent='[COMPLETE] Backend đã xác nhận hoạt động; luồng điều phối vừa chạy là mô phỏng giao diện, không phải clinical workflow production.';log.appendChild(done);document.getElementById('runBtn').textContent='✓ HOÀN TẤT';running=false;}
+let running=false;async function runDemo(){ if (typeof window.ytemoRunBackendDemo !== 'function') { toast('Backend demo chưa sẵn sàng. Hãy tải lại trang và kiểm tra kết nối.'); return; } await window.ytemoRunBackendDemo(); }
 function toast(s){let t=document.getElementById('toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
 
 </script>
@@ -556,7 +556,7 @@ async function openCompanionDashboard() {
   const panel = document.createElement('section');
   panel.id = 'companionDashboard';
   panel.style.cssText = 'position:fixed;z-index:1000;inset:5% 5%;overflow:auto;background:#fbfaf6;border:1px solid #9eaaa2;box-shadow:0 20px 80px #142c3160;padding:26px;border-radius:8px';
-  panel.innerHTML = '<button type="button" id="companionDashClose" class="btn outline" style="float:right">Đóng ✕</button><div class="mono eyebrow">PERSONAL HEALTHCARE COMPANION</div><h2 style="font:800 30px Manrope;margin:16px 0">Không gian dữ liệu Companion</h2><p id="companionDashState">Đang tải dữ liệu từ backend…</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0"><button class="btn" id="companionDashInit">Khởi tạo Companion</button><button class="btn outline" id="companionDashRefresh">↻ Tải lại dữ liệu</button></div><div id="companionDashCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px"></div>';
+  panel.innerHTML = '<button type="button" id="companionDashClose" class="btn outline" style="float:right">Đóng ✕</button><div class="mono eyebrow">PERSONAL HEALTHCARE COMPANION</div><h2 style="font:800 30px Manrope;margin:16px 0">Không gian dữ liệu Companion</h2><p id="companionDashState">Đang tải dữ liệu từ backend…</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0"><button class="btn" id="companionDashInit">Khởi tạo Companion</button><button class="btn outline" id="companionDashRefresh">↻ Tải lại dữ liệu</button></div><div id="companionDashCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px"></div><section style="margin-top:24px;padding:18px;background:#fff;border:1px solid #d9ded5"><div class="mono eyebrow">PERMISSIONED ACTIONS</div><h3 style="font:700 20px Manrope;margin:10px 0">Nhắc lịch có xác nhận</h3><p style="font-size:12px;line-height:1.7;color:#63786d">Tạo đề xuất trước, sau đó bạn tự phê duyệt. Email chỉ được gửi khi tới hạn và khi worker cùng Resend đã được cấu hình; thao tác này không thay thế lịch hẹn của bệnh viện.</p><form id="companionReminderForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px"><label style="font-size:11px">NỘI DUNG<input id="companionReminderTitle" required maxlength="180" placeholder="Ví dụ: Tái khám" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #d9ded5"></label><label style="font-size:11px">THỜI GIAN<input id="companionReminderAt" type="datetime-local" required style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #d9ded5"></label><label style="display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.6;grid-column:1/-1"><input id="companionReminderEmailConsent" type="checkbox" required style="margin-top:2px"> Tôi đồng ý nhận email nhắc lịch tại địa chỉ email đã xác minh của tài khoản.</label><div style="grid-column:1/-1"><button id="companionReminderSubmit" class="btn" type="submit">TẠO ĐỀ XUẤT NHẮC LỊCH</button></div></form><p id="companionReminderStatus" role="status" style="font-size:11px;line-height:1.6;color:#63786d"></p><div id="companionActionList" style="margin-top:12px"></div></section>';
   document.body.appendChild(panel);
   panel.querySelector('#companionDashClose').addEventListener('click',()=>panel.remove());
   const state=panel.querySelector('#companionDashState');
@@ -584,13 +584,92 @@ async function openCompanionDashboard() {
       card.style.cssText='background:#fff;border:1px solid #d9ded5;padding:14px;min-width:0';
       const heading=document.createElement('b');heading.textContent=names[index];
       const status=document.createElement('div');status.style.cssText='font:700 11px DM Mono;margin:8px 0;color:'+(result.ok?'#087e73':'#a34f37');status.textContent=result.ok?'API OK':'API ERROR';
-      const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;font:11px/1.5 DM Mono;color:#52665d';
+      const metric=document.createElement('div');metric.style.cssText='font:800 24px Manrope;color:#173b38;margin:10px 0';
+      if(!result.ok){metric.textContent='Chưa khả dụng';}
+      else if(index===0){metric.textContent=(result.data.open_needs_count||0)+' nhu cầu đang mở';}
+      else if(index===1){metric.textContent=((result.data.items||[]).length)+' mục ngữ cảnh';}
+      else if(index===2){metric.textContent=((result.data.needs||[]).length)+' nhu cầu';}
+      else {metric.textContent=((result.data.proposals||[]).length)+' đề xuất';}
+      const detail=document.createElement('details');
+      const summary=document.createElement('summary');summary.textContent='Xem dữ liệu chi tiết';summary.style.cssText='cursor:pointer;font-size:11px;color:#63786d';
+      const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto;font:10px/1.5 DM Mono;color:#52665d;margin-top:8px';
       pre.textContent=result.ok?JSON.stringify(result.data,null,2):result.error;
-      card.append(heading,status,pre);cards.appendChild(card);
+      detail.append(summary,pre);
+      card.append(heading,status,metric,detail);cards.appendChild(card);
     });
     const failed=results.filter(x=>!x.ok).length;
     state.textContent=failed?(4-failed)+' / 4 API thành công. Các lỗi bên dưới cần kiểm tra quyền truy cập hoặc migration.':'Đã tải dữ liệu trực tiếp từ 4 API của backend.';
+    await renderActions();
   };
+  const actionHost=panel.querySelector('#companionActionList');
+  const actionStatus=panel.querySelector('#companionReminderStatus');
+  const renderActions=async()=>{
+    actionHost.textContent='Đang tải các đề xuất hành động…';
+    try {
+      const response=await fetchWithAuth('/companion/actions?limit=30');
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(data.detail||('HTTP '+response.status));
+      actionHost.replaceChildren();
+      const items=data.actions||[];
+      if(!items.length){actionHost.textContent='Chưa có đề xuất nhắc lịch nào.';return;}
+      items.forEach(item=>{
+        const row=document.createElement('div');
+        row.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #e1e6de';
+        const info=document.createElement('div');
+        const title=document.createElement('b');title.textContent=(item.arguments?.title||item.action_type)+' · '+item.status;
+        const meta=document.createElement('small');meta.style.cssText='display:block;color:#63786d;margin-top:4px';
+        meta.textContent=item.arguments?.due_at?new Date(item.arguments.due_at).toLocaleString('vi-VN'):'Đề xuất cần xem xét';
+        info.append(title,meta);
+        row.appendChild(info);
+        if(item.status==='awaiting_approval'){
+          const controls=document.createElement('div');controls.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
+          const approve=document.createElement('button');approve.type='button';approve.className='btn';approve.textContent='Phê duyệt';
+          const reject=document.createElement('button');reject.type='button';reject.className='btn outline';reject.textContent='Từ chối';
+          approve.addEventListener('click',async()=>{
+            approve.disabled=true;
+            try{const result=await fetchWithAuth('/companion/actions/'+encodeURIComponent(item.id)+'/approve',{method:'POST'});const body=await result.json().catch(()=>({}));if(!result.ok)throw new Error(body.detail||('HTTP '+result.status));actionStatus('Đã phê duyệt. Worker sẽ xử lý khi tới hạn nếu dịch vụ email đã được bật.');await renderActions();}
+            catch(error){actionStatus('Không phê duyệt được: '+error.message);}
+            finally{approve.disabled=false;}
+          });
+          reject.addEventListener('click',async()=>{
+            reject.disabled=true;
+            try{const result=await fetchWithAuth('/companion/actions/'+encodeURIComponent(item.id)+'/reject',{method:'POST'});const body=await result.json().catch(()=>({}));if(!result.ok)throw new Error(body.detail||('HTTP '+result.status));actionStatus('Đã từ chối đề xuất.');await renderActions();}
+            catch(error){actionStatus('Không từ chối được: '+error.message);}
+            finally{reject.disabled=false;}
+          });
+          controls.append(approve,reject);row.appendChild(controls);
+        }
+        actionHost.appendChild(row);
+      });
+    } catch(error) {
+      actionHost.textContent='Chưa tải được danh sách hành động: '+error.message+' · Kiểm tra migration 202611240011 và quyền backend.';
+    }
+  };
+  const reminderForm=panel.querySelector('#companionReminderForm');
+  const reminderDate=panel.querySelector('#companionReminderAt');
+  const minLocal=new Date(Date.now()-new Date().getTimezoneOffset()*60000+60000).toISOString().slice(0,16);
+  reminderDate.min=minLocal;
+  reminderForm.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const title=panel.querySelector('#companionReminderTitle').value.trim();
+    const dueValue=reminderDate.value;
+    if(!title||!dueValue){actionStatus('Nhập nội dung và thời gian nhắc lịch.');return;}
+    if(!panel.querySelector('#companionReminderEmailConsent').checked){actionStatus('Bạn cần xác nhận đồng ý nhận email nhắc lịch.');return;}
+    if(!currentUser.email_confirmed_at){actionStatus('Email tài khoản chưa được xác minh. Hãy xác minh email trước khi tạo nhắc lịch.');return;}
+    const dueDate=new Date(dueValue);
+    if(Number.isNaN(dueDate.getTime())||dueDate.getTime()<=Date.now()){actionStatus('Thời gian nhắc lịch phải ở tương lai.');return;}
+    const submit=panel.querySelector('#companionReminderSubmit');
+    submit.disabled=true;submit.textContent='ĐANG GỬI ĐỀ XUẤT…';
+    try{
+      const response=await fetchWithAuth('/companion/actions/propose',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create_reminder',arguments:{title,due_at:dueDate.toISOString(),delivery_channel:'email',email_consent:true}})});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.detail||('HTTP '+response.status));
+      reminderForm.reset();reminderDate.min=new Date(Date.now()-new Date().getTimezoneOffset()*60000+60000).toISOString().slice(0,16);
+      actionStatus('Đã tạo đề xuất. Hãy phê duyệt trong danh sách; email chỉ gửi khi tới hạn và worker/Resend hoạt động.');
+      await renderActions();
+    }catch(error){actionStatus('Không tạo được đề xuất: '+error.message);}
+    finally{submit.disabled=false;submit.textContent='TẠO ĐỀ XUẤT NHẮC LỊCH';}
+  });
   panel.querySelector('#companionDashRefresh').addEventListener('click',render);
   panel.querySelector('#companionDashInit').addEventListener('click',async()=>{
     try {
@@ -634,22 +713,111 @@ async function getAccessToken() {
   return data.session.access_token;
 }
 async function fetchWithAuth(path, options = {}) {
+  const { timeoutMs, ...requestOptions } = options;
+  const method = String(requestOptions.method || 'GET').toUpperCase();
+  const timeoutDuration = timeoutMs || (
+    path.includes('/healthcare/documents/extract') ? 90000 :
+    path.startsWith('/chat') ? 60000 :
+    method === 'GET' ? 25000 : 60000
+  );
+  const controller = new AbortController();
+  const externalSignal = requestOptions.signal;
+  const onExternalAbort = () => controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort();
+    else externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+  }
+  const timeout = window.setTimeout(() => controller.abort(), timeoutDuration);
   const sendRequest = (accessToken) => {
-    const headers = new Headers(options.headers || {});
+    const headers = new Headers(requestOptions.headers || {});
     headers.set('Authorization', `Bearer ${accessToken}`);
-    return fetch(`${API_BASE}${path}`, { ...options, headers });
+    return fetch(`${API_BASE}${path}`, { ...requestOptions, headers, signal: controller.signal });
   };
 
-  const token = await getAccessToken();
-  const response = await sendRequest(token);
-
-  if (response.status !== 401) return response;
-
-  const { data, error } = await supabase.auth.refreshSession();
-  if (error || !data.session?.access_token) return response;
-
-  return sendRequest(data.session.access_token);
+  try {
+    let token = await getAccessToken();
+    let response;
+    let refreshed = false;
+    let retried = false;
+    const safeToRetry = method === 'GET';
+    while (true) {
+      try {
+        response = await sendRequest(token);
+      } catch (error) {
+        if (safeToRetry && !retried && error.name !== 'AbortError') {
+          retried = true;
+          await new Promise(resolve => window.setTimeout(resolve, 350));
+          continue;
+        }
+        throw error;
+      }
+      if (response.status === 401 && !refreshed) {
+        const refresh = await supabase.auth.refreshSession();
+        if (refresh.error || !refresh.data.session?.access_token) return response;
+        token = refresh.data.session.access_token;
+        refreshed = true;
+        continue;
+      }
+      if (safeToRetry && !retried && [502, 503, 504].includes(response.status)) {
+        retried = true;
+        await new Promise(resolve => window.setTimeout(resolve, 350));
+        continue;
+      }
+      return response;
+    }
+  } finally {
+    window.clearTimeout(timeout);
+    if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
+  }
 }
+
+window.ytemoRunBackendDemo = async function () {
+  if (!currentUser) {
+    document.getElementById('loginScreen').hidden = false;
+    toast('Đăng nhập trước khi gửi yêu cầu thử nghiệm.');
+    return;
+  }
+  const button = document.getElementById('runBtn');
+  const log = document.getElementById('log');
+  const originalLabel = button ? button.textContent : 'GỬI YÊU CẦU THỬ';
+  if (button) { button.disabled = true; button.textContent = 'ĐANG GỌI BACKEND…'; }
+  log.replaceChildren();
+  const status = document.createElement('div');
+  status.className = 'logline current';
+  status.textContent = '[REQUEST] POST /chat — gửi yêu cầu thử nghiệm tới Companion backend…';
+  log.appendChild(status);
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 60000);
+  try {
+    const response = await fetchWithAuth('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Hãy giới thiệu ngắn gọn cách Companion của Y TẾ MỞ hỗ trợ người dùng xác định nhu cầu và bước chăm sóc tiếp theo. Nêu rõ giới hạn, không đưa ra chẩn đoán hoặc kê đơn.' }),
+      signal: controller.signal
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || ('Backend HTTP ' + response.status));
+    status.classList.remove('current');
+    status.textContent = '[HTTP ' + response.status + '] Backend đã trả về dữ liệu thật.';
+    const reply = document.createElement('pre');
+    reply.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.7 var(--sans);margin:12px 0;color:inherit';
+    reply.textContent = data.reply || 'Backend không trả về nội dung.';
+    log.append(status, reply);
+    const meta = document.createElement('div');
+    meta.textContent = '[CONVERSATION] ' + (data.conversation_id || 'Không có ID');
+    log.appendChild(meta);
+    toast('Đã nhận phản hồi thật từ Companion backend.');
+  } catch (error) {
+    status.classList.remove('current');
+    status.textContent = '[API ERROR] ' + (error.name === 'AbortError' ? 'Quá thời gian chờ 60 giây.' : error.message);
+    log.appendChild(status);
+    toast('Không chạy được yêu cầu thử nghiệm.');
+  } finally {
+    window.clearTimeout(timeout);
+    if (button) { button.disabled = false; button.textContent = originalLabel; }
+  }
+};
+
 async function showSignedIn(user) {
   currentUser = user;
   authPanel.hidden = true;
@@ -781,11 +949,12 @@ async function sendMessage(message) {
   chatInput.value = '';
   setBusy(true);
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), 25000);
+  const timeoutId = window.setTimeout(() => controller.abort(), 60000);
+  let streamedNode = null;
   try {
-    const response = await fetchWithAuth('/chat', {
+    const response = await fetchWithAuth('/chat?stream=true', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
       body: JSON.stringify({
         message: clean,
         conversation_id: conversationId,
@@ -802,14 +971,64 @@ async function sendMessage(message) {
       }),
       signal: controller.signal
     });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.detail || ('Máy chủ trả về HTTP ' + response.status));
-    if (!result.reply || !String(result.reply).trim()) throw new Error('AI đã phản hồi nhưng không có nội dung. Bạn có thể gửi lại yêu cầu.');
-    conversationId = result.conversation_id;
-    if (conversationId) localStorage.setItem(storageKey(), conversationId);
-    appendMessage(result.reply, 'assistant');
-    if (result.evidence_retrieval) {
-      const evidence = result.evidence_retrieval;
+    if (!response.ok) {
+      const failure = await response.json().catch(() => ({}));
+      throw new Error(failure.detail || ('Máy chủ trả về HTTP ' + response.status));
+    }
+    if (!response.body) throw new Error('Trình duyệt không hỗ trợ nhận dữ liệu streaming.');
+
+    streamedNode = appendMessage('', 'assistant');
+    const streamedBody = streamedNode.querySelector('p');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullReply = '';
+    let metadata = null;
+
+    const processEvent = block => {
+      let eventName = 'message';
+      const dataLines = [];
+      for (const line of block.split('\n')) {
+        if (line.startsWith('event:')) eventName = line.slice(6).trim();
+        else if (line.startsWith('data:')) dataLines.push(line.slice(5).trim());
+      }
+      if (!dataLines.length) return;
+      const payload = JSON.parse(dataLines.join('\n'));
+      if (eventName === 'status') {
+        if (!fullReply) streamedBody.textContent = String(payload.message || 'Đang xử lý...');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } else if (eventName === 'token') {
+        const token = String(payload.token || '');
+        fullReply += token;
+        streamedBody.textContent = fullReply;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } else if (eventName === 'done') {
+        metadata = payload;
+      } else if (eventName === 'error') {
+        throw new Error(payload.detail || 'Luồng phản hồi AI bị gián đoạn.');
+      }
+    };
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+      let boundary;
+      while ((boundary = buffer.indexOf('\n\n')) >= 0) {
+        const block = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        if (block.trim()) processEvent(block);
+      }
+    }
+    buffer += decoder.decode();
+    if (buffer.trim()) processEvent(buffer);
+    if (!fullReply.trim()) throw new Error('AI đã kết thúc nhưng không có nội dung phản hồi.');
+    if (!metadata?.conversation_id) throw new Error('Luồng AI kết thúc nhưng thiếu mã hội thoại.');
+
+    conversationId = metadata.conversation_id;
+    localStorage.setItem(storageKey(), conversationId);
+    if (metadata.evidence_retrieval) {
+      const evidence = metadata.evidence_retrieval;
       if (evidence.abstention) {
         appendMessage('Tra cứu bằng chứng: Không tìm thấy claim đã được thẩm định phù hợp với đối tượng, phạm vi và bối cảnh đã chọn. Không sử dụng phản hồi này làm căn cứ cho quyết định lâm sàng.', 'system');
       } else {
@@ -817,11 +1036,12 @@ async function sendMessage(message) {
           const citation = item.citation || {};
           return (citation.document_title || 'Tài liệu') + ' — trang ' + (citation.page || '?') + (citation.version ? ' — phiên bản ' + citation.version : '');
         });
-        appendMessage('Nguồn bằng chứng đã truy xuất:\\n' + refs.join('\\n'), 'system');
+        appendMessage('Nguồn bằng chứng đã truy xuất:\n' + refs.join('\n'), 'system');
       }
     }
   } catch (error) {
-    const message = error.name === 'AbortError' ? 'Yêu cầu đã quá 25 giây và được dừng để tránh chờ vô hạn. Dịch vụ AI có thể đang quá tải; hãy thử gửi lại sau ít phút.' : error.message;
+    if (streamedNode) streamedNode.remove();
+    const message = error.name === 'AbortError' ? 'Yêu cầu đã quá 60 giây và được dừng để tránh chờ vô hạn. Dịch vụ AI có thể đang quá tải; hãy thử gửi lại sau ít phút.' : error.message;
     appendMessage('Chưa nhận được phản hồi: ' + message, 'system');
   } finally {
     window.clearTimeout(timeoutId);
@@ -837,9 +1057,56 @@ document.getElementById('chatQuick').addEventListener('click', event => {
   const button = event.target.closest('button[data-message]');
   if (button) sendMessage(button.dataset.message);
 });
+
+document.getElementById('conversationHistoryBtn').addEventListener('click', async () => {
+  const panel = document.getElementById('conversationHistoryPanel');
+  if (!currentUser) { document.getElementById('loginScreen').hidden = false; return; }
+  panel.hidden = false;
+  panel.textContent = 'Đang tải lịch sử hội thoại từ backend…';
+  try {
+    const response = await fetchWithAuth('/conversations?limit=30');
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || ('HTTP ' + response.status));
+    panel.replaceChildren();
+    const items = data.conversations || [];
+    if (!items.length) { panel.textContent = 'Tài khoản chưa có hội thoại đã lưu.'; return; }
+    items.forEach(item => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.style.cssText = 'display:flex;justify-content:space-between;gap:12px;text-align:left;padding:11px 13px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer';
+      const title = document.createElement('b');
+      title.textContent = item.title || 'Cuộc hội thoại';
+      const date = document.createElement('small');
+      date.textContent = item.updated_at ? new Date(item.updated_at).toLocaleString('vi-VN') : '';
+      button.append(title, date);
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+          const messagesResponse = await fetchWithAuth('/conversations/' + encodeURIComponent(item.id) + '/messages');
+          const messagesData = await messagesResponse.json().catch(() => ({}));
+          if (!messagesResponse.ok) throw new Error(messagesData.detail || ('HTTP ' + messagesResponse.status));
+          conversationId = item.id;
+          if (storageKey()) localStorage.setItem(storageKey(), conversationId);
+          chatMessages.replaceChildren();
+          (messagesData.messages || []).forEach(message => appendMessage(message.content, message.sender_type === 'user' ? 'user' : 'assistant'));
+          if (!(messagesData.messages || []).length) clearChat();
+          panel.hidden = true;
+          chatState.textContent = 'Đã tải hội thoại đã lưu';
+        } catch (error) {
+          toast('Không tải được hội thoại: ' + error.message);
+        } finally { button.disabled = false; }
+      });
+      panel.appendChild(button);
+    });
+  } catch (error) {
+    panel.textContent = 'Không thể tải lịch sử: ' + error.message;
+  }
+});
+
 document.getElementById('newChatBtn').addEventListener('click', () => {
   conversationId = null;
-  if (storageKey()) localStorage.removeItem(storageKey());
+  if (storageKey()) localStorage.removeItem(storageKey());  document.getElementById('conversationHistoryPanel').hidden = true;
+
   clearChat();
   chatInput.focus();
 });
@@ -862,6 +1129,100 @@ async function healthRequest(path, options={}) {
   if (!response.ok) throw new Error(data.detail || `Backend trả về HTTP ${response.status}`);
   return data;
 }
+
+const healthHistoryButton = document.getElementById('loadHealthDocumentsBtn');
+const healthHistoryHost = document.getElementById('healthDocumentHistory');
+async function loadHealthDocuments() {
+  if (!currentUser) { healthHistoryHost.hidden = false; healthHistoryHost.textContent = 'Bạn cần đăng nhập để xem hồ sơ đã lưu.'; return; }
+  healthHistoryHost.hidden = false;
+  healthHistoryHost.textContent = 'Đang tải danh sách hồ sơ từ backend…';
+  const data = await healthRequest('/healthcare/documents');
+  const documents = data.documents || [];
+  healthHistoryHost.replaceChildren();
+  if (!documents.length) { healthHistoryHost.textContent = 'Chưa có hồ sơ nào được lưu.'; return; }
+  documents.forEach(documentRecord => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)';
+    const info = document.createElement('div');
+    const name = document.createElement('b'); name.textContent = documentRecord.filename || 'Hồ sơ y tế';
+    const meta = document.createElement('small');
+    meta.style.cssText = 'display:block;color:var(--muted);margin-top:4px';
+    meta.textContent = (documentRecord.created_at ? new Date(documentRecord.created_at).toLocaleString('vi-VN') : '') + ' · ' + Math.round((documentRecord.byte_size || 0) / 1024) + ' KB · ' + (documentRecord.extraction_status || 'saved');
+    info.append(name, meta);
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'secondary'; remove.textContent = 'Xóa';
+    remove.addEventListener('click', async () => {
+      if (!window.confirm('Xóa hồ sơ này khỏi tài khoản? Thao tác không thể hoàn tác.')) return;
+      remove.disabled = true;
+      try {
+        await healthRequest('/healthcare/documents/' + encodeURIComponent(documentRecord.id), { method: 'DELETE' });
+        await loadHealthDocuments();
+        healthStatus(extractStatus, 'Đã xóa hồ sơ khỏi bộ nhớ lưu trữ.');
+      } catch (error) { remove.disabled = false; healthStatus(extractStatus, 'Không xóa được hồ sơ: ' + error.message, true); }
+    });
+    row.append(info, remove); healthHistoryHost.appendChild(row);
+  });
+}
+healthHistoryButton.addEventListener('click', async () => {
+  healthHistoryButton.disabled = true;
+  try { await loadHealthDocuments(); }
+  catch (error) { healthHistoryHost.hidden = false; healthHistoryHost.textContent = 'Không tải được lịch sử hồ sơ: ' + error.message; }
+  finally { healthHistoryButton.disabled = false; }
+});
+
+const analysisHistoryButton = document.getElementById('loadAnalysisHistoryBtn');
+const analysisHistoryHost = document.getElementById('healthAnalysisHistory');
+async function loadAnalysisHistory() {
+  if (!currentUser) { analysisHistoryHost.hidden = false; analysisHistoryHost.textContent = 'Đăng nhập để xem lịch sử phân tích.'; return; }
+  analysisHistoryHost.hidden = false;
+  analysisHistoryHost.textContent = 'Đang tải lịch sử phân tích từ backend…';
+  const data = await healthRequest('/healthcare/analysis-runs?limit=30');
+  const runs = data.runs || [];
+  analysisHistoryHost.replaceChildren();
+  if (!runs.length) { analysisHistoryHost.textContent = 'Chưa có lần phân tích nào được lưu.'; return; }
+  runs.forEach(run => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)';
+    const info = document.createElement('div');
+    const title = document.createElement('b'); title.textContent = 'Phân tích ' + String(run.id).slice(0,8);
+    const meta = document.createElement('small');
+    meta.style.cssText = 'display:block;color:var(--muted);margin-top:4px';
+    meta.textContent = (run.created_at ? new Date(run.created_at).toLocaleString('vi-VN') : '') + ' · ' + (run.agent_keys || []).join(', ');
+    info.append(title, meta);
+    const actions = document.createElement('div'); actions.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
+    const view = document.createElement('button'); view.type = 'button'; view.className = 'secondary'; view.textContent = 'Xem kết quả';
+    view.addEventListener('click', async () => {
+      view.disabled = true;
+      try {
+        const detail = await healthRequest('/healthcare/analysis-runs/' + encodeURIComponent(run.id));
+        renderHealthResults(detail.run.result || {});
+        healthStatus(runHealthStatus, 'Đã mở kết quả phân tích đã lưu.');
+      } catch (error) { healthStatus(runHealthStatus, 'Không tải được kết quả: ' + error.message, true); }
+      finally { view.disabled = false; }
+    });
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'secondary'; remove.textContent = 'Xóa';
+    remove.addEventListener('click', async () => {
+      if (!window.confirm('Xóa kết quả phân tích đã lưu? Thao tác không thể hoàn tác.')) return;
+      remove.disabled = true;
+      try {
+        await healthRequest('/healthcare/analysis-runs/' + encodeURIComponent(run.id), { method: 'DELETE' });
+        await loadAnalysisHistory();
+        healthStatus(runHealthStatus, 'Đã xóa kết quả khỏi lịch sử tài khoản.');
+      } catch (error) { remove.disabled = false; healthStatus(runHealthStatus, 'Không xóa được kết quả: ' + error.message, true); }
+    });
+    actions.append(view, remove);
+    row.append(info, actions); analysisHistoryHost.appendChild(row);
+  });
+}
+analysisHistoryButton.addEventListener('click', async () => {
+  analysisHistoryButton.disabled = true;
+  try { await loadAnalysisHistory(); }
+  catch (error) {
+    analysisHistoryHost.hidden = false;
+    analysisHistoryHost.textContent = 'Lịch sử phân tích chưa khả dụng: ' + error.message + ' · Cần áp dụng migration 202611240010.';
+  } finally { analysisHistoryButton.disabled = false; }
+});
+
+
 healthFile.addEventListener('change', () => {
   const file = healthFile.files?.[0];
   document.getElementById('healthFileName').textContent = file ? file.name : 'Chọn hồ sơ y tế';
@@ -872,7 +1233,7 @@ extractBtn.addEventListener('click', async () => {
   const file = healthFile.files?.[0]; if (!file || !currentUser || healthBusy) return;
   if (file.size > 10*1024*1024) return healthStatus(extractStatus,'File vượt giới hạn 10 MB.',true);
   healthBusy = true; extractBtn.disabled = true; extractBtn.textContent = 'ĐANG TRÍCH XUẤT…';
-  healthStatus(extractStatus,'Đang gửi tài liệu đến Backend để trích xuất trong bộ nhớ…');
+  healthStatus(extractStatus,'Đang gửi hồ sơ tới Backend để trích xuất và lưu riêng theo tài khoản…');
   try {
     const body = new FormData(); body.append('file',file);
     const data = await healthRequest('/healthcare/documents/extract',{method:'POST',body});
@@ -883,12 +1244,13 @@ extractBtn.addEventListener('click', async () => {
     runHealthBtn.disabled = !healthText.value.trim();
     healthStatus(extractStatus,`Trích xuất thành công: ${extractedDocument.filename}. ${extractedDocument.limitations?.join(' ') || ''}`);
     healthStatus(runHealthStatus,'Đã có văn bản. Chọn Agent và chạy phân tích.');
+    loadHealthDocuments().catch(error => healthStatus(extractStatus, 'Đã tải lên nhưng không tải được lịch sử: ' + error.message, true));
   } catch(error) { extractedDocument=null; runHealthBtn.disabled=true; healthStatus(extractStatus,`Không trích xuất được: ${error.message}`,true); }
   finally { healthBusy=false; extractBtn.disabled=!healthFile.files?.[0] || !currentUser; extractBtn.textContent='TRÍCH XUẤT VĂN BẢN'; }
 });
 healthText.addEventListener('input',()=>{runHealthBtn.disabled=!healthText.value.trim() || !currentUser || healthBusy;});
 document.getElementById('clearHealthBtn').addEventListener('click',()=>{
-  healthFile.value=''; extractedDocument=null; healthText.value=''; document.getElementById('healthFileName').textContent='Chọn hồ sơ y tế'; document.getElementById('healthFileMeta').textContent='Chưa chọn tài liệu'; document.getElementById('extractedPreview').hidden=true; runHealthBtn.disabled=true; extractBtn.disabled=true; healthResults.replaceChildren(); healthStatus(extractStatus,'Đã xóa tài liệu khỏi giao diện.'); healthStatus(runHealthStatus,'Chưa có văn bản để phân tích.');
+  healthFile.value=''; extractedDocument=null; healthText.value=''; document.getElementById('healthFileName').textContent='Chọn hồ sơ y tế'; document.getElementById('healthFileMeta').textContent='Chưa chọn tài liệu'; document.getElementById('extractedPreview').hidden=true; runHealthBtn.disabled=true; extractBtn.disabled=true; healthResults.replaceChildren(); healthStatus(extractStatus,'Đã xóa nội dung khỏi phiên hiện tại. Hồ sơ đã lưu vẫn còn trong Lịch sử hồ sơ cho tới khi bạn xóa riêng.'); healthStatus(runHealthStatus,'Chưa có văn bản để phân tích.');
 });
 function renderHealthResults(data) {
   healthResults.replaceChildren();
@@ -949,6 +1311,7 @@ function renderHealthResults(data) {
     note.textContent=report.clinical_boundary||'Chỉ tổng hợp số liệu được cung cấp; không thay thế xác minh BHYT hoặc tư vấn chuyên môn.'; card.append(note);
     healthResults.append(card);
   }
+  if(data.analysis_history){const historyNote=document.createElement('p');historyNote.className='health-muted';historyNote.textContent=data.analysis_history.persisted?'Lần phân tích đã được lưu vào lịch sử tài khoản.':(data.analysis_history.message||'Lần phân tích chưa được lưu.');healthResults.append(historyNote);}
   const limits=document.createElement('p'); limits.className='health-muted'; limits.textContent=(data.limitations||[]).join(' · '); healthResults.append(limits);
 }
 runHealthBtn.addEventListener('click',async()=>{
@@ -972,12 +1335,14 @@ runHealthBtn.addEventListener('click',async()=>{
       bhyt={eligible_amount:Number(eligible),coverage_rate:Number(rate),currency:'VND'};
       if(cap!=='') bhyt.patient_cap=Number(cap);
     }
-    const payload={document_text:textValue,agent_keys};
+    const payload={document_text:textValue,agent_keys,document_id:extractedDocument?.id || null,persist_history:document.getElementById("persistAnalysisHistory").checked};
     if(cost_items!==undefined) payload.cost_items=cost_items;
     if(bhyt!==undefined) payload.bhyt=bhyt;
     const data=await healthRequest('/healthcare/agents/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     renderHealthResults(data);
-    healthStatus(runHealthStatus,`Hoàn tất. ${data.agents_completed?.length||0}/${data.agents_requested?.length||0} Agent đã trả kết quả. Task: ${data.task_id}`);
+    const historyState=data.analysis_history?.persisted ? 'Đã lưu lịch sử phân tích.' : 'Kết quả chỉ tồn tại trong phiên này; chưa lưu được lịch sử.';
+    healthStatus(runHealthStatus,`Hoàn tất. ${data.agents_completed?.length||0}/${data.agents_requested?.length||0} Agent đã trả kết quả. ${historyState}`);
+    loadAnalysisHistory().catch(error => healthStatus(runHealthStatus, historyState + ' Không tải được danh sách lịch sử: ' + error.message, true));
   }
   catch(error){healthStatus(runHealthStatus,`Phân tích thất bại: ${error.message}`,true);}
   finally{healthBusy=false;runHealthBtn.disabled=!healthText.value.trim() || !currentUser;runHealthBtn.textContent='CHẠY PHÂN TÍCH';}

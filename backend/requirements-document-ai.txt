@@ -1,0 +1,4 @@
+# Optional dependencies for the isolated medical-document worker.
+# Docling provides layout-aware PDF/DOCX conversion, table reconstruction and OCR.
+# Do NOT add this file to the lightweight API requirements by default.
+docling>=2.0,<3
