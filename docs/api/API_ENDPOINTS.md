@@ -967,3 +967,6 @@ All three routes require the authenticated Bearer token used by the Backend. The
 | POST | `/companion/actions/{action_id}/reject` | Người dùng từ chối đề xuất |
 
 Các endpoint yêu cầu Bearer token. Owner ID luôn lấy từ phiên đăng nhập, không nhận từ request body. Cần áp dụng migration `202611240009_companion_action_tasks.sql` trước khi bật nhóm API này. Worker và kênh gửi thông báo chưa được cấu hình trong môi trường triển khai.
+
+
+| GET | `/conversations?limit=30` | Liệt kê hội thoại của người dùng đăng nhập; giới hạn tối đa 100 bản ghi. |
