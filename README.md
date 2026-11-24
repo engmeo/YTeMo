@@ -150,27 +150,45 @@ Sáu phase release gates đã được chạy PASS theo log người dùng cung 
 - Không dùng dữ liệu bệnh nhân thật trong môi trường thử nghiệm chưa được phê duyệt.
 - Unit tests và release gates không thay thế đánh giá lâm sàng.
 
-## Clinical Knowledge Governance — nền tảng tri thức y khoa
+## Clinical Knowledge — Evidence-grade foundation
 
-Backend bổ sung module quản trị nguồn và tài liệu y khoa, gồm provenance, kiểm tra metadata/chất lượng trích xuất, hàng đợi thẩm định chuyên gia, phê duyệt theo phạm vi và audit.
+Backend đã có các workflow kỹ thuật cho source discovery, bản gốc bất biến ở tầng ứng dụng, PDF/page extraction, OCR fallback tùy cấu hình, claim extraction drafts, appraisal/review, version relations, conflict resolution và evidence retrieval có scope. Tất cả vẫn fail-closed: AI không phê duyệt lâm sàng; claim/document chưa đủ reviewer độc lập không được retrieval.
+
+### API chính
 
 | Endpoint | Chức năng |
 |---|---|
-| GET /clinical-knowledge/sources | Danh mục nguồn tri thức được đăng ký |
-| POST /clinical-knowledge/documents | Đăng ký tài liệu và chạy kiểm tra tự động |
-| GET /clinical-knowledge/documents | Danh sách tài liệu, có thể lọc theo status |
-| GET /clinical-knowledge/review-queue | Hàng đợi dành cho reviewer được cấp quyền |
-| GET /clinical-knowledge/documents/{id} | Reviewer đọc nội dung gốc đã trích xuất |
-| POST /clinical-knowledge/documents/{id}/review | Ghi nhận phê duyệt/từ chối/yêu cầu sửa |
+| GET `/clinical-knowledge/sources` | Source Registry |
+| POST `/clinical-knowledge/sources/{source_key}/discover` | Tìm PDF trên domain nguồn đã đăng ký (knowledge_admin) |
+| POST `/clinical-knowledge/candidates/{id}/ingest` | Fetch PDF, lưu bản gốc private theo SHA-256, trích xuất từng trang (knowledge_admin) |
+| GET `/clinical-knowledge/documents/{id}/original-url` | Signed URL 5 phút cho reviewer |
+| GET `/clinical-knowledge/documents/{id}/pages` | Báo cáo chất lượng từng trang |
+| POST `/clinical-knowledge/documents/{id}/claims/suggest` | AI tạo claim draft, quote phải khớp trang; không tự lưu/duyệt |
+| POST `/clinical-knowledge/documents/{id}/claims` | Tạo evidence claim có exact quote và locator |
+| POST `/clinical-knowledge/claims/{id}/review` | Appraisal theo AGREE II/GRADE/AMSTAR 2/RoB 2/ROBINS-I/QUADAS-2 |
+| GET `/clinical-knowledge/documents/{id}/version-candidates` | Tìm ứng viên phiên bản cùng official identifier |
+| POST `/clinical-knowledge/documents/{id}/version-relations` | Thẩm định quan hệ phiên bản; hai reviewer độc lập |
+| POST `/clinical-knowledge/conflicts` | Đăng ký xung đột giữa các claim đã duyệt |
+| POST `/clinical-knowledge/conflicts/{id}/review` | Xử lý conflict với hai reviewer độc lập |
+| POST `/clinical-knowledge/retrieve` | Truy xuất claim đã duyệt, citation và scope |
+| POST `/chat` | Có thể nhận thêm `evidence_request` để đưa evidence context đã lọc vào Companion |
 
-**Ranh giới an toàn:** domain match không xác thực tài liệu; đăng ký mới luôn ở DISCOVERED. Các domain guideline/thuốc/chẩn đoán yêu cầu hai reviewer độc lập đã xác minh credential. AI chỉ hỗ trợ trích xuất/đối chiếu, không tự chấm độ chắc chắn hay phê duyệt lâm sàng. Chưa bật clinical retrieval hoặc clinical decision support.
+### Ranh giới an toàn
 
-Layer 1 được tổ chức thành 7 knowledge domains: national guidelines, WHO guidelines, specialty guidelines, medication/pharmacovigilance, reviewed health education, diagnostics/clinical reference và prevention/public health. Có terminology registry (ICD-10/11, ATC/DDD, LOINC, SNOMED CT, UCUM), evidence-claim schema và conflict registry. Taxonomy/schema không đồng nghĩa đã có dữ liệu hoặc chuyên gia thẩm định.
+- Source-domain match, SHA-256, OCR confidence và exact-quote matching không chứng minh tài liệu chính thống hoặc kết luận y khoa đúng.
+- OCR, claim draft và retrieval đều có thể sai; claim phải được đối chiếu bản PDF gốc.
+- Retrieval hiện là structured lexical matching, chưa phải semantic/vector/hybrid retrieval.
+- Chưa có scheduler crawler, reviewer UI, frontend evidence form, OCR runtime validation trên tài liệu scan hoặc external clinical validation.
+- Không dùng làm chẩn đoán/kê đơn độc lập. Chỉ sử dụng trong clinical workflow sau khi reviewer credential, scope, migrations, deployment và đánh giá chuyên gia đã hoàn tất.
 
-- Kiến trúc, tiêu chuẩn bằng chứng, vòng đời và giới hạn: [docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md](docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md)
-- Migrations (chạy theo thứ tự):
-  - [202611240001_clinical_knowledge_governance.sql](supabase/migrations/202611240001_clinical_knowledge_governance.sql)
-  - [202611240002_evidence_grade_clinical_knowledge.sql](supabase/migrations/202611240002_evidence_grade_clinical_knowledge.sql)
+Tài liệu kiến trúc, quy trình, API và giới hạn: [docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md](docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md).
+
+Migrations (chạy theo thứ tự):
+- `202611240003_clinical_knowledge_governance.sql`
+- `202611240004_evidence_grade_clinical_knowledge.sql`
+- `202611240005_clinical_knowledge_ingestion_evidence_workflows.sql`
+- `202611240006_clinical_knowledge_independent_resolution.sql`
+
 
 ## 10. Đóng góp
 
