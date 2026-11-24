@@ -83,7 +83,18 @@ def route_request(message: str, evidence_context: str = "") -> dict[str, Any]:
         name for name, terms in _INTENT_TERMS.items()
         if any(_normalize_vietnamese(term) in normalized for term in terms)
     ]
-    emergency = any(term in normalized for term in _EMERGENCY_TERMS)
+    import re
+    emergency = False
+    for term in _EMERGENCY_TERMS:
+        normalized_term = _normalize_vietnamese(term)
+        for match in re.finditer(re.escape(normalized_term), normalized):
+            prefix = normalized[max(0, match.start() - 28):match.start()]
+            if re.search(r"\\b(khong|chua|khong bi|khong con)\\s*$", prefix):
+                continue
+            emergency = True
+            break
+        if emergency:
+            break
     complexity_reasons = [
         term for term in _COMPLEXITY_TERMS
         if _normalize_vietnamese(term) in normalized
