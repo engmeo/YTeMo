@@ -33,6 +33,10 @@ class ModelIntelligenceTests(unittest.TestCase):
         self.assertEqual(route["profile"], "fast")
         self.assertTrue(route["emergency_signal"])
 
+    def test_negated_emergency_phrase_does_not_trigger_emergency_route(self):
+        route = route_request("Tôi không bị khó thở, chỉ muốn hỏi lịch khám")
+        self.assertFalse(route["emergency_signal"])
+
     def test_catalog_marks_models_as_not_default_enabled(self):
         catalog = model_catalog()
         self.assertGreaterEqual(len(catalog["models"]), 4)
