@@ -584,9 +584,18 @@ async function openCompanionDashboard() {
       card.style.cssText='background:#fff;border:1px solid #d9ded5;padding:14px;min-width:0';
       const heading=document.createElement('b');heading.textContent=names[index];
       const status=document.createElement('div');status.style.cssText='font:700 11px DM Mono;margin:8px 0;color:'+(result.ok?'#087e73':'#a34f37');status.textContent=result.ok?'API OK':'API ERROR';
-      const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;font:11px/1.5 DM Mono;color:#52665d';
+      const metric=document.createElement('div');metric.style.cssText='font:800 24px Manrope;color:#173b38;margin:10px 0';
+      if(!result.ok){metric.textContent='Chưa khả dụng';}
+      else if(index===0){metric.textContent=(result.data.open_needs_count||0)+' nhu cầu đang mở';}
+      else if(index===1){metric.textContent=((result.data.items||[]).length)+' mục ngữ cảnh';}
+      else if(index===2){metric.textContent=((result.data.needs||[]).length)+' nhu cầu';}
+      else {metric.textContent=((result.data.proposals||[]).length)+' đề xuất';}
+      const detail=document.createElement('details');
+      const summary=document.createElement('summary');summary.textContent='Xem dữ liệu chi tiết';summary.style.cssText='cursor:pointer;font-size:11px;color:#63786d';
+      const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto;font:10px/1.5 DM Mono;color:#52665d;margin-top:8px';
       pre.textContent=result.ok?JSON.stringify(result.data,null,2):result.error;
-      card.append(heading,status,pre);cards.appendChild(card);
+      detail.append(summary,pre);
+      card.append(heading,status,metric,detail);cards.appendChild(card);
     });
     const failed=results.filter(x=>!x.ok).length;
     state.textContent=failed?(4-failed)+' / 4 API thành công. Các lỗi bên dưới cần kiểm tra quyền truy cập hoặc migration.':'Đã tải dữ liệu trực tiếp từ 4 API của backend.';
