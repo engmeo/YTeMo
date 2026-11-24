@@ -15,6 +15,7 @@ from dataclasses import asdict
 from supabase import create_client
 
 from agent import chat, chat_stream, chat_events
+from multi_agent_orchestrator import run_multi_agent
 from agent_core import AgentCore, AgentCoreError
 from companion_core import (
     CompanionCore, ConsentScope, NeedStatus, UserPriority,
@@ -602,6 +603,8 @@ class HealthcareAnalysisRequest(BaseModel):
     cost_items: Optional[list[dict]] = None
     # BHYT is arithmetic only; eligibility/rate must be verified by the caller.
     bhyt: Optional[dict] = None
+    # Explicit opt-in: document text will be sent to the configured external/local LLM provider.
+    allow_external_llm_analysis: bool = False
 
 
 
@@ -750,6 +753,31 @@ def run_healthcare_agents(
             lab_items=lab_items,
             bhyt=bhyt,
         )
+
+        if request.allow_external_llm_analysis:
+            if os.getenv("YTEMO_ALLOW_EXTERNAL_DOCUMENT_LLM", "false").strip().lower() not in {"1", "true", "yes", "on"}:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Phân tích LLM hồ sơ chưa được quản trị viên bật. Dữ liệu hồ sơ chưa được gửi tới nhà cung cấp AI.",
+                )
+            if not (os.getenv("YTEMO_MODEL_BACKEND") or os.getenv("OPENROUTER_API_KEY")):
+                raise HTTPException(status_code=503, detail="Model Gateway chưa được cấu hình.")
+            aliases = {"lab": "laboratory", "bhyt": "insurance"}
+            requested = request.agent_keys or list(DEFAULT_AGENT_KEYS)
+            llm_agents = [aliases.get(key, key) for key in requested]
+            llm_result = run_multi_agent(
+                message="Phân tích hồ sơ y tế người dùng cung cấp. Chỉ trích xuất, đối chiếu và nêu giới hạn theo từng chuyên môn.",
+                evidence_context="KHÔNG CÓ CLINICAL KNOWLEDGE CLAIM ĐÃ ĐƯỢC DUYỆT CHO LƯỢT PHÂN TÍCH NÀY.",
+                document_context=request.document_text,
+                requested_agents=llm_agents,
+            )
+            result["llm_multi_agent_analysis"] = llm_result
+            result["llm_multi_agent_analysis"]["external_provider_opt_in"] = True
+        else:
+            result["llm_multi_agent_analysis"] = {
+                "status": "not_requested",
+                "message": "Chưa gửi nội dung hồ sơ tới LLM. Chỉ chạy các extractor và phép tính xác định hiện có.",
+            }
         return result
     except HTTPException:
         raise
