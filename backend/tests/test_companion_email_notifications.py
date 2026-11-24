@@ -51,5 +51,5 @@ def test_reminder_email_uses_verified_owner_email_and_idempotency(monkeypatch):
     assert result["recipient"] == "owner@example.test"
     assert captured["url"] == "https://api.resend.com/emails"
     assert captured["timeout"] == 15
-    assert "Idempotency-Key" in captured["headers"]
+    assert any(key.lower() == "idempotency-key" for key in captured["headers"])
     assert '"to": ["owner@example.test"]' in captured["payload"]
