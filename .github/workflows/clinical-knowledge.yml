@@ -3,6 +3,8 @@ name: Clinical Knowledge Governance Tests
 on:
   pull_request:
     paths:
+      - "backend/clinical_meta_analysis.py"
+      - "backend/test_clinical_meta_analysis.py"
       - "backend/clinical_evidence_intelligence.py"
       - "backend/test_clinical_evidence_intelligence.py"
       - "docs/CLINICAL_EVIDENCE_INTELLIGENCE.vi.md"
@@ -63,8 +65,8 @@ jobs:
       - name: Compile module and run focused tests
         working-directory: backend
         run: |
-          python -m py_compile clinical_knowledge.py clinical_knowledge_ingestion.py clinical_knowledge_workflows.py clinical_knowledge_evaluation.py clinical_evidence_intelligence.py run_clinical_knowledge_eval.py main.py
-          python -m unittest -v test_clinical_knowledge test_clinical_knowledge_ingestion test_clinical_knowledge_evaluation test_clinical_evidence_intelligence
+          python -m py_compile clinical_knowledge.py clinical_knowledge_ingestion.py clinical_knowledge_workflows.py clinical_knowledge_evaluation.py clinical_evidence_intelligence.py clinical_meta_analysis.py run_clinical_knowledge_eval.py main.py
+          python -m unittest -v test_clinical_knowledge test_clinical_knowledge_ingestion test_clinical_knowledge_evaluation test_clinical_evidence_intelligence test_clinical_meta_analysis
       - name: Syntax-check frontend JavaScript
         run: |
           python - <<'PY'
