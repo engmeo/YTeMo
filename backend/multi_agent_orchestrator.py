@@ -83,6 +83,7 @@ class MultiAgentState(TypedDict, total=False):
     evidence_context: str
     document_context: str
     requested_agents: list[str]
+    enabled: bool
     route: dict[str, Any]
     selected_agents: list[str]
     plan_reason: str
@@ -115,7 +116,7 @@ def _mandatory_agents(route: dict[str, Any]) -> list[str]:
 
 
 def _plan_node(state: MultiAgentState) -> dict[str, Any]:
-    route = route_request(state.get("message", ""), state.get("evidence_context", "") + " " + state.get("document_context", ""))
+    route = route_request(state.get("message", ""), state.get("evidence_context", ""))
     mandatory = list(dict.fromkeys(_mandatory_agents(route) + [key for key in state.get("requested_agents", []) if key in SPECIALISTS]))[:MAX_SPECIALISTS_PER_TURN]
     if not mandatory or route.get("emergency_signal"):
         return {
