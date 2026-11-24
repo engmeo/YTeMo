@@ -210,6 +210,7 @@ Các chỉ số chất lượng chỉ phát hiện dấu hiệu trích xuất k�
 - AI draft không được lưu hoặc phê duyệt tự động. Reviewer phải chọn, sửa và tạo claim bằng `POST /clinical-knowledge/documents/{id}/claims`.
 - Claim lưu population, intervention, comparator, outcomes, effect estimate (chỉ khi nguồn nêu), certainty, recommendation strength, page number, exact quote và locator.
 - `POST /clinical-knowledge/claims/{id}/review`: reviewer thẩm định theo AGREE II, GRADE, AMSTAR 2, RoB 2, ROBINS-I, QUADAS-2 hoặc OTHER; các framework có bộ domain bắt buộc.
+- Khi ACCEPTED, reviewer phải khai báo đã đối chiếu exact quote với PDF gốc (`source_quote_verified=true`); AI quote-match không thay thế xác minh bản gốc.
 - Claim ở trạng thái UNREVIEWED trước review; sau reviewer đầu tiên sẽ là PENDING_SECOND_REVIEW nếu domain yêu cầu hai người. Chỉ ACCEPTED sau đủ reviewer độc lập. Claim chưa ACCEPTED không được retrieval.
 
 AI chỉ hỗ trợ trích xuất. Nó không xác định effect estimate, certainty hoặc recommendation strength khi nguồn không nêu; không tự chuyển nội dung thành khuyến nghị. Việc quote khớp text chỉ chứng minh quote có trong bản trích xuất, không bảo đảm OCR không sai.
