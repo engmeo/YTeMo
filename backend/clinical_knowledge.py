@@ -247,8 +247,8 @@ def build_router(db, auth_dependency):
             raise HTTPException(status_code=409, detail="Tài liệu ở trạng thái không cho phép thẩm định lại.")
         if not reviewer_is_independent(doc.get("created_by"), str(user.id)):
             raise HTTPException(status_code=403, detail="Người đăng ký tài liệu không được tự thẩm định tài liệu đó.")
-        if request.decision == "APPROVED" and request.has_conflict_of_interest:
-            raise HTTPException(status_code=409, detail="Reviewer có xung đột lợi ích không được phê duyệt tài liệu.")
+        if request.has_conflict_of_interest:
+            raise HTTPException(status_code=409, detail="Reviewer có xung đột lợi ích không được thực hiện quyết định thẩm định.")
         if request.decision == "APPROVED":
             if not request.source_document_verified or not request.version_current or not request.license_cleared:
                 raise HTTPException(status_code=409, detail="Reviewer phải xác minh tài liệu gốc, phiên bản hiện hành và quyền sử dụng trước khi phê duyệt.")
@@ -293,6 +293,7 @@ def build_router(db, auth_dependency):
             updated = db.table("clinical_knowledge_documents").update({
                 "status": new_status, "reviewed_at": utc_now(),
                 "reviewed_by": str(user.id),
+                "license_status": "reviewer_cleared" if request.license_cleared else doc.get("license_status", "unknown"),
                 "approved_scope": request.scope if new_status == "CLINICAL_APPROVED" else [],
             }).eq("id", document_id).execute()
             db.table("clinical_knowledge_audit").insert({
