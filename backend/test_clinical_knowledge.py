@@ -2,7 +2,7 @@ import unittest
 from pydantic import ValidationError
 from clinical_knowledge import (
     KnowledgeDocumentCreate, automated_document_checks, host_is_within,
-    normalize_host, initial_document_status,
+    normalize_host, initial_document_status, is_reviewable_status,
 )
 
 class ClinicalKnowledgeChecksTests(unittest.TestCase):
@@ -49,6 +49,12 @@ class ClinicalKnowledgeChecksTests(unittest.TestCase):
             "target_population": "Adults",
         }
         self.assertEqual(KnowledgeDocumentCreate(**payload).published_at, "2025-01-15")
+    def test_only_unreviewed_or_pending_documents_can_be_reviewed(self):
+        self.assertTrue(is_reviewable_status("DISCOVERED"))
+        self.assertTrue(is_reviewable_status("AI_REVIEWED"))
+        self.assertFalse(is_reviewable_status("CLINICAL_APPROVED"))
+        self.assertFalse(is_reviewable_status("REJECTED"))
+        self.assertFalse(is_reviewable_status("SUPERSEDED"))
     def test_http_url_fails(self):
         metadata = {"title":"Guideline","publisher":"MoH","document_type":"guideline","source_url":"http://moh.gov.vn/doc","published_at":"2025","knowledge_domain":"national_guidelines","jurisdiction":"VN","target_population":"Adults"}
         result = automated_document_checks(metadata)
