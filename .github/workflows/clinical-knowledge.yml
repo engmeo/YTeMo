@@ -9,7 +9,7 @@ on:
       - "backend/requirements.txt"
       - ".github/workflows/clinical-knowledge.yml"
   push:
-    branches: [main]
+    branches: [main, feature/clinical-knowledge-governance]
     paths:
       - "backend/clinical_knowledge.py"
       - "backend/test_clinical_knowledge.py"
