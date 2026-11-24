@@ -22,6 +22,7 @@ on:
       - "backend/test_document_ai_adapter.py"
       - "backend/requirements-document-ai.txt"
       - "docs/DOCUMENT_AI_WORKER.vi.md"
+      - "docs/AGENT_QUALITY_ROADMAP.vi.md"
       - "backend/agent.py"
       - "backend/test_model_intelligence.py"
       - "backend/test_agent_orchestration.py"
