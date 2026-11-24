@@ -203,8 +203,10 @@ def build_router(db, auth_dependency):
             high_impact = doc.get("knowledge_domain") in {"medication", "clinical_guidelines", "diagnostics"}
             prior = db.table("clinical_knowledge_reviews").select("reviewer_id").eq("document_id", document_id).eq("decision", "APPROVED").execute()
             prior_reviewers = {item.get("reviewer_id") for item in (prior.data or [])}
-            if high_impact and str(user.id) not in prior_reviewers and len(prior_reviewers) < 1:
-                new_status = "AI_REVIEWED"  # first independent approval; second reviewer required
+            if high_impact:
+                if str(user.id) in prior_reviewers:
+                    raise HTTPException(status_code=409, detail="Reviewer thứ hai phải là một người độc lập.")
+                new_status = "AI_REVIEWED" if len(prior_reviewers) < 1 else "CLINICAL_APPROVED"
             else:
                 new_status = "CLINICAL_APPROVED"
         elif request.decision == "REJECTED":
