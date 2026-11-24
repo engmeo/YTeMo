@@ -670,6 +670,7 @@ class ProposalStatusRequest(BaseModel):
 class HealthcareAnalysisRequest(BaseModel):
     document_text: str = Field(min_length=1, max_length=200000)
     document_id: Optional[str] = None
+    persist_history: bool = False
     agent_keys: Optional[list[str]] = Field(default=None, min_length=1)
     # Structured financial inputs are optional and must be explicitly supplied.
     cost_items: Optional[list[dict]] = None
@@ -897,25 +898,35 @@ def run_healthcare_agents(
                 "status": "not_requested",
                 "message": "Chưa gửi nội dung hồ sơ tới LLM. Chỉ chạy các extractor và phép tính xác định hiện có.",
             }
-        try:
-            history_insert = db_client.table("healthcare_analysis_runs").insert({
-                "user_id": str(user.id),
-                "source_document_id": source_document_id,
-                "agent_keys": request.agent_keys or list(DEFAULT_AGENT_KEYS),
-                "status": "completed",
-                "result": result,
-            }).select("id").execute()
-            history_row = (history_insert.data or [{}])[0]
-            result["analysis_history"] = {
-                "persisted": bool(history_row.get("id")),
-                "id": history_row.get("id"),
-            }
-        except Exception as history_error:
-            print("HEALTHCARE ANALYSIS NOT PERSISTED:", type(history_error).__name__, flush=True)
+        if request.persist_history:
+            try:
+                run_status = result.get("status")
+                if run_status not in {"completed", "partial", "failed"}:
+                    run_status = "completed"
+                history_insert = db_client.table("healthcare_analysis_runs").insert({
+                    "user_id": str(user.id),
+                    "source_document_id": source_document_id,
+                    "agent_keys": request.agent_keys or list(DEFAULT_AGENT_KEYS),
+                    "status": run_status,
+                    "result": result,
+                }).select("id").execute()
+                history_row = (history_insert.data or [{}])[0]
+                result["analysis_history"] = {
+                    "persisted": bool(history_row.get("id")),
+                    "id": history_row.get("id"),
+                }
+            except Exception as history_error:
+                print("HEALTHCARE ANALYSIS NOT PERSISTED:", type(history_error).__name__, flush=True)
+                result["analysis_history"] = {
+                    "persisted": False,
+                    "reason": "MIGRATION_REQUIRED",
+                    "message": "Kết quả hiện chỉ có trong phiên này; cần áp dụng migration 202611240010_healthcare_analysis_history.sql để lưu lịch sử.",
+                }
+        else:
             result["analysis_history"] = {
                 "persisted": False,
-                "reason": "MIGRATION_REQUIRED",
-                "message": "Kết quả hiện chỉ có trong phiên này; cần áp dụng migration 202611240010_healthcare_analysis_history.sql để lưu lịch sử.",
+                "reason": "NOT_REQUESTED",
+                "message": "Bạn chưa chọn lưu kết quả vào lịch sử tài khoản.",
             }
         return result
     except HTTPException:
