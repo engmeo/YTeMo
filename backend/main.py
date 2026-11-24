@@ -1,4 +1,5 @@
 import os
+import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
@@ -36,7 +37,11 @@ from healthcare_cost_intelligence import (
     CostIntelligenceError, build_cost_intelligence_report,
 )
 from clinical_knowledge import build_router as build_clinical_knowledge_router
-from clinical_knowledge_workflows import build_workflow_router as build_clinical_knowledge_workflow_router
+from clinical_knowledge_workflows import (
+    EvidenceRetrievalRequest,
+    build_workflow_router as build_clinical_knowledge_workflow_router,
+    retrieve_approved_evidence,
+)
 
 load_dotenv()
 
@@ -101,6 +106,7 @@ security = HTTPBearer()
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     conversation_id: Optional[str] = None
+    evidence_request: Optional[EvidenceRetrievalRequest] = None
 
 
 def get_current_user(
@@ -266,6 +272,28 @@ def chat_endpoint(request: ChatRequest, user=Depends(get_current_user)):
             flush=True,
         )
 
+    # 2.7 Retrieve only explicitly scoped, human-approved clinical claims.
+    evidence_context = "NO CLINICAL EVIDENCE CONTEXT WAS REQUESTED. Do not present a diagnosis, prescription, dosage, or patient-specific clinical conclusion."
+    evidence_result = None
+    if request.evidence_request:
+        try:
+            evidence_result = retrieve_approved_evidence(db_client, request.evidence_request)
+            evidence_context = json.dumps(evidence_result, ensure_ascii=False, default=str)[:18000]
+            db_client.table("clinical_knowledge_audit").insert({
+                "actor_id": user_id,
+                "action": "COMPANION_EVIDENCE_RETRIEVAL",
+                "details": {
+                    "query_sha256": __import__("hashlib").sha256(request.evidence_request.query.encode("utf-8")).hexdigest(),
+                    "evidence_count": len(evidence_result.get("evidence", [])),
+                    "abstention": evidence_result.get("abstention", True),
+                    "retrieval_mode": evidence_result.get("retrieval_mode"),
+                },
+            }).execute()
+        except Exception as evidence_error:
+            print("CLINICAL EVIDENCE RETRIEVAL FAILED CLOSED:", type(evidence_error).__name__, flush=True)
+            evidence_context = "EVIDENCE RETRIEVAL FAILED. No clinical evidence is available for this turn. Do not give a clinical conclusion; explain the limitation and refer to a qualified clinician."
+            evidence_result = {"evidence": [], "abstention": True, "reason": "RETRIEVAL_ERROR"}
+
     # 3. Save user message.
     db_client.table("messages").insert({
         "conversation_id": conversation_id,
@@ -275,7 +303,7 @@ def chat_endpoint(request: ChatRequest, user=Depends(get_current_user)):
 
     # 4. Call the discovery agent.
     try:
-        reply = chat(request.message, history)
+        reply = chat(request.message, history, evidence_context)
     except Exception as e:
         print("GEMINI ERROR:", repr(e), flush=True)
         raise HTTPException(
@@ -295,7 +323,7 @@ def chat_endpoint(request: ChatRequest, user=Depends(get_current_user)):
         "updated_at": datetime.now(timezone.utc).isoformat()
     }).eq("id", conversation_id).eq("user_id", user_id).execute()
 
-    return {"conversation_id": conversation_id, "reply": reply}
+    return {"conversation_id": conversation_id, "reply": reply, "evidence_retrieval": evidence_result}
 
 
 class AgentTaskRequest(BaseModel):
