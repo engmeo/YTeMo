@@ -97,12 +97,12 @@ def build_router(db, auth_dependency):
     def require_reviewer(user):
         result = (
             db.table("clinical_knowledge_reviewers")
-            .select("user_id,role,specialties,is_active")
+            .select("user_id,role,specialties,is_active,credential_verified,credential_type,credential_identifier")
             .eq("user_id", str(user.id))
             .eq("is_active", True)
             .limit(1).execute()
         )
-        if not result.data or result.data[0].get("role") not in {"physician", "pharmacist", "clinical_reviewer"}:
+        if not result.data or result.data[0].get("role") not in {"physician", "pharmacist", "clinical_reviewer"} or not result.data[0].get("credential_verified"):
             raise HTTPException(status_code=403, detail="Tài khoản chưa được cấp quyền thẩm định lâm sàng.")
         return result.data[0]
 
@@ -122,6 +122,9 @@ def build_router(db, auth_dependency):
             item for item in (sources.data or [])
             if host_is_within(host, normalize_host(item["base_url"]))
         ]
+        domain = db.table("clinical_knowledge_domains").select("domain_key").eq("domain_key", request.knowledge_domain).eq("is_active", True).limit(1).execute()
+        if not domain.data:
+            raise HTTPException(status_code=422, detail="knowledge_domain không nằm trong taxonomy đã đăng ký.")
         checks = automated_document_checks(metadata, extracted_text)
         source_domain_matched = bool(matched)
         # A matching domain does not authenticate a particular document, its version,
@@ -200,15 +203,13 @@ def build_router(db, auth_dependency):
                 raise HTTPException(status_code=422, detail="Phải ghi đánh giá bằng chứng và phạm vi sử dụng được phê duyệt.")
             if doc.get("specialty") and doc["specialty"] not in (reviewer.get("specialties") or []):
                 raise HTTPException(status_code=403, detail="Reviewer không có chuyên môn được khai báo phù hợp với tài liệu.")
-            high_impact = doc.get("knowledge_domain") in {"medication", "clinical_guidelines", "diagnostics"}
+            domain_policy = db.table("clinical_knowledge_domains").select("required_reviewers").eq("domain_key", doc.get("knowledge_domain")).limit(1).execute()
+            required_reviewers = int(domain_policy.data[0]["required_reviewers"]) if domain_policy.data else 2
             prior = db.table("clinical_knowledge_reviews").select("reviewer_id").eq("document_id", document_id).eq("decision", "APPROVED").execute()
             prior_reviewers = {item.get("reviewer_id") for item in (prior.data or [])}
-            if high_impact:
-                if str(user.id) in prior_reviewers:
-                    raise HTTPException(status_code=409, detail="Reviewer thứ hai phải là một người độc lập.")
-                new_status = "AI_REVIEWED" if len(prior_reviewers) < 1 else "CLINICAL_APPROVED"
-            else:
-                new_status = "CLINICAL_APPROVED"
+            if str(user.id) in prior_reviewers:
+                raise HTTPException(status_code=409, detail="Reviewer này đã ghi nhận phê duyệt; cần reviewer độc lập khác.")
+            new_status = "AI_REVIEWED" if len(prior_reviewers) + 1 < required_reviewers else "CLINICAL_APPROVED"
         elif request.decision == "REJECTED":
             new_status = "REJECTED"
         else:
