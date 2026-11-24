@@ -33,7 +33,7 @@ def extract_document_with_docling(
 
     try:
         from docling.datamodel.base_models import InputFormat, DocumentStream
-        from docling.datamodel.pipeline_options import PdfPipelineOptions
+        from docling.datamodel.pipeline_options import PdfPipelineOptions, TesseractCliOcrOptions
         from docling.document_converter import DocumentConverter, PdfFormatOption
     except ImportError as exc:
         raise RuntimeError(
@@ -46,6 +46,7 @@ def extract_document_with_docling(
     pdf_options = PdfPipelineOptions(
         do_ocr=True,
         do_table_structure=True,
+        ocr_options=TesseractCliOcrOptions(lang=["vie", "eng"]),
         document_timeout=max(15, min(int(document_timeout_seconds), 180)),
     )
     converter = DocumentConverter(
@@ -55,7 +56,11 @@ def extract_document_with_docling(
     )
     stream = DocumentStream(name=filename, stream=BytesIO(data))
     try:
-        result = converter.convert(stream)
+        result = converter.convert(
+            stream,
+            max_num_pages=100,
+            max_file_size=10 * 1024 * 1024,
+        )
         document = result.document
         markdown = document.export_to_markdown()
     except Exception as exc:
