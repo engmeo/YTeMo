@@ -167,6 +167,7 @@ def chat_stream(
     evidence_context: str = "",
 ) -> Iterator[str]:
     """Yield approved answer text; multi-agent status events are exposed by chat_events."""
+    route = route_request(message, evidence_context) if route_request else {"emergency_signal": False}
     if route.get("emergency_signal"):
         yield EMERGENCY_RESPONSE
         return
