@@ -70,12 +70,25 @@ class KnowledgeDocumentCreate(BaseModel):
     specialty: str | None = Field(default=None, max_length=120)
     extracted_text: str | None = Field(default=None, max_length=2000000)
     license_status: str = Field(default="unknown", max_length=80)
+    knowledge_domain: str = Field(min_length=3, max_length=80)
+    jurisdiction: str = Field(min_length=2, max_length=80)
+    target_population: str = Field(min_length=3, max_length=500)
+    evidence_level: str | None = Field(default=None, max_length=100)
+    recommendation_strength: str | None = Field(default=None, max_length=100)
+    official_identifier: str | None = Field(default=None, max_length=200)
+    source_locator: str | None = Field(default=None, max_length=500)
+    limitations: str | None = Field(default=None, max_length=3000)
 
 
 class ReviewDecision(BaseModel):
     decision: str = Field(pattern="^(APPROVED|REJECTED|REQUEST_REVISION)$")
     rationale: str = Field(min_length=10, max_length=5000)
     scope: list[str] = Field(default_factory=list, max_length=30)
+    source_document_verified: bool = False
+    version_current: bool = False
+    license_cleared: bool = False
+    evidence_assessment: str = Field(default="", max_length=5000)
+    limitations: str = Field(default="", max_length=3000)
 
 
 def build_router(db, auth_dependency):
@@ -110,13 +123,16 @@ def build_router(db, auth_dependency):
             if host_is_within(host, normalize_host(item["base_url"]))
         ]
         checks = automated_document_checks(metadata, extracted_text)
-        source_verified = bool(matched)
-        status = "SOURCE_VERIFIED" if source_verified and checks["passed"] else "DISCOVERED"
+        source_domain_matched = bool(matched)
+        # A matching domain does not authenticate a particular document, its version,
+        # legal status, or clinical correctness. Never promote on host match alone.
+        status = "DISCOVERED"
         row = {
             **metadata,
             "source_url": source_url,
             "source_id": matched[0]["id"] if matched else None,
-            "source_verified": source_verified,
+            "source_verified": False,
+            "source_domain_matched": source_domain_matched,
             "automated_checks": checks,
             "content_hash": hashlib.sha256((extracted_text or "").encode("utf-8")).hexdigest() if extracted_text else None,
             "extracted_text": extracted_text,
@@ -174,13 +190,23 @@ def build_router(db, auth_dependency):
             raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
         doc = found.data[0]
         if request.decision == "APPROVED":
-            if not doc.get("source_verified") or not (doc.get("automated_checks") or {}).get("passed"):
-                raise HTTPException(status_code=409, detail="Tài liệu chưa đạt kiểm tra nguồn và chất lượng tự động.")
+            if not request.source_document_verified or not request.version_current or not request.license_cleared:
+                raise HTTPException(status_code=409, detail="Reviewer phải xác minh tài liệu gốc, phiên bản hiện hành và quyền sử dụng trước khi phê duyệt.")
+            if not (doc.get("automated_checks") or {}).get("passed"):
+                raise HTTPException(status_code=409, detail="Tài liệu chưa đạt kiểm tra metadata và toàn vẹn trích xuất.")
             if not str(doc.get("extracted_text") or "").strip() or len(str(doc.get("extracted_text") or "").strip()) < 200:
                 raise HTTPException(status_code=409, detail="Không thể phê duyệt khi chưa có nội dung tài liệu đã trích xuất đầy đủ.")
-            if not request.scope:
-                raise HTTPException(status_code=422, detail="Phải xác định phạm vi sử dụng được phê duyệt.")
-            new_status = "CLINICAL_APPROVED"
+            if not request.scope or not request.evidence_assessment.strip():
+                raise HTTPException(status_code=422, detail="Phải ghi đánh giá bằng chứng và phạm vi sử dụng được phê duyệt.")
+            if doc.get("specialty") and doc["specialty"] not in (reviewer.get("specialties") or []):
+                raise HTTPException(status_code=403, detail="Reviewer không có chuyên môn được khai báo phù hợp với tài liệu.")
+            high_impact = doc.get("knowledge_domain") in {"medication", "clinical_guidelines", "diagnostics"}
+            prior = db.table("clinical_knowledge_reviews").select("reviewer_id").eq("document_id", document_id).eq("decision", "APPROVED").execute()
+            prior_reviewers = {item.get("reviewer_id") for item in (prior.data or [])}
+            if high_impact and str(user.id) not in prior_reviewers and len(prior_reviewers) < 1:
+                new_status = "AI_REVIEWED"  # first independent approval; second reviewer required
+            else:
+                new_status = "CLINICAL_APPROVED"
         elif request.decision == "REJECTED":
             new_status = "REJECTED"
         else:
@@ -190,6 +216,10 @@ def build_router(db, auth_dependency):
                 "document_id": document_id, "reviewer_id": str(user.id),
                 "reviewer_role": reviewer["role"], "decision": request.decision,
                 "rationale": request.rationale, "approved_scope": request.scope,
+                "source_document_verified": request.source_document_verified,
+                "version_current": request.version_current, "license_cleared": request.license_cleared,
+                "evidence_assessment": request.evidence_assessment,
+                "limitations": request.limitations,
             }).execute()
             updated = db.table("clinical_knowledge_documents").update({
                 "status": new_status, "reviewed_at": utc_now(),
@@ -199,9 +229,12 @@ def build_router(db, auth_dependency):
             db.table("clinical_knowledge_audit").insert({
                 "document_id": document_id, "actor_id": str(user.id),
                 "action": "CLINICAL_REVIEW_" + request.decision,
-                "details": {"status": new_status, "scope": request.scope, "rationale": request.rationale},
+                "details": {"status": new_status, "scope": request.scope, "rationale": request.rationale,
+                            "evidence_assessment": request.evidence_assessment,
+                            "limitations": request.limitations},
             }).execute()
-            return {"document": updated.data[0] if updated.data else None, "status": new_status}
+            return {"document": updated.data[0] if updated.data else None, "status": new_status,
+                    "notice": "Tài liệu thuộc nhóm tác động cao chỉ được phê duyệt sau hai reviewer độc lập." if new_status == "AI_REVIEWED" else "Phê duyệt chỉ có hiệu lực trong approved_scope; không thay thế đánh giá lâm sàng tại từng ca."}
         except Exception as exc:
             print("CLINICAL KNOWLEDGE REVIEW ERROR:", repr(exc), flush=True)
             raise HTTPException(status_code=503, detail="Không thể lưu quyết định thẩm định.") from exc
