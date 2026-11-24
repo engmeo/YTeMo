@@ -260,8 +260,14 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
 @media(max-width:520px){.health-agent-list{grid-template-columns:1fr}.health-card{padding:18px}}
 
 
+/* Companion-first experience + dedicated authentication */
+.header-account{display:flex;align-items:center;margin-left:18px;position:relative}.login-open{border:0;background:var(--ink);color:#fff;padding:12px 17px;font-size:11px;font-weight:800;border-radius:2px;white-space:nowrap}.login-open:hover{background:var(--teal)}.user-menu-wrap{position:relative}.avatar-btn{width:38px;height:38px;border:0;border-radius:50%;background:var(--teal);color:#fff;font:800 12px var(--display);box-shadow:0 0 0 4px #087e7318}.user-dropdown{position:absolute;right:0;top:49px;width:220px;background:var(--paper);border:1px solid var(--line);box-shadow:0 15px 35px #132c3122;padding:9px;z-index:50}.user-dropdown button{width:100%;border:0;background:transparent;text-align:left;padding:11px 10px;font-size:12px;color:var(--ink)}.user-dropdown button:hover{background:#e8eee5}.profile-email{padding:10px;border-bottom:1px solid var(--line);font:10px var(--mono);color:var(--muted);overflow-wrap:anywhere}.login-screen{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:22px}.login-screen[hidden]{display:none}.login-backdrop{position:absolute;inset:0;background:#10272bd9;backdrop-filter:blur(9px)}.login-dialog{position:relative;width:min(470px,100%);padding:42px;background:var(--paper);border:1px solid #d5dfd4;box-shadow:0 30px 90px #0004}.login-dialog h2{font:800 38px/1 var(--display);letter-spacing:-.06em;margin:18px 0 10px}.login-dialog>p{font-size:12px;line-height:1.8;color:var(--muted)}.login-close{position:absolute;right:16px;top:12px;border:0;background:none;font-size:28px;color:var(--muted)}.login-dialog .auth-panel{min-height:0;padding:10px 0 0;border:0;box-shadow:none;background:transparent}.login-dialog .auth-panel label{margin-top:15px}.assistant-layout{grid-template-columns:.72fr 1.28fr}.assistant-info{min-height:650px}.companion-status{display:flex;gap:10px;align-items:center;margin-top:26px;padding:13px 0;border-top:1px solid #38504d;color:#c4d1c9;font:10px var(--mono)}.companion-workspace{background:var(--paper);border:1px solid var(--line);min-width:0;box-shadow:0 18px 50px #1b39300b}.companion-top{display:flex;justify-content:space-between;gap:15px;padding:28px 30px 20px;border-bottom:1px solid var(--line)}.companion-top h2{font:800 27px/1.08 var(--display);letter-spacing:-.05em;margin:12px 0 7px}.companion-top p{font-size:12px;line-height:1.7;color:var(--muted);margin:0}.companion-mark{width:48px;height:48px;flex:0 0 auto;display:grid;place-items:center;border-radius:50%;background:#e3eee3;color:var(--teal);font-size:26px}.companion-prompts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:18px 30px;border-bottom:1px solid var(--line)}.companion-prompts button{display:flex;gap:10px;align-items:center;text-align:left;padding:12px;border:1px solid #d7dfd5;background:#f7f7f0;color:var(--ink);font-size:11px;line-height:1.5}.companion-prompts button:hover{border-color:var(--teal);background:#edf4ed}.companion-prompts button span{font:10px var(--mono);color:var(--teal)}.companion-input-area{padding:20px 30px;background:#f5f5ee;border-bottom:1px solid var(--line)}.companion-input-area>label{display:block;font:9px var(--mono);letter-spacing:1.3px;color:#63786d;margin-bottom:9px}.chat-compose{display:flex;flex-direction:column;gap:9px;padding:0;border:0;background:transparent}.chat-compose textarea{width:100%;min-height:95px;resize:vertical;padding:14px;border:1px solid #cbd5ca;background:#fff;font:13px/1.6 var(--sans);outline:none}.chat-compose textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px #087e7312}.chat-compose button{align-self:flex-end;width:auto;padding:12px 18px;background:var(--teal);font-size:11px;font-weight:800}.chat-compose button:disabled{opacity:.45;cursor:not-allowed}.companion-foot{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font:9px var(--mono);color:#809087}.chat-typing{display:none;color:var(--teal)}.chat-typing.show{display:inline}.companion-output{padding:22px 30px 15px}.companion-output-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.companion-output-head h3{font:700 19px var(--display);margin:7px 0 0}.reset-companion{border:1px solid #cbd5ca;background:transparent;padding:8px 10px;font-size:10px;color:var(--muted)}.chat-messages{height:auto;min-height:150px;max-height:430px;overflow:auto;padding:14px 0;display:flex;flex-direction:column;gap:10px;background:transparent}.companion-result{border:1px solid #d8e1d7;background:#fff;padding:18px}.companion-result.user-request{background:#f2f5ed}.companion-result .result-kicker{font:9px var(--mono);letter-spacing:1px;color:var(--teal);margin-bottom:8px}.companion-result h4{font:700 16px var(--display);margin:0 0 9px}.companion-result p{font-size:12px;line-height:1.8;color:#53675e;white-space:pre-wrap;margin:0}.companion-empty{min-height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#71847a;padding:20px}.companion-empty>span{font-size:26px;color:var(--teal)}.companion-empty b{font:700 14px var(--display);margin:8px 0}.companion-empty p{font-size:11px;line-height:1.7;max-width:330px;margin:0}.companion-workspace .chat-foot{padding:0 30px 20px;background:transparent;font:9px/1.7 var(--mono);color:#849188}
+@media(max-width:850px){.header-account{margin-left:auto;margin-right:12px}.companion-prompts{padding:15px;grid-template-columns:1fr}.companion-top,.companion-input-area,.companion-output{padding-left:18px;padding-right:18px}.login-dialog{padding:32px 24px}.assistant-info{min-height:0}}
+@media(max-width:520px){header{gap:8px}.header-account{margin-left:auto}.login-open{padding:10px 12px;font-size:10px}.companion-top{padding:22px 18px}.companion-top h2{font-size:23px}.companion-foot{flex-direction:column}.companion-output-head{align-items:flex-start}.login-dialog{padding:30px 20px}}
+
 </style></head><body><div class="grain"></div>
-<header><a class="brand" href="#" onclick="go('home');return false"><span class="brandmark"></span> Y TẾ <span>MỞ</span></a><button class="menu" onclick="document.querySelector('nav').classList.toggle('open')">☰</button><nav id="nav"><button class="active" data-page="home" onclick="go('home')">Tổng quan</button><button data-page="assistant" onclick="go('assistant')">Trợ lý AI</button><button data-page="healthcare" onclick="go('healthcare')">Hồ sơ y tế</button><button data-page="system" onclick="go('system')">Agent system</button><button data-page="research" onclick="go('research')">Nghiên cứu</button><button data-page="projects" onclick="go('projects')">Dự án</button><button data-page="community" onclick="go('community')">Cộng đồng</button><button class="nav-cta" onclick="go('system')">Khám phá hệ thống ↗</button></nav></header>
+<header><a class="brand" href="#" onclick="go('home');return false"><span class="brandmark"></span> Y TẾ <span>MỞ</span></a><button class="menu" onclick="document.querySelector('nav').classList.toggle('open')">☰</button><nav id="nav"><button class="active" data-page="home" onclick="go('home')">Tổng quan</button><button data-page="assistant" onclick="go('assistant')">Companion Agent</button><button data-page="healthcare" onclick="go('healthcare')">Hồ sơ y tế</button><button data-page="system" onclick="go('system')">Agent system</button><button data-page="research" onclick="go('research')">Nghiên cứu</button><button data-page="projects" onclick="go('projects')">Dự án</button><button data-page="community" onclick="go('community')">Cộng đồng</button><button class="nav-cta" onclick="go('system')">Khám phá hệ thống ↗</button></nav><div class="header-account"><button id="loginOpenBtn" class="login-open" type="button">Đăng nhập ↗</button><div id="userMenuWrap" class="user-menu-wrap" hidden><button id="avatarBtn" class="avatar-btn" type="button" aria-label="Mở menu tài khoản">YT</button><div id="userDropdown" class="user-dropdown" hidden><div id="profileEmail" class="profile-email"></div><button type="button" id="profileBtn">Hồ sơ tài khoản</button><button type="button" id="settingsBtn">Cài đặt</button><button type="button" id="logoutBtn">Đăng xuất</button></div></div></div></header>
+<div id="loginScreen" class="login-screen" hidden><div class="login-backdrop" data-close-login></div><section class="login-dialog" role="dialog" aria-modal="true" aria-labelledby="loginTitle"><button class="login-close" type="button" data-close-login aria-label="Đóng">×</button><div class="mono eyebrow">SECURE ACCESS / SUPABASE AUTH</div><h2 id="loginTitle">Chào mừng trở lại.</h2><p>Đăng nhập để Companion Agent có thể tiếp tục hỗ trợ và đồng bộ ngữ cảnh của bạn.</p><div class="auth-panel" id="authPanel"><form id="loginForm"><label for="loginEmail">EMAIL</label><input id="loginEmail" type="email" autocomplete="username" placeholder="email@example.com" required><label for="loginPassword">MẬT KHẨU</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Mật khẩu Supabase" required><button class="btn" id="loginBtn" type="submit">ĐĂNG NHẬP ↗</button></form><div class="auth-status" id="authStatus" role="status">Đang kết nối cấu hình hệ thống…</div></div></section></div>
 <main>
 <section class="page active" id="home"><div class="shell hero"><div class="hero-copy"><div class="mono eyebrow">CARE, WITHOUT BARRIERS — 01 / 05</div><h1 class="display">Sức khỏe<br>không nên là<br><i>một mê cung.</i></h1><p>Y TẾ MỞ là sáng kiến công nghệ hướng đến việc giúp mọi người hiểu nhu cầu sức khỏe của mình, tìm được con đường chăm sóc phù hợp và giảm những chi phí có thể tránh được.</p><div class="hero-actions"><button class="btn" onclick="go('system')">Khám phá hệ thống ↗</button><button class="btn outline" onclick="go('research')">Các hướng nghiên cứu</button></div><div class="hero-note"><span class="live-dot"></span> LẮNG NGHE NHU CẦU · KẾT NỐI NGUỒN LỰC · ĐỔI MỚI GIẢI PHÁP</div></div><div class="hero-art hero-space" id="heroArt" aria-label="Bản đồ không gian hành trình chăm sóc sức khỏe">
   <div class="space-caption mono">CARE JOURNEY / SPATIAL MODEL <span>FIG. 01</span></div>
@@ -287,56 +293,15 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
 </div></div><div class="ticker"><span><b>✳ ACCESS</b><b>✳ AFFORDABILITY</b><b>✳ CONTINUITY</b><b>✳ PREVENTION</b><b>✳ OPEN COLLABORATION</b><b>✳ ACCESS</b><b>✳ AFFORDABILITY</b><b>✳ CONTINUITY</b><b>✳ PREVENTION</b><b>✳ OPEN COLLABORATION</b></span></div><section class="statement"><div class="shell"><div class="mono" style="color:var(--acid)">THE PROBLEM WE START WITH</div><h2>Không phải ai cũng biết <em>mình cần hỏi gì,</em> bắt đầu từ đâu, hay làm sao để có được sự chăm sóc phù hợp.</h2><p>Rào cản y tế không chỉ nằm ở bệnh viện. Nó có thể bắt đầu từ thông tin khó hiểu, chi phí không dự đoán được, khoảng cách địa lý, quy trình rời rạc hoặc việc không có ai giúp kết nối các mảnh ghép.</p></div></section><div class="shell section"><div class="section-head"><div><div class="mono eyebrow">A connected approach / 03 capabilities</div><h2>Không chỉ trả lời.<br>Giúp hành trình tiến lên.</h2></div><p>Một nền tảng phối hợp nhiều năng lực: khám phá nhu cầu, điều phối dịch vụ và chuyển vấn đề thực tế thành nghiên cứu có thể kiểm chứng.</p></div><div class="triad"><article class="tile"><div class="idx">01 — UNDERSTAND</div><div class="tile-art">◉</div><h3>Hiểu điều chưa được nói thành lời.</h3><p>Chủ động hỏi có mục đích, từng bước làm rõ điều người dùng thực sự cần.</p></article><article class="tile"><div class="idx">02 — COORDINATE</div><div class="tile-art">⌘</div><h3>Kết nối đúng nguồn lực.</h3><p>Điều hướng, chi phí, quyền lợi và tính liên tục của chăm sóc.</p></article><article class="tile"><div class="idx">03 — INNOVATE</div><div class="tile-art">⟡</div><h3>Biến vấn đề thành giải pháp.</h3><p>Kết nối cộng đồng, chuyên gia, nhà nghiên cứu và kỹ sư.</p></article></div><a class="bottom-link" href="#" onclick="go('system');return false">Khám phá kiến trúc hệ thống <span>↗</span></a></div></section>
 
 <section class="page" id="assistant">
- <div class="shell page-hero">
-  <div class="mono eyebrow">02 / 06 — TRỢ LÝ Y TẾ MỞ</div>
-  <h1>Bạn không cần<br>biết phải hỏi <i>điều gì.</i></h1>
-  <p>Hãy bắt đầu bằng điều đang khiến bạn băn khoăn. Trợ lý sẽ lắng nghe, làm rõ từng bước và ghi nhớ ngữ cảnh trong cuộc trò chuyện. Đây là bản thử nghiệm, không thay thế bác sĩ.</p>
- </div>
+ <div class="shell page-hero"><div class="mono eyebrow">02 / 07 — PERSONAL HEALTHCARE COMPANION</div><h1>Một người đồng hành.<br><i>Nhiều bước chăm sóc.</i></h1><p>Companion Agent giúp bạn xác định điều đang cần, hỏi thêm đúng thông tin còn thiếu, đề xuất bước tiếp theo và điều phối các Agent chuyên môn khi phù hợp. Không cần tự tìm đúng công cụ hay chuyên khoa ngay từ đầu.</p></div>
  <div class="shell assistant-layout">
-  <aside class="assistant-info">
-   <div class="mono" style="color:var(--acid)">PROACTIVE NEED DISCOVERY</div>
-   <h2>Một cuộc trò chuyện. Một nhu cầu được làm rõ.</h2>
-   <p>Không cần chọn đúng chuyên khoa hay biết trước tên dịch vụ. Bạn có thể kể bằng ngôn ngữ đời thường, kể cả khi chưa biết chính xác mình cần gì.</p>
-   <p>Agent sẽ hỏi từng câu một, làm rõ hoàn cảnh và rào cản, sau đó mới xác định hướng hỗ trợ phù hợp.</p>
-   <div class="safety-note"><b>Giới hạn an toàn</b><br>Không tự chẩn đoán, kê đơn hoặc thay thế quyết định của nhân viên y tế. Không nhập thông tin định danh hay hồ sơ bệnh án thật vào bản thử nghiệm.</div>
-  </aside>
-  <div>
-   <div class="auth-panel" id="authPanel">
-    <div class="mono eyebrow">SECURE ACCESS / SUPABASE AUTH</div>
-    <h3>Đăng nhập để bắt đầu</h3>
-    <p>Sử dụng tài khoản thử nghiệm Supabase mà bạn đã tạo. Phiên đăng nhập được quản lý bởi Supabase; mật khẩu không được gửi đến Gemini.</p>
-    <form id="loginForm">
-     <label for="loginEmail">EMAIL</label>
-     <input id="loginEmail" type="email" autocomplete="username" placeholder="email@example.com" required>
-     <label for="loginPassword">MẬT KHẨU</label>
-     <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Mật khẩu Supabase" required>
-     <button class="btn" id="loginBtn" type="submit">ĐĂNG NHẬP ↗</button>
-    </form>
-    <div class="auth-status" id="authStatus" role="status">Đang kết nối cấu hình hệ thống…</div>
-   </div>
-   <div class="chat-panel" id="chatPanel" hidden>
-    <div class="chat-top">
-     <div class="chat-identity"><span class="chat-avatar">✳</span><span>Trợ lý Y TẾ MỞ<small id="chatState">Đang kết nối</small></span></div>
-     <div class="chat-tools"><span class="account-line" id="accountEmail"></span><button id="newChatBtn" type="button">＋ Cuộc mới</button><button id="logoutBtn" type="button">Đăng xuất</button></div>
-    </div>
-    <div class="chat-messages" id="chatMessages" aria-live="polite">
-     <div class="chat-msg assistant">Chào bạn! Bạn không cần phải biết chính xác mình cần dịch vụ hay thiết bị y tế nào.
-
-Gần đây có điều gì về sức khỏe, việc chăm sóc người thân hoặc chi phí khám chữa bệnh khiến bạn băn khoăn không?</div>
-    </div>
-    <div class="chat-typing" id="chatTyping">TRỢ LÝ ĐANG SUY NGHĨ…</div>
-    <div class="chat-quick" id="chatQuick">
-     <button type="button" data-message="Tôi đang lo chi phí khám chữa bệnh quá cao.">Chi phí khám chữa bệnh</button>
-     <button type="button" data-message="Tôi đang chăm sóc người thân tại nhà và không biết bắt đầu từ đâu.">Chăm sóc người thân</button>
-     <button type="button" data-message="Tôi muốn phòng bệnh nhưng không biết cần theo dõi điều gì.">Phòng bệnh</button>
-     <button type="button" data-message="Tôi có một ý tưởng thiết bị y tế giá rẻ.">Ý tưởng công nghệ</button>
-    </div>
-    <form class="chat-compose" id="chatForm">
-     <input id="chatMessage" type="text" maxlength="4000" placeholder="Bạn cứ chia sẻ theo cách của mình…" autocomplete="off" required>
-     <button id="sendMessageBtn" type="submit" aria-label="Gửi tin nhắn">↑</button>
-    </form>
-    <div class="chat-foot">BẢN THỬ NGHIỆM · Không thay thế tư vấn y tế chuyên môn · Không nhập dữ liệu định danh hoặc bệnh án thật.</div>
-   </div>
+  <aside class="assistant-info"><div class="mono" style="color:var(--acid)">YOUR CARE COMPANION</div><h2>Không chỉ trả lời. Cùng bạn đi tiếp.</h2><p>Hãy mô tả tình huống bằng ngôn ngữ tự nhiên. Companion sẽ làm rõ mục tiêu, bối cảnh và rào cản; sau đó đề xuất một lộ trình có thể thực hiện.</p><p>Các Specialist Agents được gọi khi có nhiệm vụ phù hợp, thay vì hiển thị như những công cụ rời rạc.</p><div class="companion-status"><span class="live-dot"></span><span id="chatState">Đang chờ đăng nhập</span></div><div class="safety-note"><b>Giới hạn an toàn</b><br>Không tự chẩn đoán, kê đơn hoặc thay thế nhân viên y tế. Với dấu hiệu khẩn cấp, hãy liên hệ cấp cứu hoặc cơ sở y tế gần nhất.</div></aside>
+  <div class="companion-workspace" id="chatPanel">
+   <div class="companion-top"><div><div class="mono eyebrow">PERSONAL HEALTHCARE COMPANION</div><h2>Hôm nay bạn cần hỗ trợ điều gì?</h2><p id="companionWelcome">Đăng nhập để bắt đầu một phiên đồng hành được quản lý an toàn.</p></div><span class="companion-mark">✳</span></div>
+   <div class="companion-prompts" id="chatQuick"><button type="button" data-message="Tôi muốn tìm hiểu nên bắt đầu chăm sóc sức khỏe từ đâu."><span>01</span> Tôi cần định hướng chăm sóc sức khỏe</button><button type="button" data-message="Tôi đang lo lắng về chi phí khám chữa bệnh và quyền lợi BHYT."><span>02</span> Tôi cần làm rõ chi phí và BHYT</button><button type="button" data-message="Tôi muốn hiểu hồ sơ y tế và các thông tin cần theo dõi."><span>03</span> Tôi cần hiểu hồ sơ y tế</button><button type="button" data-message="Tôi đang chăm sóc người thân và cần một kế hoạch phù hợp."><span>04</span> Tôi đang chăm sóc người thân</button></div>
+   <div class="companion-input-area"><label for="chatMessage">MÔ TẢ ĐIỀU BẠN ĐANG CẦN</label><form class="chat-compose" id="chatForm"><textarea id="chatMessage" maxlength="4000" placeholder="Ví dụ: Tôi đang chăm sóc bố sau xuất viện, chưa rõ cần theo dõi những gì…" required></textarea><button id="sendMessageBtn" type="submit">Gửi yêu cầu ↗</button></form><div class="companion-foot"><span id="chatTyping" class="chat-typing">COMPANION ĐANG PHÂN TÍCH…</span><span id="companionAuthHint">Bạn cần đăng nhập để gửi yêu cầu.</span></div></div>
+   <div class="companion-output"><div class="companion-output-head"><div><div class="mono eyebrow">YOUR CARE PATHWAY</div><h3>Hướng dẫn và bước tiếp theo</h3></div><button id="newChatBtn" type="button" class="reset-companion">Làm mới phiên</button></div><div class="chat-messages" id="chatMessages" aria-live="polite"><div class="companion-empty"><span>✳</span><b>Lộ trình của bạn sẽ xuất hiện tại đây</b><p>Companion sẽ tóm tắt điều đã hiểu, thông tin còn thiếu và bước tiếp theo có thể thực hiện.</p></div></div></div>
+   <div class="chat-foot">Thông tin chỉ hỗ trợ định hướng và phối hợp chăm sóc; quyết định y khoa cần được xác nhận bởi nhân viên y tế có thẩm quyền.</div>
   </div>
  </div>
 </section>
@@ -384,7 +349,7 @@ Gần đây có điều gì về sức khỏe, việc chăm sóc người thân 
 <section class="page" id="community"><div class="shell page-hero"><div class="mono eyebrow">06 / 06 — OPEN COLLABORATION</div><h1>Không ai nên<br>giải quyết <i>một mình.</i></h1><p>Người dân hiểu những khó khăn trong cuộc sống. Nhân viên y tế hiểu nhu cầu chuyên môn. Nhà nghiên cứu và kỹ sư có thể cùng phát triển giải pháp. Y TẾ MỞ muốn tạo nơi những góc nhìn ấy gặp nhau.</p></div><div class="shell"><div class="community-band"><div><div class="mono" style="color:var(--acid)">BUILD WITH THE COMMUNITY</div><h2>Một vấn đề thật. Nhiều năng lực cùng giải.</h2><p>Mạng lưới cộng tác mở để ghi nhận vấn đề, đặt câu hỏi nghiên cứu, phát triển prototype và đánh giá trong điều kiện phù hợp.</p></div><div class="roles"><div class="role"><b>♡ Người dân</b>Trải nghiệm và nhu cầu thực tế</div><div class="role"><b>✚ Bác sĩ</b>Kiến thức chuyên môn và an toàn</div><div class="role"><b>⌘ Nhà nghiên cứu</b>Phương pháp và bằng chứng</div><div class="role"><b>⚙ Kỹ sư</b>Thiết kế và chế tạo</div><div class="role" style="grid-column:span 2"><b>◎ Bệnh viện · Trường viện · Nhà sản xuất</b>Hạ tầng thử nghiệm và triển khai có trách nhiệm</div></div></div><div class="contact-form"><div class="mono eyebrow">LET'S START WITH A PROBLEM</div><h2 style="font:800 42px var(--display);letter-spacing:-2px">Bạn muốn cùng giải quyết điều gì?</h2><form onsubmit="event.preventDefault();toast('Đây là bản giao diện tĩnh — biểu mẫu chưa gửi dữ liệu.');"><div class="field"><label>VAI TRÒ CỦA BẠN</label><select><option>Người dân / người chăm sóc</option><option>Bác sĩ / nhân viên y tế</option><option>Nhà nghiên cứu</option><option>Kỹ sư / nhà sản xuất</option><option>Tổ chức / cơ sở y tế</option></select></div><div class="field"><label>EMAIL LIÊN HỆ</label><input type="email" placeholder="ten@email.com"></div><div class="field"><label>VẤN ĐỀ BẠN MUỐN GIẢI QUYẾT</label><textarea placeholder="Hãy mô tả vấn đề, ý tưởng hoặc năng lực bạn muốn đóng góp..."></textarea></div><button class="btn" type="submit">GỬI ĐỀ XUẤT ↗</button></form></div></div></section>
 </main><footer class="footer"><div><b style="font:800 18px var(--display)">Y TẾ MỞ.</b><p>Care, without barriers.</p></div><div><p>Hiểu nhu cầu · Kết nối nguồn lực · Đổi mới giải pháp</p><p>Prototype giao diện — chưa phải dịch vụ y tế.</p></div></footer><div class="toast" id="toast"></div>
 <script>
-const pages=['home','assistant','healthcare','system','research','projects','community'];function go(id){pages.forEach(p=>document.getElementById(p).classList.toggle('active',p===id));document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));document.querySelector('nav').classList.remove('open');window.scrollTo({top:0,behavior:'smooth'});}
+const pages=['home','assistant','healthcare','system','research','projects','community'];function go(id){pages.forEach(p=>document.getElementById(p).classList.toggle('active',p===id));document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));document.querySelector('nav').classList.remove('open');document.getElementById('userDropdown')?.setAttribute('hidden','');window.scrollTo({top:0,behavior:'smooth'});}
 const info={orchestrator:{num:'01 / 06',type:'CONTROL NODE · GRAPH ROUTER',title:'Orchestrator',desc:'Quản lý trạng thái phiên làm việc, quyết định node tiếp theo dựa trên kết quả hiện tại, điều phối nhánh điều kiện và xử lý lỗi. Đây là bộ điều phối, không nhất thiết là một LLM riêng.',role:'Graph orchestration',input:'Shared state',output:'Next node / route',exec:'LangGraph workflow'},discovery:{num:'02 / 06',type:'AGENT · LLM + TOOLS',title:'Discovery Agent',desc:'Làm rõ mục tiêu, hoàn cảnh, rào cản và thông tin còn thiếu thông qua hội thoại có chủ đích. Agent cần hỏi từng câu có giá trị thông tin, không hỏi dồn và không chẩn đoán.',role:'Need discovery',input:'Natural language',output:'Structured need',exec:'LLM + state'},safety:{num:'03 / 06',type:'SAFETY NODE · RULES + CLINICAL REVIEW',title:'Safety Triage',desc:'Kiểm tra dấu hiệu cảnh báo bằng quy tắc được chuyên gia y tế xác nhận. Trường hợp có dấu hiệu khẩn cấp phải ưu tiên hướng dẫn tìm trợ giúp, không chờ hoàn tất luồng thông thường.',role:'Safety screening',input:'Symptoms / context',output:'Risk flags / route',exec:'Rules + approved protocol'},navigation:{num:'04 / 06',type:'AGENT / TOOL-ASSISTED SEARCH',title:'Care Navigation',desc:'Hỗ trợ tra cứu cơ sở, chuyên khoa, tuyến chăm sóc và điều kiện tiếp cận từ nguồn đáng tin cậy. Không tự khẳng định dịch vụ đang có nếu chưa xác minh.',role:'Care access',input:'Confirmed need',output:'Options / next steps',exec:'LLM + search tools'},cost:{num:'05 / 06',type:'DATA / COMPUTATION NODE',title:'Cost Intelligence',desc:'Tổng hợp giá, quyền lợi BHYT và khoản chi từ dữ liệu có nguồn. Phép tính cần thực hiện bằng logic có thể kiểm tra; LLM chỉ giải thích và nêu điểm chưa chắc chắn.',role:'Cost transparency',input:'Price / coverage data',output:'Cost breakdown',exec:'Python + verified data'},review:{num:'06 / 06',type:'HUMAN-IN-THE-LOOP',title:'Human Review',desc:'Tạm dừng luồng để người dùng xác nhận thông tin hoặc chuyên gia xem xét các quyết định cần thẩm quyền chuyên môn. Hệ thống không tự phê duyệt quyết định lâm sàng.',role:'Approval / oversight',input:'Draft recommendation',output:'Confirmed action',exec:'Interrupt + checkpoint'}};
 function inspect(k){let d=info[k];document.querySelectorAll('.node').forEach(n=>n.classList.toggle('active',n.dataset.node===k));document.getElementById('nodeNum').textContent=d.num;document.getElementById('nodeType').textContent=d.type;document.getElementById('nodeTitle').textContent=d.title;document.getElementById('nodeDesc').textContent=d.desc;document.getElementById('nodeRole').textContent=d.role;document.getElementById('nodeInput').textContent=d.input;document.getElementById('nodeOutput').textContent=d.output;document.getElementById('nodeExec').textContent=d.exec;}
 let zoom=1;function zoomGraph(d){zoom=Math.max(.8,Math.min(1.4,zoom+d*.1));document.getElementById('nodes').setAttribute('transform',`translate(${360*(1-zoom)} ${245*(1-zoom)}) scale(${zoom})`);document.getElementById('edges').setAttribute('transform',`translate(${360*(1-zoom)} ${245*(1-zoom)}) scale(${zoom})`)}function resetGraph(){zoom=1;document.getElementById('nodes').removeAttribute('transform');document.getElementById('edges').removeAttribute('transform');document.querySelectorAll('.node').forEach(n=>n.classList.remove('running'));document.querySelectorAll('.edge').forEach(e=>e.classList.remove('active'));document.getElementById('log').innerHTML='<div>[SYSTEM] Graph reset.</div><div>[STATE] Awaiting scenario.</div>';document.getElementById('runBtn').disabled=false;document.getElementById('runBtn').textContent='▶ CHẠY THỬ';}
@@ -419,24 +384,25 @@ function setAuthStatus(message, isError=false) {
   authStatus.style.color = isError ? '#a34f37' : '#668071';
 }
 function appendMessage(content, role='assistant') {
-  const node = document.createElement('div');
-  node.className = `chat-msg ${role}`;
-  node.textContent = content;
-  chatMessages.appendChild(node);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-  return node;
+  const node = document.createElement('article');
+  node.className = 'companion-result' + (role === 'user' ? ' user-request' : '');
+  const kicker = document.createElement('div'); kicker.className = 'result-kicker';
+  kicker.textContent = role === 'user' ? 'YÊU CẦU CỦA BẠN' : role === 'system' ? 'TRẠNG THÁI HỆ THỐNG' : 'COMPANION RESPONSE';
+  const title = document.createElement('h4');
+  title.textContent = role === 'user' ? 'Bạn đang cần hỗ trợ' : role === 'system' ? 'Thông báo' : 'Hướng dẫn và bước tiếp theo';
+  const body = document.createElement('p'); body.textContent = content;
+  node.append(kicker,title,body); chatMessages.appendChild(node); chatMessages.scrollTop = chatMessages.scrollHeight; return node;
 }
 function clearChat() {
-  chatMessages.innerHTML = '';
-  appendMessage('Chào bạn! Bạn không cần phải biết chính xác mình cần dịch vụ hay thiết bị y tế nào.\n\nGần đây có điều gì về sức khỏe, việc chăm sóc người thân hoặc chi phí khám chữa bệnh khiến bạn băn khoăn không?', 'assistant');
+  chatMessages.innerHTML = '<div class="companion-empty"><span>✳</span><b>Lộ trình của bạn sẽ xuất hiện tại đây</b><p>Companion sẽ tóm tắt điều đã hiểu, thông tin còn thiếu và bước tiếp theo có thể thực hiện.</p></div>';
 }
 function storageKey() { return currentUser ? `ytm_conversation_${currentUser.id}` : null; }
 function setBusy(value) {
   busy = value;
-  sendBtn.disabled = value;
-  chatInput.disabled = value;
+  sendBtn.disabled = value || !currentUser;
+  chatInput.disabled = value || !currentUser;
   typing.classList.toggle('show', value);
-  chatState.textContent = value ? 'Đang xử lý tin nhắn…' : 'Đã kết nối với trợ lý';
+  chatState.textContent = value ? 'Companion đang phân tích yêu cầu…' : (currentUser ? 'Đã kết nối Companion' : 'Đang chờ đăng nhập');
 }
 async function getAccessToken() {
   const { data, error } = await supabase.auth.getSession();
@@ -463,8 +429,15 @@ async function fetchWithAuth(path, options = {}) {
 async function showSignedIn(user) {
   currentUser = user;
   authPanel.hidden = true;
+  document.getElementById('loginScreen').hidden = true;
   chatPanel.hidden = false;
-  accountEmail.textContent = user.email || 'Tài khoản đã đăng nhập';
+  document.getElementById('loginOpenBtn').hidden = true;
+  document.getElementById('userMenuWrap').hidden = false;
+  document.getElementById('profileEmail').textContent = user.email || 'Tài khoản đã đăng nhập';
+  document.getElementById('avatarBtn').textContent = (user.email || 'YT').slice(0,2).toUpperCase();
+  document.getElementById('companionWelcome').textContent = 'Xin chào. Hãy cho tôi biết điều gì đang cần được giải quyết; tôi sẽ cùng bạn xác định bước tiếp theo.';
+  document.getElementById('companionAuthHint').textContent = 'Phiên làm việc được bảo vệ bằng tài khoản của bạn.';
+  document.getElementById('chatState').textContent = 'Đã kết nối Companion';
   conversationId = localStorage.getItem(storageKey());
   clearChat();
   if (conversationId) {
@@ -511,8 +484,12 @@ async function initialize() {
         currentUser = null;
         conversationId = null;
         chatMessages.innerHTML = '';
-        chatPanel.hidden = true;
-        authPanel.hidden = false;
+        document.getElementById('userMenuWrap').hidden = true;
+        document.getElementById('loginOpenBtn').hidden = false;
+        document.getElementById('userDropdown').hidden = true;
+        document.getElementById('companionWelcome').textContent = 'Đăng nhập để bắt đầu một phiên đồng hành được quản lý an toàn.';
+        document.getElementById('companionAuthHint').textContent = 'Bạn cần đăng nhập để gửi yêu cầu.';
+        document.getElementById('chatState').textContent = 'Đã đăng xuất';
         document.getElementById('loginPassword').value = '';
         setAuthStatus('Bạn đã đăng xuất. Vui lòng đăng nhập lại.');
         if (typeof syncHealthcareAccess === 'function') syncHealthcareAccess();
@@ -523,6 +500,11 @@ async function initialize() {
   }
 }
 
+document.getElementById('loginOpenBtn').addEventListener('click', () => { document.getElementById('loginScreen').hidden = false; document.getElementById('loginEmail').focus(); });
+document.querySelectorAll('[data-close-login]').forEach(node => node.addEventListener('click', () => { document.getElementById('loginScreen').hidden = true; }));
+document.getElementById('avatarBtn').addEventListener('click', () => { const menu=document.getElementById('userDropdown'); menu.hidden=!menu.hidden; });
+document.getElementById('profileBtn').addEventListener('click', () => toast('Tài khoản: '+(currentUser?.email || 'chưa đăng nhập')));
+document.getElementById('settingsBtn').addEventListener('click', () => toast('Cài đặt quyền riêng tư sẽ được mở rộng theo cấu hình tài khoản.'));
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!supabase) return setAuthStatus('Backend chưa sẵn sàng. Hãy kiểm tra Uvicorn.', true);
@@ -546,7 +528,9 @@ loginForm.addEventListener('submit', async (event) => {
 
 async function sendMessage(message) {
   const clean = message.trim();
-  if (!clean || busy || !currentUser) return;
+  if (!currentUser) { document.getElementById('loginScreen').hidden = false; return; }
+  if (!clean || busy) return;
+  chatMessages.querySelector('.companion-empty')?.remove();
   appendMessage(clean, 'user');
   chatInput.value = '';
   setBusy(true);
@@ -582,9 +566,7 @@ document.getElementById('newChatBtn').addEventListener('click', () => {
   clearChat();
   chatInput.focus();
 });
-document.getElementById('logoutBtn').addEventListener('click', async () => {
-  if (supabase) await supabase.auth.signOut();
-});
+document.getElementById('logoutBtn').addEventListener('click', async () => { document.getElementById('userDropdown').hidden=true; if (supabase) await supabase.auth.signOut(); });
 
 // Healthcare document workflow: authenticated calls to the three real backend endpoints.
 const healthFile = document.getElementById('healthFile');
@@ -726,7 +708,7 @@ runHealthBtn.addEventListener('click',async()=>{
 // Reflect session state in the document workspace.
 function syncHealthcareAccess(){
   const signed=!!currentUser;
-  if(!signed){healthStatus(extractStatus,'Bạn cần đăng nhập tại mục Trợ lý AI trước khi tải hồ sơ.');healthStatus(runHealthStatus,'Chưa đăng nhập. Hãy đăng nhập tại mục Trợ lý AI.');}
+  if(!signed){healthStatus(extractStatus,'Bạn cần đăng nhập bằng nút Đăng nhập trên thanh điều hướng.');healthStatus(runHealthStatus,'Chưa đăng nhập. Hãy đăng nhập để sử dụng Agent chuyên môn.');}
   extractBtn.disabled=!healthFile.files?.[0] || !signed;
   if(!signed) runHealthBtn.disabled=true;
 }
