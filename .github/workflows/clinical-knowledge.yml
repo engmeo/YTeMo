@@ -23,6 +23,7 @@ on:
       - "backend/requirements-training.txt"
       - "docs/CLINICAL_MODEL_TRAINING.vi.md"
       - "docs/CLINICAL_DATA_COLLECTION.vi.md"
+      - "docs/OPEN_MODEL_SETUP.vi.md"
       - "docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md"
       - "supabase/migrations/20261124000*.sql"
       - "backend/main.py"
