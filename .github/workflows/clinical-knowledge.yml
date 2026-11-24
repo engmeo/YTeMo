@@ -28,6 +28,9 @@ on:
       - "supabase/migrations/20261124000*.sql"
       - "backend/main.py"
       - "backend/requirements.txt"
+      - "frontend/index.html"
+      - "README.md"
+      - "docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md"
       - ".github/workflows/clinical-knowledge.yml"
 
 jobs:
