@@ -334,7 +334,7 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
     <label class="health-agent"><input type="checkbox" value="lab" checked><span><b>Xét nghiệm</b><small>Nhận diện chỉ số và giá trị được ghi.</small></span></label>
     <label class="health-agent"><input type="checkbox" value="bhyt" checked><span><b>Bảo hiểm y tế</b><small>Trích xuất thông tin BHYT có trong hồ sơ.</small></span></label>
    </div>
-   <div class="health-actions"><button id="runHealthBtn" type="button" disabled>CHẠY PHÂN TÍCH</button></div>
+   <div class="health-actions"><button id="runHealthBtn" type="button" disabled>CHẠY PHÂN TÍCH</button></div><label style="display:flex;align-items:flex-start;gap:9px;margin-top:12px;font-size:11px;line-height:1.6"><input id="persistAnalysisHistory" type="checkbox" style="margin-top:2px"> Lưu kết quả phân tích vào lịch sử tài khoản. Chỉ lưu khi tôi bật lựa chọn này; có thể mở lại từ lịch sử sau.</label>
    <div class="health-status" id="runHealthStatus" role="status" style="background:#203b3b;color:#e8eee8;border-color:var(--acid)">Chưa có văn bản để phân tích.</div>
     <details class="health-safety" style="margin-top:14px;padding:14px;border:1px solid var(--line)">
      <summary style="cursor:pointer;font-weight:800">BỔ SUNG DỮ LIỆU CHI PHÍ / BHYT ĐÃ XÁC MINH</summary>
@@ -1244,7 +1244,7 @@ runHealthBtn.addEventListener('click',async()=>{
       bhyt={eligible_amount:Number(eligible),coverage_rate:Number(rate),currency:'VND'};
       if(cap!=='') bhyt.patient_cap=Number(cap);
     }
-    const payload={document_text:textValue,agent_keys,document_id:extractedDocument?.id || null};
+    const payload={document_text:textValue,agent_keys,document_id:extractedDocument?.id || null,persist_history:document.getElementById("persistAnalysisHistory").checked};
     if(cost_items!==undefined) payload.cost_items=cost_items;
     if(bhyt!==undefined) payload.bhyt=bhyt;
     const data=await healthRequest('/healthcare/agents/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
