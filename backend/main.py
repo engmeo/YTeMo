@@ -7,13 +7,14 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, UploadFile, File
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from dataclasses import asdict
 from supabase import create_client
 
-from agent import chat
+from agent import chat, chat_stream
 from agent_core import AgentCore, AgentCoreError
 from companion_core import (
     CompanionCore, ConsentScope, NeedStatus, UserPriority,
@@ -190,7 +191,7 @@ def get_conversation_messages(
 
 
 @app.post("/chat")
-def chat_endpoint(request: ChatRequest, user=Depends(get_current_user)):
+def chat_endpoint(request: ChatRequest, stream: bool = False, user=Depends(get_current_user)):
     user_id = str(user.id)
 
     # 1. Find or create a conversation owned by the authenticated user.
@@ -315,7 +316,49 @@ def chat_endpoint(request: ChatRequest, user=Depends(get_current_user)):
         "content": request.message
     }).execute()
 
-    # 4. Call the discovery agent.
+    # 4. Stream provider deltas when requested. The non-streaming JSON contract
+    # remains unchanged for existing clients and automated integrations.
+    if stream:
+        def event_stream():
+            chunks = []
+            try:
+                for token in chat_stream(request.message, history, evidence_context):
+                    if not token:
+                        continue
+                    chunks.append(token)
+                    yield "event: token\\ndata: " + json.dumps({"token": token}, ensure_ascii=False) + "\\n\\n"
+                streamed_reply = "".join(chunks).strip()
+                if not streamed_reply:
+                    raise RuntimeError("AI returned an empty streamed response.")
+                db_client.table("messages").insert({
+                    "conversation_id": conversation_id,
+                    "sender_type": "assistant",
+                    "content": streamed_reply
+                }).execute()
+                db_client.table("conversations").update({
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }).eq("id", conversation_id).eq("user_id", user_id).execute()
+                yield "event: done\\ndata: " + json.dumps({
+                    "conversation_id": conversation_id,
+                    "evidence_retrieval": evidence_result,
+                }, ensure_ascii=False, default=str) + "\\n\\n"
+            except Exception as stream_error:
+                print("CHAT STREAM ERROR:", type(stream_error).__name__, flush=True)
+                yield "event: error\\ndata: " + json.dumps({
+                    "detail": "Dịch vụ AI bị gián đoạn. Nội dung chưa hoàn tất không được lưu thành câu trả lời."
+                }, ensure_ascii=False) + "\\n\\n"
+
+        return StreamingResponse(
+            event_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache, no-transform",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+            },
+        )
+
+    # 5. Compatibility JSON response.
     try:
         reply = chat(request.message, history, evidence_context)
     except Exception as e:
