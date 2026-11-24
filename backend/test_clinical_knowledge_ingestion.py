@@ -5,7 +5,9 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 
 from pydantic import ValidationError
-from clinical_knowledge_workflows import EvidenceRetrievalRequest, retrieve_approved_evidence
+from clinical_knowledge_workflows import (
+    EvidenceRetrievalRequest, can_access_evidence_scope, retrieve_approved_evidence,
+)
 from clinical_knowledge_ingestion import (
     IngestionError, _page_quality, discover_pdf_links, extract_pdf_pages,
     is_allowed_source_url, normalize_host,
@@ -180,6 +182,17 @@ class ClinicalKnowledgeIngestionTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             from clinical_knowledge_workflows import IngestCandidateRequest
             IngestCandidateRequest(**payload)
+    def test_high_risk_evidence_scopes_require_verified_professional(self):
+        no_reviewer = FakeDB({"clinical_knowledge_reviewers": []})
+        user = type("User", (), {"id": "user-1"})()
+        self.assertTrue(can_access_evidence_scope(no_reviewer, user, "patient_education"))
+        self.assertFalse(can_access_evidence_scope(no_reviewer, user, "treatment_reference"))
+        verified = FakeDB({"clinical_knowledge_reviewers": [{
+            "role": "physician", "is_active": True, "credential_verified": True,
+            "credential_type": "license", "credential_identifier": "VN-123",
+            "credential_verified_at": "2026-01-01T00:00:00Z", "credential_verified_by": "admin-1",
+        }]})
+        self.assertTrue(can_access_evidence_scope(verified, user, "medication_safety"))
     def test_non_pdf_is_rejected(self):
         with self.assertRaises(IngestionError):
             extract_pdf_pages(b"not a pdf", enable_ocr=False)
