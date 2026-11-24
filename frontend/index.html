@@ -843,7 +843,310 @@ function syncHealthcareAccess(){
   extractBtn.disabled=!healthFile.files?.[0] || !signed;
   if(!signed) runHealthBtn.disabled=true;
 }
+
 syncHealthcareAccess();
+
+// Clinical Knowledge reviewer/admin console. All authorization is enforced by backend roles.
+const ck = id => document.getElementById('ck' + id);
+const ckSetStatus = (message, error=false) => {
+  const node = ck('Status');
+  if (!node) return;
+  node.textContent = message;
+  node.style.borderLeftColor = error ? 'var(--coral)' : 'var(--teal)';
+};
+async function ckRequest(path, method='GET', body=null) {
+  const options = { method };
+  if (body !== null) {
+    options.headers = { 'Content-Type': 'application/json' };
+    options.body = JSON.stringify(body);
+  }
+  const response = await fetchWithAuth(path, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.detail || ('HTTP ' + response.status));
+  return data;
+}
+const ckEscape = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const ckDomainName = key => ({
+  national_guidelines:'National guidelines',who_guidelines:'WHO guidelines',
+  specialty_guidelines:'Specialty guidelines',medication:'Medication',
+  health_education:'Health education',diagnostics:'Diagnostics',
+  prevention_public_health:'Prevention / public health'
+}[key] || key);
+
+ck('Discover').addEventListener('click', async () => {
+  try {
+    ckSetStatus('Đang quét trang danh mục nguồn chính thức…');
+    const source = ck('Source').value;
+    const result = await ckRequest('/clinical-knowledge/sources/' + encodeURIComponent(source) + '/discover', 'POST', {});
+    ckSetStatus('Discovery hoàn tất: ' + result.discovered_count + ' PDF links; mới ' + result.new_candidates.length + '. Chưa tài liệu nào được xác thực.');
+    await loadClinicalCandidates();
+  } catch (error) { ckSetStatus(error.message, true); }
+});
+async function loadClinicalCandidates() {
+  const result = await ckRequest('/clinical-knowledge/candidates?status=DISCOVERED');
+  const host = ck('Candidates'); host.replaceChildren();
+  if (!result.candidates.length) { host.textContent = 'Không có candidate mới.'; return; }
+  result.candidates.forEach(candidate => {
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:9px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;justify-content:space-between';
+    const label = document.createElement('span');
+    label.textContent = (candidate.link_text || candidate.canonical_url) + ' · ' + candidate.id;
+    const choose = document.createElement('button'); choose.className='mini-btn'; choose.textContent='Chọn';
+    choose.addEventListener('click', () => {
+      ck('CandidateId').value = candidate.id;
+      if (!ck('Title').value) ck('Title').value = candidate.link_text || '';
+    });
+    row.append(label, choose); host.append(row);
+  });
+}
+ck('LoadCandidates').addEventListener('click', async () => {
+  try { await loadClinicalCandidates(); ckSetStatus('Đã tải candidate queue.'); }
+  catch (error) { ckSetStatus(error.message, true); }
+});
+ck('Ingest').addEventListener('click', async () => {
+  try {
+    const candidateId = ck('CandidateId').value.trim();
+    const title = ck('Title').value.trim();
+    const population = ck('Population').value.trim();
+    const published = ck('Published').value;
+    if (!candidateId || !title || !population || !published) throw new Error('Cần candidate ID, title, target population và ngày công bố.');
+    ckSetStatus('Đang tải bản gốc, kiểm tra PDF và trích xuất từng trang…');
+    const body = {
+      title, document_type: ck('DocType').value.trim() || 'guideline',
+      knowledge_domain: ck('Domain').value, jurisdiction: ck('Jurisdiction').value.trim() || 'VN',
+      target_population: population, published_at: published,
+      effective_from: ck('EffectiveFrom').value || null,
+      effective_until: ck('EffectiveUntil').value || null,
+      version: ck('Version').value.trim() || null,
+      official_identifier: ck('Identifier').value.trim() || null,
+      specialty: ck('Specialty').value.trim() || null, language:'vi', license_status:'unknown'
+    };
+    const result = await ckRequest('/clinical-knowledge/candidates/' + encodeURIComponent(candidateId) + '/ingest', 'POST', body);
+    ck('ClaimDocumentId').value = result.document_id || '';
+    ck('VersionDocumentId').value = result.document_id || '';
+    ckSetStatus('Đã ingest: ' + result.document_id + ' · ' + result.extraction_report.overall_status + ' · SHA-256 ' + result.original.sha256);
+    await loadClinicalCandidates();
+  } catch (error) { ckSetStatus(error.message, true); }
+});
+
+async function loadClinicalReviewQueue() {
+  const result = await ckRequest('/clinical-knowledge/review-queue');
+  const host = ck('ReviewQueue'); host.replaceChildren();
+  if (!result.documents.length) { host.textContent='Không có tài liệu chờ review.'; return; }
+  result.documents.forEach(doc => {
+    const row = document.createElement('div');
+    row.style.cssText='padding:12px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center';
+    const label=document.createElement('div');
+    label.innerHTML='<b>'+ckEscape(doc.title)+'</b><div style="font-size:10px;color:var(--muted)">'+ckEscape(doc.publisher)+' · '+ckEscape(doc.status)+' · '+ckEscape(doc.id)+'</div>';
+    const button=document.createElement('button'); button.className='mini-btn'; button.textContent='Thẩm định';
+    button.addEventListener('click',()=>openClinicalDocument(doc.id));
+    row.append(label,button); host.append(row);
+  });
+}
+ck('LoadQueue').addEventListener('click', async () => {
+  try { await loadClinicalReviewQueue(); ckSetStatus('Đã tải review queue.'); }
+  catch (error) { ckSetStatus(error.message, true); }
+});
+async function openClinicalDocument(id) {
+  try {
+    const [detail,pages] = await Promise.all([
+      ckRequest('/clinical-knowledge/documents/' + encodeURIComponent(id)),
+      ckRequest('/clinical-knowledge/documents/' + encodeURIComponent(id) + '/pages')
+    ]);
+    const doc=detail.document, host=ck('DocumentReview');
+    ck('ClaimDocumentId').value=id; ck('VersionDocumentId').value=id;
+    host.innerHTML='<h3 style="font:700 20px var(--display)">'+ckEscape(doc.title)+'</h3>'+
+      '<p style="font-size:11px">Status: '+ckEscape(doc.status)+' · Pages: '+pages.pages.length+' · SHA-256: '+ckEscape(doc.original_sha256||'—')+'</p>'+
+      '<button class="mini-btn" id="ckOpenOriginal">Mở bản gốc (signed URL)</button> '+
+      '<button class="mini-btn" id="ckLoadDocClaims">Tải claims</button>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0">'+
+      '<label style="font-size:11px"><input type="checkbox" id="ckSourceVerified"> Đã đối chiếu bản gốc/chữ ký/số hiệu</label>'+
+      '<label style="font-size:11px"><input type="checkbox" id="ckVersionCurrent"> Đã xác minh phiên bản và hiệu lực</label>'+
+      '<label style="font-size:11px"><input type="checkbox" id="ckLicenseCleared"> Đã xác minh quyền sử dụng</label>'+
+      '<label style="font-size:11px"><input type="checkbox" id="ckExtractionReviewed"> Đã kiểm tra trang có cảnh báo OCR</label></div>'+
+      '<textarea id="ckEvidenceAssessment" placeholder="Đánh giá phương pháp, chất lượng bằng chứng, COI, phạm vi áp dụng và giới hạn (bắt buộc)" style="width:100%;min-height:90px;padding:10px;border:1px solid var(--line)"></textarea>'+
+      '<textarea id="ckDocRationale" placeholder="Lý do phê duyệt (tối thiểu 10 ký tự)" style="width:100%;min-height:65px;padding:10px;border:1px solid var(--line);margin-top:8px"></textarea>'+
+      '<div style="font-size:11px;margin:10px 0">Approved scope:</div>'+
+      ['patient_education','self_care','prevention','screening','diagnostic_reference','treatment_reference','medication_safety','professional_decision_support','public_health'].map(scope=>'<label style="display:inline-block;margin:4px 10px 4px 0;font-size:10px"><input type="checkbox" class="ckDocScope" value="'+scope+'"> '+scope+'</label>').join('')+
+      '<button class="btn" id="ckApproveDocument" style="margin-top:12px">Ghi nhận APPROVED ↗</button>'+
+      '<div id="ckPageList" style="margin-top:14px"></div>';
+    document.getElementById('ckOpenOriginal').addEventListener('click',async()=>{
+      try { const signed=await ckRequest('/clinical-knowledge/documents/'+encodeURIComponent(id)+'/original-url'); if(!signed.signed_url) throw new Error('Không có signed URL'); window.open(signed.signed_url,'_blank','noopener'); }
+      catch(error){ckSetStatus(error.message,true);}
+    });
+    document.getElementById('ckLoadDocClaims').addEventListener('click',()=>loadClinicalClaims(id));
+    document.getElementById('ckApproveDocument').addEventListener('click',async()=>{
+      try {
+        const scope=[...document.querySelectorAll('.ckDocScope:checked')].map(x=>x.value);
+        const body={
+          decision:'APPROVED', rationale:document.getElementById('ckDocRationale').value.trim(),
+          scope, source_document_verified:document.getElementById('ckSourceVerified').checked,
+          version_current:document.getElementById('ckVersionCurrent').checked,
+          license_cleared:document.getElementById('ckLicenseCleared').checked,
+          evidence_assessment:document.getElementById('ckEvidenceAssessment').value.trim(),
+          extraction_quality_reviewed:document.getElementById('ckExtractionReviewed').checked
+        };
+        const result=await ckRequest('/clinical-knowledge/documents/'+encodeURIComponent(id)+'/review','POST',body);
+        ckSetStatus('Review đã ghi nhận. Trạng thái: '+result.status+'. '+result.notice);
+        await loadClinicalReviewQueue();
+      } catch(error){ckSetStatus(error.message,true);}
+    });
+    const pageHost=document.getElementById('ckPageList'); pageHost.innerHTML='<b style="font-size:11px">Page extraction report</b>';
+    pages.pages.forEach(page=>{
+      const item=document.createElement('div'); item.style.cssText='padding:6px 0;border-bottom:1px solid var(--line);font-size:10px';
+      item.textContent='Trang '+page.page_number+' · '+page.extraction_status+' · '+page.extraction_method+' · '+JSON.stringify(page.quality_report?.warnings||[]);
+      pageHost.append(item);
+    });
+    ckSetStatus('Đang xem tài liệu '+id+'. Đối chiếu bản gốc trước khi duyệt.');
+  } catch(error){ckSetStatus(error.message,true);}
+}
+
+let ckClaimDrafts=[];
+ck('SuggestClaims').addEventListener('click',async()=>{
+  try {
+    const id=ck('ClaimDocumentId').value.trim();
+    const pages=ck('ClaimPages').value.split(',').map(x=>Number(x.trim())).filter(Number.isInteger);
+    if(!id||!pages.length) throw new Error('Nhập document ID và số trang.');
+    const result=await ckRequest('/clinical-knowledge/documents/'+encodeURIComponent(id)+'/claims/suggest','POST',{page_numbers:pages});
+    ckClaimDrafts=result.suggestions||[];
+    const host=ck('ClaimSuggestions'); host.replaceChildren();
+    if(!ckClaimDrafts.length){host.textContent='Không có claim draft quote-validated từ các trang đã chọn.';return;}
+    ckClaimDrafts.forEach((item,index)=>{
+      const card=document.createElement('div'); card.style.cssText='padding:12px;border:1px solid var(--line);margin:8px 0;background:white';
+      const text=document.createElement('p'); text.textContent=item.claim_text+' · '+item.claim_type+' · Trang '+item.source_page_number;
+      const quote=document.createElement('blockquote'); quote.textContent='“'+item.exact_quote+'”'; quote.style.cssText='font-size:11px;color:var(--muted);margin:8px 0';
+      const save=document.createElement('button'); save.className='mini-btn'; save.textContent='Lưu thành claim UNREVIEWED';
+      save.addEventListener('click',async()=>{
+        try {
+          await ckRequest('/clinical-knowledge/documents/'+encodeURIComponent(id)+'/claims','POST',{
+            claim_text:item.claim_text,claim_type:item.claim_type,population:item.population,
+            source_page_number:item.source_page_number,exact_quote:item.exact_quote,
+            source_locator:item.source_locator,extraction_method:'AI_DRAFT'
+          });
+          save.disabled=true; save.textContent='Đã lưu UNREVIEWED';
+          ckSetStatus('Claim đã lưu ở trạng thái UNREVIEWED; cần appraisal và hai reviewer nếu domain yêu cầu.');
+          await loadClinicalClaims(id);
+        } catch(error){ckSetStatus(error.message,true);}
+      });
+      card.append(text,quote,save); host.append(card);
+    });
+    ckSetStatus('Có '+ckClaimDrafts.length+' claim draft. Quote đã đối chiếu text; vẫn phải kiểm tra PDF gốc.');
+  } catch(error){ckSetStatus(error.message,true);}
+});
+
+const appraisalTemplates={
+ AGREE_II:{scope_and_purpose:'',stakeholder_involvement:'',rigor_of_development:'',clarity_of_presentation:'',applicability:'',editorial_independence:''},
+ GRADE:{risk_of_bias:'',inconsistency:'',indirectness:'',imprecision:'',publication_bias:'',certainty:''},
+ AMSTAR_2:{protocol:'',search_strategy:'',study_selection:'',risk_of_bias:'',meta_analysis:'',publication_bias:''},
+ ROB_2:{randomization:'',deviations_from_intended_interventions:'',missing_outcome_data:'',outcome_measurement:'',selection_of_reported_result:''},
+ ROBINS_I:{confounding:'',participant_selection:'',intervention_classification:'',deviations:'',missing_data:'',outcome_measurement:'',reported_result_selection:''},
+ QUADAS_2:{patient_selection:'',index_test:'',reference_standard:'',flow_and_timing:''},
+ OTHER:{methodology:'',limitations:'',applicability:''}
+};
+async function loadClinicalClaims(id) {
+  const result=await ckRequest('/clinical-knowledge/documents/'+encodeURIComponent(id)+'/claims?status=UNREVIEWED');
+  const host=ck('Claims'); host.replaceChildren();
+  if(!result.claims.length){host.textContent='Không có claim UNREVIEWED.';return;}
+  result.claims.forEach(claim=>{
+    const card=document.createElement('div'); card.style.cssText='padding:14px;border:1px solid var(--line);margin:8px 0;background:white';
+    const title=document.createElement('b'); title.textContent=claim.claim_text;
+    const quote=document.createElement('p'); quote.textContent='“'+claim.exact_quote+'” · Trang '+claim.source_page_number; quote.style.fontSize='11px';
+    const framework=document.createElement('select'); framework.innerHTML=Object.keys(appraisalTemplates).map(x=>'<option>'+x+'</option>').join('');
+    const appraisal=document.createElement('textarea'); appraisal.style.cssText='width:100%;min-height:100px;padding:8px;border:1px solid var(--line);margin:8px 0'; appraisal.value=JSON.stringify(appraisalTemplates[framework.value],null,2);
+    framework.addEventListener('change',()=>appraisal.value=JSON.stringify(appraisalTemplates[framework.value],null,2));
+    const rationale=document.createElement('textarea'); rationale.placeholder='Lý do appraisal và kết luận reviewer (tối thiểu 20 ký tự)'; rationale.style.cssText='width:100%;min-height:55px;padding:8px;border:1px solid var(--line)';
+    const accept=document.createElement('button'); accept.className='mini-btn'; accept.textContent='Chấp nhận claim';
+    accept.addEventListener('click',async()=>{
+      try {
+        await ckRequest('/clinical-knowledge/claims/'+encodeURIComponent(claim.id)+'/review','POST',{
+          decision:'ACCEPTED',appraisal_framework:framework.value,appraisal:JSON.parse(appraisal.value),
+          rationale:rationale.value.trim(),has_conflict_of_interest:false
+        });
+        ckSetStatus('Đã ghi appraisal. Claim chỉ ACCEPTED sau đủ reviewer độc lập.');
+        await loadClinicalClaims(id);
+      } catch(error){ckSetStatus(error.message,true);}
+    });
+    card.append(title,quote,framework,appraisal,rationale,accept); host.append(card);
+  });
+}
+ck('LoadClaims').addEventListener('click',async()=>{
+  try {const id=ck('ClaimDocumentId').value.trim();if(!id)throw new Error('Nhập document ID.');await loadClinicalClaims(id);}
+  catch(error){ckSetStatus(error.message,true);}
+});
+
+ck('FindVersions').addEventListener('click',async()=>{
+  try {
+    const id=ck('VersionDocumentId').value.trim(); if(!id)throw new Error('Nhập document ID.');
+    const result=await ckRequest('/clinical-knowledge/documents/'+encodeURIComponent(id)+'/version-candidates');
+    const host=ck('VersionCandidates'); host.replaceChildren();
+    result.candidates.forEach(item=>{const p=document.createElement('p');p.textContent=item.title+' · '+item.version+' · '+item.status+' · '+item.id;host.append(p);});
+    if(!result.candidates.length)host.textContent=result.notice;
+    ckSetStatus(result.notice);
+  } catch(error){ckSetStatus(error.message,true);}
+});
+ck('ConfirmRelation').addEventListener('click',async()=>{
+  try {
+    const id=ck('VersionDocumentId').value.trim(), predecessor=ck('PredecessorId').value.trim();
+    const rationale=ck('RelationRationale').value.trim();
+    if(!id||!predecessor||rationale.length<20)throw new Error('Cần document ID, predecessor ID và căn cứ ít nhất 20 ký tự.');
+    const result=await ckRequest('/clinical-knowledge/documents/'+encodeURIComponent(id)+'/version-relations','POST',{
+      predecessor_document_id:predecessor,relation_type:ck('RelationType').value,rationale,decision:'CONFIRM'
+    });
+    ckSetStatus('Quan hệ phiên bản: '+result.status+' · '+result.confirmations+'/2 reviewer.');
+  } catch(error){ckSetStatus(error.message,true);}
+});
+
+async function loadClinicalConflicts() {
+  const [open,pending]=await Promise.all([
+    ckRequest('/clinical-knowledge/conflicts?status=OPEN'),
+    ckRequest('/clinical-knowledge/conflicts?status=UNDER_REVIEW')
+  ]);
+  const items=[...(open.conflicts||[]),...(pending.conflicts||[])], host=ck('Conflicts'); host.replaceChildren();
+  if(!items.length){host.textContent='Không có conflict đang mở.';return;}
+  items.forEach(conflict=>{
+    const card=document.createElement('div');card.style.cssText='padding:13px;border:1px solid #536b65;margin:9px 0';
+    const title=document.createElement('b');title.textContent=conflict.topic_key+' · '+conflict.resolution_status;
+    const desc=document.createElement('p');desc.textContent=conflict.conflict_summary+' · claims: '+(conflict.claim_ids||[]).join(', ');desc.style.fontSize='11px';
+    const rationale=document.createElement('textarea');rationale.placeholder='Căn cứ xử lý bất đồng (tối thiểu 20 ký tự)';rationale.style.cssText='width:100%;min-height:60px;padding:8px;background:#f5f4ed;border:1px solid #536b65';
+    const resolve=document.createElement('button');resolve.className='mini-btn';resolve.textContent='Xác nhận đã giải quyết';
+    const unresolved=document.createElement('button');unresolved.className='mini-btn';unresolved.textContent='Giữ UNRESOLVED';unresolved.style.marginLeft='7px';
+    const submit=decision=>async()=>{
+      try {
+        if(rationale.value.trim().length<20)throw new Error('Cần rationale tối thiểu 20 ký tự.');
+        const result=await ckRequest('/clinical-knowledge/conflicts/'+encodeURIComponent(conflict.id)+'/review','POST',{decision,rationale:rationale.value.trim(),has_conflict_of_interest:false});
+        ckSetStatus('Conflict '+conflict.id+' → '+result.status+' · '+result.review_count+' review records.');
+        await loadClinicalConflicts();
+      } catch(error){ckSetStatus(error.message,true);}
+    };
+    resolve.addEventListener('click',submit('RESOLVE'));unresolved.addEventListener('click',submit('UNRESOLVED'));
+    card.append(title,desc,rationale,resolve,unresolved);host.append(card);
+  });
+}
+ck('LoadConflicts').addEventListener('click',async()=>{
+  try{await loadClinicalConflicts();ckSetStatus('Đã tải conflict queue.');}
+  catch(error){ckSetStatus(error.message,true);}
+});
+
+ck('Retrieve').addEventListener('click',async()=>{
+  try {
+    const query=ck('RetrieveQuery').value.trim(), population=ck('RetrievePopulation').value.trim();
+    if(!query||!population)throw new Error('Cần query và đối tượng áp dụng.');
+    const result=await ckRequest('/clinical-knowledge/retrieve','POST',{
+      query,jurisdiction:'VN',population,scope:ck('RetrieveScope').value,limit:10
+    });
+    const host=ck('RetrievalResults');host.replaceChildren();
+    if(result.abstention){host.textContent='ABSTENTION: '+result.reason+' — Không đủ bằng chứng đã thẩm định cho phạm vi/đối tượng này.';}
+    else result.evidence.forEach(item=>{
+      const card=document.createElement('div');card.style.cssText='padding:12px;border-bottom:1px solid var(--line)';
+      const title=document.createElement('b');title.textContent=item.document.title+' · trang '+item.citation.page;
+      const quote=document.createElement('p');quote.textContent='“'+item.citation.exact_quote+'”';
+      const link=document.createElement('a');link.href=item.citation.source_url;link.target='_blank';link.rel='noopener';link.textContent='Mở nguồn chính thức';
+      card.append(title,quote,link);host.append(card);
+    });
+    ckSetStatus(result.abstention?'Retrieval abstained: no eligible evidence.':'Truy xuất '+result.evidence.length+' claim đã được phê duyệt.');
+  } catch(error){ckSetStatus(error.message,true);}
+});
+
 
 
 initialize();
