@@ -1,7 +1,7 @@
 import unittest
 from pydantic import ValidationError
 from clinical_knowledge import (
-    KnowledgeDocumentCreate, automated_document_checks, host_is_within,
+    KnowledgeDocumentCreate, ReviewDecision, automated_document_checks, host_is_within,
     normalize_host, initial_document_status, is_reviewable_status,
     reviewer_is_independent,
 )
