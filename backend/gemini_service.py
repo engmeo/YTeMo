@@ -36,11 +36,15 @@ class _OpenRouterModels:
         if referer:
             headers["HTTP-Referer"] = referer
 
+        # Bound provider latency so a slow/free model cannot hold a user request
+        # for multiple minutes. Override per deployment if needed.
+        timeout_seconds = int(os.getenv("OPENROUTER_TIMEOUT_SECONDS", "15"))
+        timeout_seconds = max(5, min(timeout_seconds, 30))
         response = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers=headers,
             json=payload,
-            timeout=30,
+            timeout=(5, timeout_seconds),
         )
 
         if not response.ok:
@@ -120,13 +124,14 @@ def _is_temporary_error(exc):
     ))
 
 
-def generate_content(model, contents, client=None):
-    """One application-level retry policy: 3 attempts, delays 2s and 4s."""
+def generate_content(model, contents, client=None, max_attempts=3):
+    """Generate content with bounded retries; callers may opt out for interactive UX."""
     target = client if client is not None else get_gemini_client()
+    max_attempts = max(1, min(int(max_attempts), 3))
     delays = (2, 4)
     last_error = None
 
-    for attempt in range(3):
+    for attempt in range(max_attempts):
         try:
             return target.models.generate_content(
                 model=model,
@@ -134,7 +139,7 @@ def generate_content(model, contents, client=None):
             )
         except Exception as exc:
             last_error = exc
-            if not _is_temporary_error(exc) or attempt == 2:
+            if not _is_temporary_error(exc) or attempt == max_attempts - 1:
                 break
 
             delay = delays[attempt]
@@ -146,7 +151,7 @@ def generate_content(model, contents, client=None):
             time.sleep(delay)
 
     raise GeminiServiceError(
-        f"AI provider khong phan hoi sau toi da 3 lan thu. "
+        f"AI provider khong phan hoi sau toi da {max_attempts} lan thu. "
         f"Model={os.getenv('OPENROUTER_MODEL') or model or 'openrouter/free'}. "
         f"Loi cuoi: {type(last_error).__name__}: {str(last_error)[:500]}"
     ) from last_error
