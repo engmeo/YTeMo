@@ -54,7 +54,13 @@ create unique index if not exists companion_needs_action_task_id_uidx
 create unique index if not exists companion_events_action_task_id_uidx
     on public.companion_events(action_task_id) where action_task_id is not null;
 
-create or replace function public.claim_companion_action_tasks(p_now timestamptz, p_limit integer default 10)
+drop function if exists public.claim_companion_action_tasks(timestamptz, integer);
+
+create function public.claim_companion_action_tasks(
+    p_now timestamptz,
+    p_limit integer,
+    p_action_types text[]
+)
 returns setof public.companion_action_tasks
 language plpgsql
 security definer
@@ -83,6 +89,7 @@ begin
             (t.status = 'running' and t.lease_expires_at <= p_now)
            )
        and t.attempt_count < t.max_attempts
+       and t.action_type = any(p_action_types)
        and (t.approved_at is not null or t.requires_approval = false)
      order by t.created_at
      for update skip locked
@@ -99,5 +106,5 @@ begin
   returning t.*;
 end;
 $$;
-revoke all on function public.claim_companion_action_tasks(timestamptz, integer) from public, anon, authenticated;
-grant execute on function public.claim_companion_action_tasks(timestamptz, integer) to service_role;
+revoke all on function public.claim_companion_action_tasks(timestamptz, integer, text[]) from public, anon, authenticated;
+grant execute on function public.claim_companion_action_tasks(timestamptz, integer, text[]) to service_role;
