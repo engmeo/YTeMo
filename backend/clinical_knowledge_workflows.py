@@ -106,6 +106,7 @@ class ClaimReview(BaseModel):
     appraisal: dict = Field(min_length=1)
     rationale: str = Field(min_length=20, max_length=5000)
     has_conflict_of_interest: bool = False
+    source_quote_verified: bool = False
 
 
 class ConflictCreate(BaseModel):
@@ -535,9 +536,12 @@ VĂN BẢN NGUỒN KẾT THÚC.
                 continue
             if normalized_text(quote) not in normalized_text(page["page_text"]):
                 continue
+            proposed_population = str(item.get("population") or "Chưa xác định từ trích dẫn")
+            if proposed_population != "Chưa xác định từ trích dẫn" and normalized_text(proposed_population) not in normalized_text(quote):
+                proposed_population = "Chưa xác định từ trích dẫn"
             suggestions.append({
                 "claim_text": claim_text, "claim_type": claim_type,
-                "population": str(item.get("population") or "Chưa xác định từ trích dẫn"),
+                "population": proposed_population,
                 "exact_quote": quote, "source_page_number": page_number,
                 "source_locator": str(item.get("source_locator") or f"Trang {page_number}"),
                 "page_sha256": page["text_sha256"], "reviewer_status": "DRAFT_NOT_SAVED",
@@ -610,6 +614,8 @@ VĂN BẢN NGUỒN KẾT THÚC.
             raise HTTPException(status_code=422, detail="Appraisal framework không hợp lệ.")
         if request.has_conflict_of_interest:
             raise HTTPException(status_code=409, detail="Reviewer có xung đột lợi ích không được thẩm định claim.")
+        if request.decision == "ACCEPTED" and not request.source_quote_verified:
+            raise HTTPException(status_code=409, detail="Reviewer phải đối chiếu exact quote với PDF gốc trước khi chấp nhận claim.")
         validate_appraisal(request.appraisal_framework, request.appraisal)
         found = db.table("clinical_evidence_claims").select("*").eq("id", claim_id).limit(1).execute()
         if not found.data:
@@ -638,7 +644,7 @@ VĂN BẢN NGUỒN KẾT THÚC.
             "claim_id": claim_id, "reviewer_id": str(user.id), "reviewer_role": reviewer["role"],
             "decision": request.decision, "appraisal_framework": request.appraisal_framework,
             "appraisal": request.appraisal, "rationale": request.rationale,
-            "has_conflict_of_interest": False,
+            "has_conflict_of_interest": False, "source_quote_verified": request.source_quote_verified,
         }).execute()
         updated = db.table("clinical_evidence_claims").update({
             "reviewer_status": final_status,
@@ -786,6 +792,8 @@ VĂN BẢN NGUỒN KẾT THÚC.
                 "verified_by": str(user.id), "review_status": "UNDER_REVIEW",
             }).execute()
             relation = created.data[0]
+        if relation.get("review_status") in {"CONFIRMED", "REJECTED"}:
+            raise HTTPException(status_code=409, detail="Quan hệ phiên bản đã có kết luận cuối cùng.")
         prior = db.table("clinical_knowledge_document_relation_reviews").select("reviewer_id").eq(
             "relation_id", relation["id"]
         ).execute()
