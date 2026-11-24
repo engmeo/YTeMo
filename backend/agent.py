@@ -5,10 +5,7 @@ from langgraph.graph import StateGraph, START, END
 from gemini_service import generate_content
 
 try:
-    from model_intelligence import (
-        ModelGatewayError,
-        generate_companion_response,
-    )
+    from model_intelligence import ModelGatewayError, generate_companion_response
 except ImportError:  # pragma: no cover - preserves older deployment layout
     ModelGatewayError = RuntimeError
     generate_companion_response = None
@@ -57,11 +54,6 @@ QUY TẮC BẰNG CHỨNG BẮT BUỘC:
 
 Hãy phản hồi phù hợp và hỏi tối đa một câu tiếp theo nếu cần.
 """
-
-
-    # Use the configured multi-model gateway when available. The default
-    # OpenRouter route is its free-model pool; a self-hosted OpenAI-compatible
-    # server can be selected with YTEMO_MODEL_BACKEND=local.
     gateway_enabled = bool(
         os.getenv("YTEMO_MODEL_BACKEND") or os.getenv("OPENROUTER_API_KEY")
     )
@@ -72,18 +64,17 @@ Hãy phản hồi phù hợp và hỏi tối đa một câu tiếp theo nếu c�
                 state["message"],
                 state.get("evidence_context", ""),
             )
-            return {
-                "reply": result["text"],
-                "model_metadata": {
-                    "model": result.get("model"),
-                    "profile": result.get("profile"),
-                    "provider": result.get("provider"),
-                    "latency_ms": result.get("latency_ms"),
-                },
-            }
+            print(
+                "MODEL_GATEWAY:",
+                result.get("profile"),
+                result.get("model"),
+                result.get("latency_ms"),
+                "ms",
+                flush=True,
+            )
+            return {"reply": result["text"]}
         except ModelGatewayError:
-            # Do not silently switch to an unrelated paid model or hide a
-            # provider failure behind a second slow request.
+            # No silent fallback to a different provider/model or a paid route.
             raise
 
     # Compatibility fallback for deployments still using the existing provider.
@@ -92,7 +83,7 @@ Hãy phản hồi phù hợp và hỏi tối đa một câu tiếp theo nếu c�
         contents=prompt,
         max_attempts=1,
     )
-    return {"reply": response.text, "model_metadata": {"provider": "legacy_compatibility"}}
+    return {"reply": response.text}
 
 
 graph_builder = StateGraph(AgentState)
