@@ -41,6 +41,7 @@ from clinical_knowledge_workflows import (
     EvidenceRetrievalRequest,
     build_workflow_router as build_clinical_knowledge_workflow_router,
     retrieve_approved_evidence,
+    can_access_evidence_scope,
 )
 
 load_dotenv()
@@ -277,8 +278,12 @@ def chat_endpoint(request: ChatRequest, user=Depends(get_current_user)):
     evidence_result = None
     if request.evidence_request:
         try:
-            evidence_result = retrieve_approved_evidence(db_client, request.evidence_request)
-            evidence_context = json.dumps(evidence_result, ensure_ascii=False, default=str)[:18000]
+            if not can_access_evidence_scope(db_client, user, request.evidence_request.scope):
+                evidence_result = {"evidence": [], "abstention": True, "reason": "PROFESSIONAL_ACCESS_REQUIRED"}
+                evidence_context = "PROFESSIONAL-ONLY EVIDENCE SCOPE REQUESTED BY A USER WITHOUT VERIFIED PROFESSIONAL CREDENTIALS. No clinical evidence was provided. Do not provide diagnostic, treatment, medication, or dosage guidance."
+            else:
+                evidence_result = retrieve_approved_evidence(db_client, request.evidence_request)
+                evidence_context = json.dumps(evidence_result, ensure_ascii=False, default=str)[:18000]
             db_client.table("clinical_knowledge_audit").insert({
                 "actor_id": user_id,
                 "action": "COMPANION_EVIDENCE_RETRIEVAL",
