@@ -310,6 +310,12 @@ def build_workflow_router(db, storage, auth_dependency):
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         inserted, duplicates = [], 0
         for candidate in candidates:
+            existing = db.table("clinical_knowledge_discovery_candidates").select("id").eq(
+                "source_id", source["id"]
+            ).eq("canonical_url", candidate["url"]).limit(1).execute()
+            if existing.data:
+                duplicates += 1
+                continue
             row = {
                 "source_id": source["id"], "discovery_url": final_url,
                 "canonical_url": candidate["url"], "link_text": candidate["link_text"],
@@ -319,8 +325,8 @@ def build_workflow_router(db, storage, auth_dependency):
                 result = db.table("clinical_knowledge_discovery_candidates").insert(row).execute()
                 if result.data:
                     inserted.append(result.data[0])
-            except Exception:
-                duplicates += 1
+            except Exception as exc:
+                raise HTTPException(status_code=503, detail="Không thể lưu discovery candidate.") from exc
         return {
             "source_key": source_key, "listing_url": final_url,
             "discovered_count": len(candidates), "new_candidates": inserted,
