@@ -180,6 +180,8 @@ Các API mới (yêu cầu Supabase Bearer token):
 - `POST /clinical-knowledge/candidates/{candidate_id}/ingest`: tải PDF, kiểm tra magic bytes, tính SHA-256, lưu private Storage theo content-addressed path và tạo bản ghi trang.
 - `GET /clinical-knowledge/documents/{id}/original-url`: tạo signed URL ngắn hạn 5 phút cho reviewer.
 - `GET /clinical-knowledge/documents/{id}/pages` và `GET /clinical-knowledge/documents/{id}/page/{page_number}`: xem chẩn đoán trích xuất theo trang.
+- `GET /clinical-knowledge/candidates?status=DISCOVERED`: candidate queue cho knowledge_admin.
+- `GET /clinical-knowledge/documents/{id}/claims?status=UNREVIEWED`: claim queue cho reviewer.
 
 Chỉ `knowledge_admin` được chạy discovery/ingestion. URL phải là HTTPS, host thuộc source registry, không dùng IP literal, localhost, port khác 443 hoặc redirect ra ngoài allowlist. Mỗi redirect được kiểm tra lại. Kích thước PDF tối đa 25 MB, HTML discovery tối đa 5 MB, tối đa 300 trang. Các giới hạn này là biện pháp giảm rủi ro, không phải sandbox hoàn chỉnh chống mọi kiểu DNS rebinding hoặc tấn công parser.
 
@@ -232,7 +234,7 @@ Hệ thống chỉ gợi ý ứng viên theo official identifier. Không tự k�
 
 Retrieval hiện tại là **structured lexical matching**, chưa phải semantic/vector/hybrid retrieval và không đủ để tự hiểu mọi câu hỏi y khoa. Đây là một evidence gateway fail-closed, không phải máy tạo câu trả lời lâm sàng.
 
-Companion `POST /chat` nhận thêm trường tùy chọn `evidence_request`. Khi có request, backend truy xuất bằng chứng đã duyệt, ghi audit và chuyển evidence context vào agent. Prompt yêu cầu agent chỉ dùng claim/citation được cung cấp, không vượt quá scope; khi retrieval rỗng/lỗi thì phải nói rõ không có bằng chứng đã thẩm định và không đưa ra kết luận lâm sàng. Frontend hiện chưa cung cấp form nhập evidence_request, vì vậy cần bổ sung UI trước khi người dùng cuối khai thác luồng này thường xuyên.
+Companion `POST /chat` nhận thêm trường tùy chọn `evidence_request`. Khi có request, backend truy xuất bằng chứng đã duyệt, ghi audit và chuyển evidence context vào agent. Prompt yêu cầu agent chỉ dùng claim/citation được cung cấp, không vượt quá scope; khi retrieval rỗng/lỗi thì phải nói rõ không có bằng chứng đã thẩm định và không đưa ra kết luận lâm sàng. Frontend đã có form tùy chọn nhập population, scope và specialty để gửi evidence_request từ Companion chat. Nếu bật mà không có population, UI chặn gửi request.
 
 ## 15. Migration order
 
@@ -264,7 +266,7 @@ Hai migration Clinical Knowledge ban đầu từng bị trùng version với mig
 - Migration chưa chạy trên Supabase; backend chưa deploy.
 - Chưa có scheduler crawler tự chạy, queue worker bền vững hoặc retry orchestration.
 - Chưa có OCR runtime được cài và kiểm thử trên dữ liệu scan thực tế.
-- Chưa có reviewer UI, conflict-resolution UI, claim appraisal UI hoặc frontend evidence request form.
+- Đã có reviewer/admin console cơ bản trong frontend cho discovery, ingest, document review, claim drafts/appraisal, version relation, conflict resolution và retrieval smoke test; chưa có usability/security review hoặc E2E verification trên môi trường triển khai.
 - Chưa có vector/hybrid retrieval, reranker, terminology service tích hợp thực tế.
 - Chưa có bộ benchmark lâm sàng đại diện, đánh giá độc lập của chuyên gia y tế hoặc xác nhận an toàn.
 - Chưa có tài liệu/claim nào được phê duyệt lâm sàng thực tế.
