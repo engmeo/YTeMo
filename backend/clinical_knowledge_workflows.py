@@ -495,6 +495,7 @@ def build_workflow_router(db, storage, auth_dependency):
             "topic_key": request.topic_key, "jurisdiction": request.jurisdiction,
             "population": request.population, "claim_ids": request.claim_ids,
             "conflict_summary": request.conflict_summary, "resolution_status": "OPEN",
+            "created_by": str(user.id),
         }).execute()
         return {"conflict": result.data[0] if result.data else None}
 
@@ -518,6 +519,8 @@ def build_workflow_router(db, storage, auth_dependency):
         if not found.data:
             raise HTTPException(status_code=404, detail="Không tìm thấy conflict.")
         conflict = found.data[0]
+        if str(conflict.get("created_by") or "") == str(user.id):
+            raise HTTPException(status_code=403, detail="Người tạo conflict không được tự xác nhận kết quả xử lý.")
         prior = db.table("clinical_evidence_conflict_reviews").select("reviewer_id,decision").eq(
             "conflict_id", conflict_id
         ).execute()
@@ -579,8 +582,8 @@ def build_workflow_router(db, storage, auth_dependency):
             raise HTTPException(status_code=409, detail="Publisher hoặc knowledge domain không khớp; cần xác minh thủ công ngoài luồng này.")
         if request.decision == "REJECT":
             return {"relation_created": False, "status": "REJECTED", "rationale": request.rationale}
-        if str(current.get("created_by") or "") == str(user.id):
-            raise HTTPException(status_code=403, detail="Người đăng ký không được tự xác nhận quan hệ phiên bản.")
+        if str(current.get("created_by") or "") == str(user.id) or str(predecessor.get("created_by") or "") == str(user.id):
+            raise HTTPException(status_code=403, detail="Người đăng ký một trong hai tài liệu không được tự xác nhận quan hệ phiên bản.")
         relation_result = db.table("clinical_knowledge_document_relations").select("*").eq(
             "predecessor_document_id", predecessor["id"]
         ).eq("successor_document_id", current["id"]).eq("relation_type", request.relation_type).limit(1).execute()
@@ -590,7 +593,7 @@ def build_workflow_router(db, storage, auth_dependency):
             created = db.table("clinical_knowledge_document_relations").insert({
                 "predecessor_document_id": predecessor["id"], "successor_document_id": current["id"],
                 "relation_type": request.relation_type, "rationale": request.rationale,
-                "verified_by": str(user.id),
+                "verified_by": str(user.id), "review_status": "UNDER_REVIEW",
             }).execute()
             relation = created.data[0]
         prior = db.table("clinical_knowledge_document_relation_reviews").select("reviewer_id").eq(
@@ -600,13 +603,16 @@ def build_workflow_router(db, storage, auth_dependency):
             raise HTTPException(status_code=409, detail="Reviewer đã xác nhận quan hệ này.")
         db.table("clinical_knowledge_document_relation_reviews").insert({
             "relation_id": relation["id"], "reviewer_id": str(user.id),
-            "decision": "CONFIRM", "rationale": request.rationale,
+            "decision": request.decision, "rationale": request.rationale,
         }).execute()
         confirmations = db.table("clinical_knowledge_document_relation_reviews").select("reviewer_id,decision").eq(
             "relation_id", relation["id"]
         ).execute()
         confirmed = [item for item in (confirmations.data or []) if item["decision"] == "CONFIRM"]
-        if len(confirmed) >= 2 and request.relation_type == "SUPERSEDES":
+        rejected = [item for item in (confirmations.data or []) if item["decision"] == "REJECT"]
+        relation_status = "REJECTED" if rejected else ("CONFIRMED" if len(confirmed) >= 2 else "UNDER_REVIEW")
+        db.table("clinical_knowledge_document_relations").update({"review_status": relation_status}).eq("id", relation["id"]).execute()
+        if relation_status == "CONFIRMED" and request.relation_type == "SUPERSEDES":
             db.table("clinical_knowledge_documents").update({
                 "is_current": False, "status": "SUPERSEDED", "superseded_by": current["id"]
             }).eq("id", predecessor["id"]).execute()
@@ -614,7 +620,7 @@ def build_workflow_router(db, storage, auth_dependency):
             "relation_id": relation["id"], "relation_type": request.relation_type,
             "confirmations": len(confirmed),
         })
-        return {"relation": relation, "confirmations": len(confirmed), "status": "CONFIRMED" if len(confirmed) >= 2 else "UNDER_REVIEW"}
+        return {"relation": relation, "confirmations": len(confirmed), "status": relation_status}
 
     @router.post("/retrieve")
     def retrieve_approved_evidence(request: EvidenceRetrievalRequest, user=Depends(auth_dependency)):
