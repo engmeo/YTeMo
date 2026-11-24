@@ -24,6 +24,8 @@ on:
       - "docs/DOCUMENT_AI_WORKER.vi.md"
       - "docs/AGENT_QUALITY_ROADMAP.vi.md"
       - "backend/agent.py"
+      - "backend/multi_agent_orchestrator.py"
+      - "backend/test_multi_agent_orchestrator.py"
       - "backend/test_model_intelligence.py"
       - "backend/test_agent_orchestration.py"
       - "backend/memory_conflict_engine.py"
@@ -87,6 +89,7 @@ jobs:
             backend/clinical_meta_analysis.py \
             backend/model_intelligence.py \
             backend/agent.py \
+            backend/multi_agent_orchestrator.py \
             backend/main.py \
             backend/document_ai_adapter.py \
             backend/memory_conflict_engine.py \
@@ -109,6 +112,7 @@ jobs:
             test_model_intelligence \
             test_document_ai_adapter \
             test_agent_orchestration \
+            test_multi_agent_orchestrator \
             test_memory_conflict_engine
       - name: Full backend regression suite
         working-directory: backend
