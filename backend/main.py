@@ -97,9 +97,16 @@ CORS_ORIGINS = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    # Allow this product's Vercel production + branch-preview hostnames.
+    # Keep this scoped to hosts containing "ytemo"; custom domains belong in CORS_ORIGINS.
+    allow_origin_regex=os.getenv(
+        "CORS_ORIGIN_REGEX",
+        r"https://[a-z0-9-]*ytemo[a-z0-9-]*\\.vercel\\.app"
+    ),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
+    max_age=600,
 )
 
 security = HTTPBearer()
