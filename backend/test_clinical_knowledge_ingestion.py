@@ -188,7 +188,7 @@ class ClinicalKnowledgeIngestionTests(unittest.TestCase):
         self.assertTrue(can_access_evidence_scope(no_reviewer, user, "patient_education"))
         self.assertFalse(can_access_evidence_scope(no_reviewer, user, "treatment_reference"))
         verified = FakeDB({"clinical_knowledge_reviewers": [{
-            "role": "physician", "is_active": True, "credential_verified": True,
+            "user_id": "user-1", "role": "physician", "is_active": True, "credential_verified": True,
             "credential_type": "license", "credential_identifier": "VN-123",
             "credential_verified_at": "2026-01-01T00:00:00Z", "credential_verified_by": "admin-1",
         }]})
