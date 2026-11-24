@@ -96,7 +96,7 @@ jobs:
       - name: Run training data governance tests
         working-directory: backend/clinical_training
         run: |
-          python -m unittest -v test_prepare_dataset test_collect_europe_pmc
+          python -m unittest -v test_prepare_dataset test_collect_europe_pmc test_draft_sft_examples
       - name: Syntax-check frontend JavaScript
         run: |
           python - <<'PY'
