@@ -110,3 +110,20 @@ python -m clinical_training.score_benchmark \
 ```
 
 Script chỉ unblind khi mỗi case có ít nhất hai reviewer độc lập đã xác minh. Báo cáo so sánh base/fine-tuned theo từng dimension và scenario group; không cấp trạng thái clinical-ready.
+
+
+## 8. Chạy model server local
+
+Ví dụ nếu máy có GPU tương thích và đủ VRAM, cài vLLM trên Linux/CUDA theo hướng dẫn chính thức của vLLM. Có thể chạy từng model trên endpoint riêng:
+
+```bash
+vllm serve Qwen/Qwen3-4B --host 0.0.0.0 --port 8001 --served-model-name Qwen/Qwen3-4B --max-model-len 4096
+```
+
+```bash
+vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-7B --host 0.0.0.0 --port 8002 --served-model-name deepseek-ai/DeepSeek-R1-Distill-Qwen-7B --max-model-len 4096
+```
+
+Sau đó cấu hình `YTEMO_FAST_BASE_URL` trỏ port 8001 và `YTEMO_REASONING_BASE_URL` trỏ port 8002. Medical profile chỉ bật khi đã tải model có license phù hợp và kiểm tra khả năng tương thích runtime.
+
+**Không mặc định chạy cả ba model cùng lúc.** Qwen3-4B weights gốc đã khoảng nhiều GB; 7B models còn lớn hơn. Ba server đồng thời cần nhiều VRAM. Nếu chỉ có một GPU, hãy benchmark Qwen3-4B quantized trước, giữ reasoning profile trên free hosted pool hoặc chỉ khởi động model reasoning khi cần. Đây là cách tiết kiệm tài nguyên hơn việc ensemble mọi lượt.
