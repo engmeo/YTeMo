@@ -26,6 +26,8 @@ on:
       - "backend/agent.py"
       - "backend/test_model_intelligence.py"
       - "backend/test_agent_orchestration.py"
+      - "backend/memory_conflict_engine.py"
+      - "backend/test_memory_conflict_engine.py"
       - "backend/clinical_training/**"
       - "backend/requirements-training.txt"
       - "docs/CLINICAL_MODEL_TRAINING.vi.md"
@@ -87,6 +89,7 @@ jobs:
             backend/agent.py \
             backend/main.py \
             backend/document_ai_adapter.py \
+            backend/memory_conflict_engine.py \
             backend/clinical_training/prepare_dataset.py \
             backend/clinical_training/draft_sft_examples.py \
             backend/clinical_training/train_lora.py \
