@@ -3,6 +3,7 @@ from pydantic import ValidationError
 from clinical_knowledge import (
     KnowledgeDocumentCreate, automated_document_checks, host_is_within,
     normalize_host, initial_document_status, is_reviewable_status,
+    reviewer_is_independent,
 )
 
 class ClinicalKnowledgeChecksTests(unittest.TestCase):
@@ -55,6 +56,10 @@ class ClinicalKnowledgeChecksTests(unittest.TestCase):
         self.assertFalse(is_reviewable_status("CLINICAL_APPROVED"))
         self.assertFalse(is_reviewable_status("REJECTED"))
         self.assertFalse(is_reviewable_status("SUPERSEDED"))
+    def test_document_creator_cannot_review_own_document(self):
+        self.assertFalse(reviewer_is_independent("user-1", "user-1"))
+        self.assertTrue(reviewer_is_independent("user-1", "user-2"))
+        self.assertTrue(reviewer_is_independent(None, "user-2"))
     def test_http_url_fails(self):
         metadata = {"title":"Guideline","publisher":"MoH","document_type":"guideline","source_url":"http://moh.gov.vn/doc","published_at":"2025","knowledge_domain":"national_guidelines","jurisdiction":"VN","target_population":"Adults"}
         result = automated_document_checks(metadata)
