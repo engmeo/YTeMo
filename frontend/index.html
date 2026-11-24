@@ -556,7 +556,7 @@ async function openCompanionDashboard() {
   const panel = document.createElement('section');
   panel.id = 'companionDashboard';
   panel.style.cssText = 'position:fixed;z-index:1000;inset:5% 5%;overflow:auto;background:#fbfaf6;border:1px solid #9eaaa2;box-shadow:0 20px 80px #142c3160;padding:26px;border-radius:8px';
-  panel.innerHTML = '<button type="button" id="companionDashClose" class="btn outline" style="float:right">Đóng ✕</button><div class="mono eyebrow">PERSONAL HEALTHCARE COMPANION</div><h2 style="font:800 30px Manrope;margin:16px 0">Không gian dữ liệu Companion</h2><p id="companionDashState">Đang tải dữ liệu từ backend…</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0"><button class="btn" id="companionDashInit">Khởi tạo Companion</button><button class="btn outline" id="companionDashRefresh">↻ Tải lại dữ liệu</button></div><div id="companionDashCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px"></div>';
+  panel.innerHTML = '<button type="button" id="companionDashClose" class="btn outline" style="float:right">Đóng ✕</button><div class="mono eyebrow">PERSONAL HEALTHCARE COMPANION</div><h2 style="font:800 30px Manrope;margin:16px 0">Không gian dữ liệu Companion</h2><p id="companionDashState">Đang tải dữ liệu từ backend…</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0"><button class="btn" id="companionDashInit">Khởi tạo Companion</button><button class="btn outline" id="companionDashRefresh">↻ Tải lại dữ liệu</button></div><div id="companionDashCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px"></div><section style="margin-top:24px;padding:18px;background:#fff;border:1px solid #d9ded5"><div class="mono eyebrow">PERMISSIONED ACTIONS</div><h3 style="font:700 20px Manrope;margin:10px 0">Nhắc lịch có xác nhận</h3><p style="font-size:12px;line-height:1.7;color:#63786d">Tạo đề xuất trước, sau đó bạn tự phê duyệt. Email chỉ được gửi khi tới hạn và khi worker cùng Resend đã được cấu hình; thao tác này không thay thế lịch hẹn của bệnh viện.</p><form id="companionReminderForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px"><label style="font-size:11px">NỘI DUNG<input id="companionReminderTitle" required maxlength="180" placeholder="Ví dụ: Tái khám" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #d9ded5"></label><label style="font-size:11px">THỜI GIAN<input id="companionReminderAt" type="datetime-local" required style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #d9ded5"></label><label style="display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.6;grid-column:1/-1"><input id="companionReminderEmailConsent" type="checkbox" required style="margin-top:2px"> Tôi đồng ý nhận email nhắc lịch tại địa chỉ email đã xác minh của tài khoản.</label><div style="grid-column:1/-1"><button id="companionReminderSubmit" class="btn" type="submit">TẠO ĐỀ XUẤT NHẮC LỊCH</button></div></form><p id="companionReminderStatus" role="status" style="font-size:11px;line-height:1.6;color:#63786d"></p><div id="companionActionList" style="margin-top:12px"></div></section>';
   document.body.appendChild(panel);
   panel.querySelector('#companionDashClose').addEventListener('click',()=>panel.remove());
   const state=panel.querySelector('#companionDashState');
@@ -590,7 +590,77 @@ async function openCompanionDashboard() {
     });
     const failed=results.filter(x=>!x.ok).length;
     state.textContent=failed?(4-failed)+' / 4 API thành công. Các lỗi bên dưới cần kiểm tra quyền truy cập hoặc migration.':'Đã tải dữ liệu trực tiếp từ 4 API của backend.';
+    await renderActions();
   };
+  const actionHost=panel.querySelector('#companionActionList');
+  const actionStatus=panel.querySelector('#companionReminderStatus');
+  const renderActions=async()=>{
+    actionHost.textContent='Đang tải các đề xuất hành động…';
+    try {
+      const response=await fetchWithAuth('/companion/actions?limit=30');
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(data.detail||('HTTP '+response.status));
+      actionHost.replaceChildren();
+      const items=data.actions||[];
+      if(!items.length){actionHost.textContent='Chưa có đề xuất nhắc lịch nào.';return;}
+      items.forEach(item=>{
+        const row=document.createElement('div');
+        row.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #e1e6de';
+        const info=document.createElement('div');
+        const title=document.createElement('b');title.textContent=(item.arguments?.title||item.action_type)+' · '+item.status;
+        const meta=document.createElement('small');meta.style.cssText='display:block;color:#63786d;margin-top:4px';
+        meta.textContent=item.arguments?.due_at?new Date(item.arguments.due_at).toLocaleString('vi-VN'):'Đề xuất cần xem xét';
+        info.append(title,meta);
+        row.appendChild(info);
+        if(item.status==='awaiting_approval'){
+          const controls=document.createElement('div');controls.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
+          const approve=document.createElement('button');approve.type='button';approve.className='btn';approve.textContent='Phê duyệt';
+          const reject=document.createElement('button');reject.type='button';reject.className='btn outline';reject.textContent='Từ chối';
+          approve.addEventListener('click',async()=>{
+            approve.disabled=true;
+            try{const result=await fetchWithAuth('/companion/actions/'+encodeURIComponent(item.id)+'/approve',{method:'POST'});const body=await result.json().catch(()=>({}));if(!result.ok)throw new Error(body.detail||('HTTP '+result.status));actionStatus('Đã phê duyệt. Worker sẽ xử lý khi tới hạn nếu dịch vụ email đã được bật.');await renderActions();}
+            catch(error){actionStatus('Không phê duyệt được: '+error.message);}
+            finally{approve.disabled=false;}
+          });
+          reject.addEventListener('click',async()=>{
+            reject.disabled=true;
+            try{const result=await fetchWithAuth('/companion/actions/'+encodeURIComponent(item.id)+'/reject',{method:'POST'});const body=await result.json().catch(()=>({}));if(!result.ok)throw new Error(body.detail||('HTTP '+result.status));actionStatus('Đã từ chối đề xuất.');await renderActions();}
+            catch(error){actionStatus('Không từ chối được: '+error.message);}
+            finally{reject.disabled=false;}
+          });
+          controls.append(approve,reject);row.appendChild(controls);
+        }
+        actionHost.appendChild(row);
+      });
+    } catch(error) {
+      actionHost.textContent='Chưa tải được danh sách hành động: '+error.message+' · Kiểm tra migration 202611240011 và quyền backend.';
+    }
+  };
+  const reminderForm=panel.querySelector('#companionReminderForm');
+  const reminderDate=panel.querySelector('#companionReminderAt');
+  const minLocal=new Date(Date.now()-new Date().getTimezoneOffset()*60000+60000).toISOString().slice(0,16);
+  reminderDate.min=minLocal;
+  reminderForm.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const title=panel.querySelector('#companionReminderTitle').value.trim();
+    const dueValue=reminderDate.value;
+    if(!title||!dueValue){actionStatus('Nhập nội dung và thời gian nhắc lịch.');return;}
+    if(!panel.querySelector('#companionReminderEmailConsent').checked){actionStatus('Bạn cần xác nhận đồng ý nhận email nhắc lịch.');return;}
+    if(!currentUser.email_confirmed_at){actionStatus('Email tài khoản chưa được xác minh. Hãy xác minh email trước khi tạo nhắc lịch.');return;}
+    const dueDate=new Date(dueValue);
+    if(Number.isNaN(dueDate.getTime())||dueDate.getTime()<=Date.now()){actionStatus('Thời gian nhắc lịch phải ở tương lai.');return;}
+    const submit=panel.querySelector('#companionReminderSubmit');
+    submit.disabled=true;submit.textContent='ĐANG GỬI ĐỀ XUẤT…';
+    try{
+      const response=await fetchWithAuth('/companion/actions/propose',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create_reminder',arguments:{title,due_at:dueDate.toISOString(),delivery_channel:'email'}})});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.detail||('HTTP '+response.status));
+      reminderForm.reset();reminderDate.min=new Date(Date.now()-new Date().getTimezoneOffset()*60000+60000).toISOString().slice(0,16);
+      actionStatus('Đã tạo đề xuất. Hãy phê duyệt trong danh sách; email chỉ gửi khi tới hạn và worker/Resend hoạt động.');
+      await renderActions();
+    }catch(error){actionStatus('Không tạo được đề xuất: '+error.message);}
+    finally{submit.disabled=false;submit.textContent='TẠO ĐỀ XUẤT NHẮC LỊCH';}
+  });
   panel.querySelector('#companionDashRefresh').addEventListener('click',render);
   panel.querySelector('#companionDashInit').addEventListener('click',async()=>{
     try {
