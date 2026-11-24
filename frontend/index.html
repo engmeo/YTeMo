@@ -651,6 +651,54 @@ async function fetchWithAuth(path, options = {}) {
   return sendRequest(data.session.access_token);
 }
 async function showSignedIn(user) {
+window.ytemoRunBackendDemo = async function () {
+  if (!currentUser) {
+    document.getElementById('loginScreen').hidden = false;
+    toast('Đăng nhập trước khi gửi yêu cầu thử nghiệm.');
+    return;
+  }
+  const button = document.getElementById('runBtn');
+  const log = document.getElementById('log');
+  const originalLabel = button ? button.textContent : 'GỬI YÊU CẦU THỬ';
+  if (button) { button.disabled = true; button.textContent = 'ĐANG GỌI BACKEND…'; }
+  log.replaceChildren();
+  const status = document.createElement('div');
+  status.className = 'logline current';
+  status.textContent = '[REQUEST] POST /chat — gửi yêu cầu thử nghiệm tới Companion backend…';
+  log.appendChild(status);
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 60000);
+  try {
+    const response = await fetchWithAuth('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Hãy giới thiệu ngắn gọn cách Companion của Y TẾ MỞ hỗ trợ người dùng xác định nhu cầu và bước chăm sóc tiếp theo. Nêu rõ giới hạn, không đưa ra chẩn đoán hoặc kê đơn.' }),
+      signal: controller.signal
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || ('Backend HTTP ' + response.status));
+    status.classList.remove('current');
+    status.textContent = '[HTTP ' + response.status + '] Backend đã trả về dữ liệu thật.';
+    const reply = document.createElement('pre');
+    reply.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.7 var(--sans);margin:12px 0;color:inherit';
+    reply.textContent = data.reply || 'Backend không trả về nội dung.';
+    log.append(status, reply);
+    const meta = document.createElement('div');
+    meta.textContent = '[CONVERSATION] ' + (data.conversation_id || 'Không có ID');
+    log.appendChild(meta);
+    toast('Đã nhận phản hồi thật từ Companion backend.');
+  } catch (error) {
+    status.classList.remove('current');
+    status.textContent = '[API ERROR] ' + (error.name === 'AbortError' ? 'Quá thời gian chờ 60 giây.' : error.message);
+    log.appendChild(status);
+    toast('Không chạy được yêu cầu thử nghiệm.');
+  } finally {
+    window.clearTimeout(timeout);
+    if (button) { button.disabled = false; button.textContent = originalLabel; }
+  }
+};
+
+async function showSignedIn(user) {
   currentUser = user;
   authPanel.hidden = true;
   document.getElementById('loginScreen').hidden = true;
@@ -889,9 +937,56 @@ document.getElementById('chatQuick').addEventListener('click', event => {
   const button = event.target.closest('button[data-message]');
   if (button) sendMessage(button.dataset.message);
 });
+
+document.getElementById('conversationHistoryBtn').addEventListener('click', async () => {
+  const panel = document.getElementById('conversationHistoryPanel');
+  if (!currentUser) { document.getElementById('loginScreen').hidden = false; return; }
+  panel.hidden = false;
+  panel.textContent = 'Đang tải lịch sử hội thoại từ backend…';
+  try {
+    const response = await fetchWithAuth('/conversations?limit=30');
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || ('HTTP ' + response.status));
+    panel.replaceChildren();
+    const items = data.conversations || [];
+    if (!items.length) { panel.textContent = 'Tài khoản chưa có hội thoại đã lưu.'; return; }
+    items.forEach(item => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.style.cssText = 'display:flex;justify-content:space-between;gap:12px;text-align:left;padding:11px 13px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer';
+      const title = document.createElement('b');
+      title.textContent = item.title || 'Cuộc hội thoại';
+      const date = document.createElement('small');
+      date.textContent = item.updated_at ? new Date(item.updated_at).toLocaleString('vi-VN') : '';
+      button.append(title, date);
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+          const messagesResponse = await fetchWithAuth('/conversations/' + encodeURIComponent(item.id) + '/messages');
+          const messagesData = await messagesResponse.json().catch(() => ({}));
+          if (!messagesResponse.ok) throw new Error(messagesData.detail || ('HTTP ' + messagesResponse.status));
+          conversationId = item.id;
+          if (storageKey()) localStorage.setItem(storageKey(), conversationId);
+          chatMessages.replaceChildren();
+          (messagesData.messages || []).forEach(message => appendMessage(message.content, message.sender_type === 'user' ? 'user' : 'assistant'));
+          if (!(messagesData.messages || []).length) clearChat();
+          panel.hidden = true;
+          chatState.textContent = 'Đã tải hội thoại đã lưu';
+        } catch (error) {
+          toast('Không tải được hội thoại: ' + error.message);
+        } finally { button.disabled = false; }
+      });
+      panel.appendChild(button);
+    });
+  } catch (error) {
+    panel.textContent = 'Không thể tải lịch sử: ' + error.message;
+  }
+});
+
 document.getElementById('newChatBtn').addEventListener('click', () => {
   conversationId = null;
-  if (storageKey()) localStorage.removeItem(storageKey());
+  if (storageKey()) localStorage.removeItem(storageKey());  document.getElementById('conversationHistoryPanel').hidden = true;
+
   clearChat();
   chatInput.focus();
 });
@@ -914,6 +1009,46 @@ async function healthRequest(path, options={}) {
   if (!response.ok) throw new Error(data.detail || `Backend trả về HTTP ${response.status}`);
   return data;
 }
+
+const healthHistoryButton = document.getElementById('loadHealthDocumentsBtn');
+const healthHistoryHost = document.getElementById('healthDocumentHistory');
+async function loadHealthDocuments() {
+  if (!currentUser) { healthHistoryHost.hidden = false; healthHistoryHost.textContent = 'Bạn cần đăng nhập để xem hồ sơ đã lưu.'; return; }
+  healthHistoryHost.hidden = false;
+  healthHistoryHost.textContent = 'Đang tải danh sách hồ sơ từ backend…';
+  const data = await healthRequest('/healthcare/documents');
+  const documents = data.documents || [];
+  healthHistoryHost.replaceChildren();
+  if (!documents.length) { healthHistoryHost.textContent = 'Chưa có hồ sơ nào được lưu.'; return; }
+  documents.forEach(documentRecord => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)';
+    const info = document.createElement('div');
+    const name = document.createElement('b'); name.textContent = documentRecord.filename || 'Hồ sơ y tế';
+    const meta = document.createElement('small');
+    meta.style.cssText = 'display:block;color:var(--muted);margin-top:4px';
+    meta.textContent = (documentRecord.created_at ? new Date(documentRecord.created_at).toLocaleString('vi-VN') : '') + ' · ' + Math.round((documentRecord.byte_size || 0) / 1024) + ' KB · ' + (documentRecord.extraction_status || 'saved');
+    info.append(name, meta);
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'secondary'; remove.textContent = 'Xóa';
+    remove.addEventListener('click', async () => {
+      if (!window.confirm('Xóa hồ sơ này khỏi tài khoản? Thao tác không thể hoàn tác.')) return;
+      remove.disabled = true;
+      try {
+        await healthRequest('/healthcare/documents/' + encodeURIComponent(documentRecord.id), { method: 'DELETE' });
+        await loadHealthDocuments();
+        healthStatus(extractStatus, 'Đã xóa hồ sơ khỏi bộ nhớ lưu trữ.');
+      } catch (error) { remove.disabled = false; healthStatus(extractStatus, 'Không xóa được hồ sơ: ' + error.message, true); }
+    });
+    row.append(info, remove); healthHistoryHost.appendChild(row);
+  });
+}
+healthHistoryButton.addEventListener('click', async () => {
+  healthHistoryButton.disabled = true;
+  try { await loadHealthDocuments(); }
+  catch (error) { healthHistoryHost.hidden = false; healthHistoryHost.textContent = 'Không tải được lịch sử hồ sơ: ' + error.message; }
+  finally { healthHistoryButton.disabled = false; }
+});
+
 healthFile.addEventListener('change', () => {
   const file = healthFile.files?.[0];
   document.getElementById('healthFileName').textContent = file ? file.name : 'Chọn hồ sơ y tế';
@@ -924,7 +1059,7 @@ extractBtn.addEventListener('click', async () => {
   const file = healthFile.files?.[0]; if (!file || !currentUser || healthBusy) return;
   if (file.size > 10*1024*1024) return healthStatus(extractStatus,'File vượt giới hạn 10 MB.',true);
   healthBusy = true; extractBtn.disabled = true; extractBtn.textContent = 'ĐANG TRÍCH XUẤT…';
-  healthStatus(extractStatus,'Đang gửi tài liệu đến Backend để trích xuất trong bộ nhớ…');
+  healthStatus(extractStatus,'Đang gửi hồ sơ tới Backend để trích xuất và lưu riêng theo tài khoản…');
   try {
     const body = new FormData(); body.append('file',file);
     const data = await healthRequest('/healthcare/documents/extract',{method:'POST',body});
@@ -935,6 +1070,7 @@ extractBtn.addEventListener('click', async () => {
     runHealthBtn.disabled = !healthText.value.trim();
     healthStatus(extractStatus,`Trích xuất thành công: ${extractedDocument.filename}. ${extractedDocument.limitations?.join(' ') || ''}`);
     healthStatus(runHealthStatus,'Đã có văn bản. Chọn Agent và chạy phân tích.');
+    loadHealthDocuments().catch(error => healthStatus(extractStatus, 'Đã tải lên nhưng không tải được lịch sử: ' + error.message, true));
   } catch(error) { extractedDocument=null; runHealthBtn.disabled=true; healthStatus(extractStatus,`Không trích xuất được: ${error.message}`,true); }
   finally { healthBusy=false; extractBtn.disabled=!healthFile.files?.[0] || !currentUser; extractBtn.textContent='TRÍCH XUẤT VĂN BẢN'; }
 });
