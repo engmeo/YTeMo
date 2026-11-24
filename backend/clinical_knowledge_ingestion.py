@@ -69,7 +69,9 @@ def fetch_registered_url(url: str, registered_hosts: list[str], max_bytes: int =
         host = urlparse(current).hostname or ""
         _assert_public_resolution(host)
         try:
-            response = requests.get(
+            session = requests.Session()
+            session.trust_env = False
+            response = session.get(
                 current, headers={"User-Agent": USER_AGENT, "Accept": "application/pdf,text/html;q=0.9,*/*;q=0.1"},
                 timeout=REQUEST_TIMEOUT, stream=True, allow_redirects=False,
             )
@@ -87,9 +89,15 @@ def fetch_registered_url(url: str, registered_hosts: list[str], max_bytes: int =
             response.close()
             raise IngestionError(f"Nguồn trả về HTTP {status}; chỉ chấp nhận HTTP 200.")
         content_length = response.headers.get("Content-Length")
-        if content_length and int(content_length) > max_bytes:
-            response.close()
-            raise IngestionError("Tài liệu vượt giới hạn dung lượng cho phép.")
+        if content_length:
+            try:
+                declared_size = int(content_length)
+            except ValueError:
+                response.close()
+                raise IngestionError("Nguồn trả về Content-Length không hợp lệ.")
+            if declared_size > max_bytes:
+                response.close()
+                raise IngestionError("Tài liệu vượt giới hạn dung lượng cho phép.")
         chunks, total = [], 0
         try:
             for chunk in response.iter_content(1024 * 128):
