@@ -26,7 +26,7 @@ def main():
     try:
         import torch
         from datasets import load_dataset
-        from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+        from peft import LoraConfig, prepare_model_for_kbit_training
         from transformers import (
             AutoModelForCausalLM, AutoTokenizer, Trainer,
             TrainingArguments, DataCollatorForLanguageModeling, BitsAndBytesConfig,
@@ -40,7 +40,7 @@ def main():
     raw = load_dataset("json", data_files=str(dataset_path), split="train")
     if len(raw) == 0:
         raise SystemExit("Dataset rỗng.")
-    required = {"instruction", "response", "evidence_state", "source_id", "license", "clinical_review_id"}
+    required = {"instruction", "response", "evidence_state", "source_provenance", "training_record_sha256"}
     missing = required - set(raw.column_names)
     if missing:
         raise SystemExit(f"Dataset thiếu provenance fields: {sorted(missing)}")
@@ -74,7 +74,8 @@ def main():
         bias="none", task_type="CAUSAL_LM",
         target_modules="all-linear",
     )
-    model = get_peft_model(model, lora)
+    model.add_adapter(lora)
+    model.enable_adapters()
     model.print_trainable_parameters()
 
     def format_record(row):
@@ -83,7 +84,17 @@ def main():
             f"Tóm tắt bằng chứng: {row.get('evidence_summary', '')}\n"
         )
         user_input = f"{row['instruction']}\n{row.get('input', '')}\n{evidence}".strip()
-        return {"text": f"<|user|>\n{user_input}\n<|assistant|>\n{row['response']}{tokenizer.eos_token}"}
+        messages = [
+            {"role": "user", "content": user_input},
+            {"role": "assistant", "content": row["response"]},
+        ]
+        if getattr(tokenizer, "chat_template", None):
+            text = tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=False
+            )
+        else:
+            text = f"User:\n{user_input}\nAssistant:\n{row['response']}{tokenizer.eos_token}"
+        return {"text": text}
 
     formatted = raw.map(format_record)
     def tokenize(batch):
