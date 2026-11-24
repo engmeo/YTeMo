@@ -534,20 +534,26 @@ async function sendMessage(message) {
   appendMessage(clean, 'user');
   chatInput.value = '';
   setBusy(true);
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 25000);
   try {
     const response = await fetchWithAuth('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: clean, conversation_id: conversationId })
+      body: JSON.stringify({ message: clean, conversation_id: conversationId }),
+      signal: controller.signal
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.detail || `HTTP ${response.status}`);
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.detail || ('Máy chủ trả về HTTP ' + response.status));
+    if (!result.reply || !String(result.reply).trim()) throw new Error('AI đã phản hồi nhưng không có nội dung. Bạn có thể gửi lại yêu cầu.');
     conversationId = result.conversation_id;
-    localStorage.setItem(storageKey(), conversationId);
-    appendMessage(result.reply || 'Hệ thống chưa trả về nội dung.', 'assistant');
+    if (conversationId) localStorage.setItem(storageKey(), conversationId);
+    appendMessage(result.reply, 'assistant');
   } catch (error) {
-    appendMessage(`Chưa gửi được tin nhắn: ${error.message}. Tin nhắn này có thể đã được lưu ở máy chủ nếu lỗi xảy ra sau khi gửi.`, 'system');
+    const message = error.name === 'AbortError' ? 'Yêu cầu đã quá 25 giây và được dừng để tránh chờ vô hạn. Dịch vụ AI có thể đang quá tải; hãy thử gửi lại sau ít phút.' : error.message;
+    appendMessage('Chưa nhận được phản hồi: ' + message, 'system');
   } finally {
+    window.clearTimeout(timeoutId);
     setBusy(false);
     chatInput.focus();
   }
