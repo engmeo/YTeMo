@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "policy": {
+    "weights_are_not_committed": true,
+    "default_inference": "local",
+    "routine_requests_use_one_model": true,
+    "parallel_ensemble_default": false,
+    "license_review_required_before_download": true,
+    "clinical_validation_required_before_patient_use": true
+  },
+  "models": [
+    {
+      "id": "qwen3-4b",
+      "display_name": "Qwen3 4B",
+      "model_id": "Qwen/Qwen3-4B",
+      "role": ["fast", "general_reasoning"],
+      "license": "Apache-2.0",
+      "license_status": "candidate_verify_model_card",
+      "runtime_profile": "small_gpu_or_quantized",
+      "default_enabled": false,
+      "notes": "Compact general model candidate. Verify exact repository revision and license before use."
+    },
+    {
+      "id": "mistral-7b-instruct-v03",
+      "display_name": "Mistral 7B Instruct v0.3",
+      "model_id": "mistralai/Mistral-7B-Instruct-v0.3",
+      "role": ["fast", "general_reasoning"],
+      "license": "Apache-2.0",
+      "license_status": "candidate_verify_model_card",
+      "runtime_profile": "quantized_gpu",
+      "default_enabled": false,
+      "notes": "General instruction model candidate; not a clinically trained or validated model."
+    },
+    {
+      "id": "deepseek-r1-distill-qwen-7b",
+      "display_name": "DeepSeek R1 Distill Qwen 7B",
+      "model_id": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+      "role": ["deep_reasoning"],
+      "license": "MIT",
+      "license_status": "candidate_verify_model_card",
+      "runtime_profile": "quantized_gpu",
+      "default_enabled": false,
+      "notes": "Reasoning candidate; longer generation can increase latency. Not clinically validated."
+    },
+    {
+      "id": "medgemma-4b-it",
+      "display_name": "MedGemma 4B IT",
+      "model_id": "google/medgemma-4b-it",
+      "role": ["medical_language", "multimodal_candidate"],
+      "license": "Health AI Developer Foundations terms",
+      "license_status": "restricted_terms_review_required",
+      "runtime_profile": "quantized_gpu",
+      "default_enabled": false,
+      "notes": "Do not assume unrestricted commercial use. Review the current model terms and intended-use restrictions before download or deployment."
+    },
+    {
+      "id": "biomistral-7b",
+      "display_name": "BioMistral 7B",
+      "model_id": "BioMistral/BioMistral-7B",
+      "role": ["biomedical_language"],
+      "license": "verify_upstream_and_model_card",
+      "license_status": "manual_review_required",
+      "runtime_profile": "quantized_gpu",
+      "default_enabled": false,
+      "notes": "Biomedical language candidate; biomedical pretraining does not establish clinical reasoning safety."
+    }
+  ]
+}
