@@ -351,7 +351,7 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
     </details>
    <div class="health-safety">GIỚI HẠN AN TOÀN<br>Hệ thống chỉ trích xuất thông tin có bằng chứng. Không chẩn đoán, kê đơn, diễn giải kết quả xét nghiệm, ước tính chi phí còn thiếu hoặc xác định mức hưởng BHYT. Đối chiếu kết quả với hồ sơ gốc và chuyên gia y tế.</div>
   </div>
- </div><div id="healthResults" class="health-results" aria-live="polite"></div></div>
+ </div><div class="health-actions" style="margin-top:18px"><button id="loadAnalysisHistoryBtn" class="secondary" type="button">LỊCH SỬ PHÂN TÍCH</button></div><div id="healthAnalysisHistory" class="health-status" role="status" hidden style="margin-top:10px"></div><div id="healthResults" class="health-results" aria-live="polite"></div></div>
 </section>
 
 <section class="page" id="system"><div class="shell page-hero"><div class="mono eyebrow">03 / 06 — AGENT ARCHITECTURE</div><h1>Không phải một chatbot.<br><i>Một hệ thống phối hợp.</i></h1><p>Orchestrator điều phối các Agent chuyên môn, workflow và công cụ dữ liệu. Chọn từng node để xem nhiệm vụ, trạng thái và đầu ra của nó. Chạy thử một luồng mô phỏng để quan sát cách hệ thống phối hợp.</p><div class="hero-index">LANGGRAPH-INSPIRED / INTERACTIVE CONCEPT</div></div><div class="shell"><div class="system-layout"><div><div class="graph-panel"><div class="graph-top"><span>● EXECUTION GRAPH / DEMO</span><div class="graph-actions"><button class="mini-btn" onclick="resetGraph()">RESET</button><button class="mini-btn" onclick="zoomGraph(1)">＋</button><button class="mini-btn" onclick="zoomGraph(-1)">－</button></div></div><div class="graph-canvas"><svg id="graph" viewBox="0 0 720 490" preserveAspectRatio="xMidYMid meet"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#aebdb0"/></pattern><marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 6 3 0 6" fill="none" stroke="#9db1a4"/></marker></defs><rect width="720" height="490" fill="url(#dots)" opacity=".5"/><g id="edges"><path class="edge" id="e1" d="M360 70V125" marker-end="url(#arr)"/><path class="edge" id="e2" d="M360 180C360 220 175 205 175 255" marker-end="url(#arr)"/><path class="edge" id="e3" d="M360 180C360 220 545 205 545 255" marker-end="url(#arr)"/><path class="edge" id="e4" d="M175 310V365H360V400" marker-end="url(#arr)"/><path class="edge" id="e5" d="M545 310V365H360" marker-end="url(#arr)"/><path class="edge" id="e6" d="M360 180V400" marker-end="url(#arr)"/></g><g id="nodes"><g class="node" data-node="orchestrator" transform="translate(360 43)" onclick="inspect('orchestrator')"><circle r="29"/><text y="-3">ORCH</text><text class="sub" y="11">ROUTER</text></g><g class="node active" data-node="discovery" transform="translate(175 282)" onclick="inspect('discovery')"><circle r="38"/><text y="-4">DISCOVERY</text><text class="sub" y="11">AGENT 01</text></g><g class="node" data-node="safety" transform="translate(545 282)" onclick="inspect('safety')"><circle r="38"/><text y="-4">SAFETY</text><text class="sub" y="11">RULE ENGINE</text></g><g class="node" data-node="navigation" transform="translate(100 435)" onclick="inspect('navigation')"><circle r="32"/><text y="-3">CARE</text><text class="sub" y="11">NAVIGATION</text></g><g class="node" data-node="cost" transform="translate(360 435)" onclick="inspect('cost')"><circle r="32"/><text y="-3">COST</text><text class="sub" y="11">INTELLIGENCE</text></g><g class="node" data-node="review" transform="translate(620 435)" onclick="inspect('review')"><circle r="32"/><text y="-3">HUMAN</text><text class="sub" y="11">REVIEW</text></g></g><text x="360" y="112" text-anchor="middle" font-size="9" fill="#71857a" font-family="DM Mono">STATE + ROUTING</text><text x="360" y="225" text-anchor="middle" font-size="9" fill="#71857a" font-family="DM Mono">CONDITIONAL BRANCH</text></svg></div><div class="graph-legend"><span><i class="legend-dot"></i>READY</span><span><i class="legend-dot" style="background:var(--coral)"></i>RUNNING</span><span>— DATA / CONTROL FLOW</span></div></div><div class="runbar"><p><b>Luồng demo:</b> Người dùng cần khám, có rào cản chi phí.</p><button class="btn" id="runBtn" onclick="runDemo()">▶ GỬI YÊU CẦU THỬ</button></div><div class="log" id="log"><div class="logline">[SYSTEM] Graph initialized. Awaiting input.</div><div class="logline">[STATE] user_context = null</div><div class="logline">[READY] Select a node or run the scenario.</div></div></div><aside class="inspector" id="inspector"><div class="inspector-top"><span class="mono">NODE INSPECTOR</span><span class="mono" id="nodeNum">01 / 06</span></div><div class="label" id="nodeType">AGENT · LANGUAGE MODEL</div><h3 id="nodeTitle">Discovery Agent</h3><p id="nodeDesc">Làm rõ mục tiêu, hoàn cảnh, rào cản và thông tin còn thiếu thông qua hội thoại có chủ đích. Không chẩn đoán.</p><div class="specs"><div class="spec"><span>Vai trò</span><span id="nodeRole">Need discovery</span></div><div class="spec"><span>Input</span><span id="nodeInput">Natural language</span></div><div class="spec"><span>Output</span><span id="nodeOutput">Structured need</span></div><div class="spec"><span>Execution</span><span id="nodeExec">LLM + state</span></div></div><div class="inspector-foot"><button class="btn outline" onclick="window.ytemoShowApiStatus()">CHI TIẾT</button><button class="btn" onclick="runDemo()">GỬI YÊU CẦU ↗</button></div></aside></div></div><div class="shell"><div class="mono eyebrow">AGENT REGISTRY / RESPONSIBILITY MAP</div><div class="agent-grid"><article class="agent-card" onclick="inspect('discovery')"><div class="symbol">⌕</div><h3>Discovery Agent</h3><p>Khám phá mục tiêu, bối cảnh và rào cản. Đặt câu hỏi tiếp theo dựa trên state hiện tại.</p></article><article class="agent-card" onclick="inspect('safety')"><div class="symbol">⬡</div><h3>Safety Triage</h3><p>Luồng kiểm tra dấu hiệu cảnh báo theo quy tắc an toàn đã được chuyên gia xác nhận.</p></article><article class="agent-card" onclick="inspect('navigation')"><div class="symbol">⌖</div><h3>Care Navigation</h3><p>Hỗ trợ tìm cơ sở, chuyên khoa, tuyến chăm sóc và thông tin cần xác minh.</p></article><article class="agent-card" onclick="inspect('cost')"><div class="symbol">◈</div><h3>Cost Intelligence</h3><p>Tổng hợp giá, BHYT và khoản chi từ nguồn dữ liệu có thể truy xuất.</p></article><article class="agent-card" onclick="inspect('orchestrator')"><div class="symbol">⤳</div><h3>Orchestrator</h3><p>Quản lý state, chọn node, xử lý nhánh, retry và bàn giao cho con người.</p></article><article class="agent-card" onclick="inspect('review')"><div class="symbol">◎</div><h3>Human Review</h3><p>Chờ người dùng hoặc chuyên gia xác nhận ở các bước cần thẩm quyền.</p></article></div></div></section>
@@ -1097,6 +1097,48 @@ healthHistoryButton.addEventListener('click', async () => {
   finally { healthHistoryButton.disabled = false; }
 });
 
+const analysisHistoryButton = document.getElementById('loadAnalysisHistoryBtn');
+const analysisHistoryHost = document.getElementById('healthAnalysisHistory');
+async function loadAnalysisHistory() {
+  if (!currentUser) { analysisHistoryHost.hidden = false; analysisHistoryHost.textContent = 'Đăng nhập để xem lịch sử phân tích.'; return; }
+  analysisHistoryHost.hidden = false;
+  analysisHistoryHost.textContent = 'Đang tải lịch sử phân tích từ backend…';
+  const data = await healthRequest('/healthcare/analysis-runs?limit=30');
+  const runs = data.runs || [];
+  analysisHistoryHost.replaceChildren();
+  if (!runs.length) { analysisHistoryHost.textContent = 'Chưa có lần phân tích nào được lưu.'; return; }
+  runs.forEach(run => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)';
+    const info = document.createElement('div');
+    const title = document.createElement('b'); title.textContent = 'Phân tích ' + String(run.id).slice(0,8);
+    const meta = document.createElement('small');
+    meta.style.cssText = 'display:block;color:var(--muted);margin-top:4px';
+    meta.textContent = (run.created_at ? new Date(run.created_at).toLocaleString('vi-VN') : '') + ' · ' + (run.agent_keys || []).join(', ');
+    info.append(title, meta);
+    const view = document.createElement('button'); view.type = 'button'; view.className = 'secondary'; view.textContent = 'Xem kết quả';
+    view.addEventListener('click', async () => {
+      view.disabled = true;
+      try {
+        const detail = await healthRequest('/healthcare/analysis-runs/' + encodeURIComponent(run.id));
+        renderHealthResults(detail.run.result || {});
+        healthStatus(runHealthStatus, 'Đã mở kết quả phân tích đã lưu.');
+      } catch (error) { healthStatus(runHealthStatus, 'Không tải được kết quả: ' + error.message, true); }
+      finally { view.disabled = false; }
+    });
+    row.append(info, view); analysisHistoryHost.appendChild(row);
+  });
+}
+analysisHistoryButton.addEventListener('click', async () => {
+  analysisHistoryButton.disabled = true;
+  try { await loadAnalysisHistory(); }
+  catch (error) {
+    analysisHistoryHost.hidden = false;
+    analysisHistoryHost.textContent = 'Lịch sử phân tích chưa khả dụng: ' + error.message + ' · Cần áp dụng migration 202611240010.';
+  } finally { analysisHistoryButton.disabled = false; }
+});
+
+
 healthFile.addEventListener('change', () => {
   const file = healthFile.files?.[0];
   document.getElementById('healthFileName').textContent = file ? file.name : 'Chọn hồ sơ y tế';
@@ -1185,6 +1227,7 @@ function renderHealthResults(data) {
     note.textContent=report.clinical_boundary||'Chỉ tổng hợp số liệu được cung cấp; không thay thế xác minh BHYT hoặc tư vấn chuyên môn.'; card.append(note);
     healthResults.append(card);
   }
+  if(data.analysis_history){const historyNote=document.createElement('p');historyNote.className='health-muted';historyNote.textContent=data.analysis_history.persisted?'Lần phân tích đã được lưu vào lịch sử tài khoản.':(data.analysis_history.message||'Lần phân tích chưa được lưu.');healthResults.append(historyNote);}
   const limits=document.createElement('p'); limits.className='health-muted'; limits.textContent=(data.limitations||[]).join(' · '); healthResults.append(limits);
 }
 runHealthBtn.addEventListener('click',async()=>{
@@ -1208,12 +1251,14 @@ runHealthBtn.addEventListener('click',async()=>{
       bhyt={eligible_amount:Number(eligible),coverage_rate:Number(rate),currency:'VND'};
       if(cap!=='') bhyt.patient_cap=Number(cap);
     }
-    const payload={document_text:textValue,agent_keys};
+    const payload={document_text:textValue,agent_keys,document_id:extractedDocument?.id || null};
     if(cost_items!==undefined) payload.cost_items=cost_items;
     if(bhyt!==undefined) payload.bhyt=bhyt;
     const data=await healthRequest('/healthcare/agents/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     renderHealthResults(data);
-    healthStatus(runHealthStatus,`Hoàn tất. ${data.agents_completed?.length||0}/${data.agents_requested?.length||0} Agent đã trả kết quả. Task: ${data.task_id}`);
+    const historyState=data.analysis_history?.persisted ? 'Đã lưu lịch sử phân tích.' : 'Kết quả chỉ tồn tại trong phiên này; chưa lưu được lịch sử.';
+    healthStatus(runHealthStatus,`Hoàn tất. ${data.agents_completed?.length||0}/${data.agents_requested?.length||0} Agent đã trả kết quả. ${historyState}`);
+    loadAnalysisHistory().catch(error => healthStatus(runHealthStatus, historyState + ' Không tải được danh sách lịch sử: ' + error.message, true));
   }
   catch(error){healthStatus(runHealthStatus,`Phân tích thất bại: ${error.message}`,true);}
   finally{healthBusy=false;runHealthBtn.disabled=!healthText.value.trim() || !currentUser;runHealthBtn.textContent='CHẠY PHÂN TÍCH';}
