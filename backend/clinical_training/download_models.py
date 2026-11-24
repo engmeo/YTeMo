@@ -38,11 +38,7 @@ def main():
                 "Không tự động tải model có điều khoản chưa được xem xét."
             )
         target = cache / model_id
-        snapshot_download(
-            repo_id=entry["model_id"],
-            local_dir=str(target),
-            local_dir_use_symlinks=False,
-        )
+        snapshot_download(repo_id=entry["model_id"], local_dir=str(target))
         print(f"Downloaded {model_id} -> {target}")
 
 
