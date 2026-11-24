@@ -151,11 +151,7 @@ Tất cả endpoint yêu cầu Supabase Bearer token:
 - GET `/clinical-knowledge/documents/{id}` (reviewer đã xác minh credential)
 - POST `/clinical-knowledge/documents/{id}/review` (reviewer đã xác minh credential)
 
-POST document cần thêm `knowledge_domain`, `jurisdiction`, `target_population`. Review APPROVED cần `source_document_verified`, `version_current`, `license_cleared`, `evidence_assessment` và `scope`. Reviewer đầu tiên của domain cần hai người sẽ để tài liệu ở AI_REVIEWED; reviewer độc lập thứ hai mới có thể chuyển sang CLINICAL_APPROVED.
-
-Cần chạy migration theo thứ tự:
-1. `202611240001_clinical_knowledge_governance.sql`
-2. `202611240002_evidence_grade_clinical_knowledge.sql`
+POST document cần thêm `knowledge_domain`, `jurisdiction`, `target_population`. Review APPROVED cần `source_document_verified`, `version_current`, `license_cleared`, `evidence_assessment` và ít nhất một `scope` thuộc taxonomy. Reviewer đầu tiên của domain cần hai người sẽ chuyển tài liệu sang `CLINICAL_REVIEW_PENDING_SECOND`; reviewer độc lập thứ hai mới có thể chuyển sang `CLINICAL_APPROVED`.
 
 ## 9. Điều kiện trước khi đưa ý kiến dựa trên tri thức
 
