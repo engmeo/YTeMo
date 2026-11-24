@@ -65,10 +65,11 @@ class IngestCandidateRequest(BaseModel):
     language: str = Field(default="vi", max_length=10)
     license_status: str = Field(default="unknown", max_length=80)
 
-    @field_validator("published_at")
+    @field_validator("published_at", "effective_from", "effective_until")
     @classmethod
-    def valid_published_date(cls, value):
-        date.fromisoformat(value)
+    def valid_document_dates(cls, value):
+        if value is not None:
+            date.fromisoformat(value)
         return value
 
 
@@ -388,21 +389,28 @@ def build_workflow_router(db, storage, auth_dependency):
             },
             "status": "DISCOVERED", "created_by": str(user.id),
         }
+        document_inserted = False
         try:
             created = db.table("clinical_knowledge_documents").insert(row).execute()
             if not created.data:
                 raise RuntimeError("document insert returned no row")
+            document_inserted = True
             db.table("clinical_knowledge_document_pages").insert(page_rows).execute()
-            db.table("clinical_knowledge_discovery_candidates").update({
-                "status": "INGESTED", "document_id": document_id, "reviewed_at": now_iso(),
-                "reviewed_by": str(user.id),
-            }).eq("id", candidate_id).execute()
             audit(document_id, user.id, "OFFICIAL_SOURCE_INGESTED", {
                 "source_key": source["source_key"], "source_url": final_url,
                 "sha256": original_hash, "byte_size": len(original), "page_count": len(pages),
                 "extraction_report": report,
             })
+            db.table("clinical_knowledge_discovery_candidates").update({
+                "status": "INGESTED", "document_id": document_id, "reviewed_at": now_iso(),
+                "reviewed_by": str(user.id),
+            }).eq("id", candidate_id).execute()
         except Exception as exc:
+            if document_inserted:
+                try:
+                    db.table("clinical_knowledge_documents").delete().eq("id", document_id).execute()
+                except Exception:
+                    pass
             try:
                 storage.from_(BUCKET).remove([storage_path])
             except Exception:
@@ -632,6 +640,14 @@ VĂN BẢN NGUỒN KẾT THÚC.
             item["reviewer_status"] != "ACCEPTED" for item in (found.data or [])
         ):
             raise HTTPException(status_code=422, detail="Conflict chỉ được tạo từ các claim đã được chấp nhận.")
+        claim_docs = db.table("clinical_knowledge_documents").select("id,status,is_current").in_(
+            "id", list({item["document_id"] for item in (db.table("clinical_evidence_claims").select("document_id").in_("id", request.claim_ids).execute().data or [])})
+        ).execute()
+        if len(claim_docs.data or []) == 0 or any(
+            item.get("status") != "CLINICAL_APPROVED" or not item.get("is_current", True)
+            for item in (claim_docs.data or [])
+        ):
+            raise HTTPException(status_code=422, detail="Conflict chỉ được lập từ claim thuộc tài liệu CLINICAL_APPROVED và còn hiệu lực.")
         result = db.table("clinical_evidence_conflicts").insert({
             "topic_key": request.topic_key, "jurisdiction": request.jurisdiction,
             "population": request.population, "claim_ids": request.claim_ids,
@@ -721,6 +737,11 @@ VĂN BẢN NGUỒN KẾT THÚC.
             raise HTTPException(status_code=409, detail="Hai tài liệu không cùng official_identifier đã khai báo; không tự liên kết phiên bản.")
         if current.get("publisher") != predecessor.get("publisher") or current.get("knowledge_domain") != predecessor.get("knowledge_domain"):
             raise HTTPException(status_code=409, detail="Publisher hoặc knowledge domain không khớp; cần xác minh thủ công ngoài luồng này.")
+        if request.relation_type == "SUPERSEDES" and (
+            current.get("status") != "CLINICAL_APPROVED" or not current.get("is_current", True)
+            or predecessor.get("status") != "CLINICAL_APPROVED" or not predecessor.get("is_current", True)
+        ):
+            raise HTTPException(status_code=409, detail="Chỉ được đánh dấu SUPERSEDES giữa hai tài liệu đã được phê duyệt và đang hiện hành.")
         if request.decision == "REJECT":
             return {"relation_created": False, "status": "REJECTED", "rationale": request.rationale}
         if str(current.get("created_by") or "") == str(user.id) or str(predecessor.get("created_by") or "") == str(user.id):
