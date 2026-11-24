@@ -58,7 +58,8 @@ alter table public.clinical_evidence_claims
   add column if not exists required_reviewers integer not null default 2,
   add column if not exists approved_scope text[] not null default '{}',
   add column if not exists jurisdiction text,
-  add column if not exists reviewed_at timestamptz;
+  add column if not exists reviewed_at timestamptz,
+  add column if not exists created_by uuid;
 
 create table if not exists public.clinical_evidence_claim_reviews (
   id uuid primary key default gen_random_uuid(),
@@ -107,3 +108,13 @@ comment on column public.clinical_knowledge_documents.original_sha256 is
   'SHA-256 of fetched original bytes; integrity marker, not proof of publisher authenticity.';
 comment on column public.clinical_knowledge_documents.original_storage_path is
   'Private, content-addressed storage path. Application never overwrites an existing original.';
+
+-- Official landing pages are discovery starting points, not pre-approved documents.
+update public.clinical_knowledge_sources set discovery_url='https://moh.gov.vn/', fetch_enabled=true where source_key='moh_vn';
+update public.clinical_knowledge_sources set discovery_url='https://www.who.int/publications/who-guidelines', fetch_enabled=true where source_key='who';
+update public.clinical_knowledge_sources set discovery_url='https://www.escardio.org/Guidelines', fetch_enabled=true where source_key='esc';
+update public.clinical_knowledge_sources set discovery_url='https://kdigo.org/guidelines/', fetch_enabled=true where source_key='kdigo';
+update public.clinical_knowledge_sources set discovery_url='https://ginasthma.org/', fetch_enabled=true where source_key='gina';
+update public.clinical_knowledge_sources set discovery_url='https://goldcopd.org/', fetch_enabled=true where source_key='gold';
+update public.clinical_knowledge_sources set discovery_url='https://diabetes.org/', fetch_enabled=true where source_key='ada';
+update public.clinical_knowledge_sources set discovery_url='https://dav.gov.vn/', fetch_enabled=true where source_key='dav_vn';
