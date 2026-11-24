@@ -145,6 +145,7 @@ def main() -> None:
     parser.add_argument("--model", default=os.getenv("YTEMO_BENCHMARK_MODEL"))
     parser.add_argument("--prompts", type=Path, required=True)
     parser.add_argument("--runs", type=int, default=3)
+    parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--max-tokens", type=int, default=256)
     parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("--output", type=Path, default=Path("inference-benchmark-results.json"))
@@ -153,10 +154,15 @@ def main() -> None:
         parser.error("Provide --base-url and --model or set YTEMO_BENCHMARK_BASE_URL / YTEMO_BENCHMARK_MODEL.")
     if args.runs < 1 or args.runs > 20:
         parser.error("--runs must be between 1 and 20.")
+    if args.warmup < 0 or args.warmup > 5:
+        parser.error("--warmup must be between 0 and 5.")
 
     prompts = load_prompts(args.prompts)
     endpoint = completion_endpoint(args.base_url)
     samples = []
+    for warmup_index in range(args.warmup):
+        stream_completion(endpoint, args.model, prompts[0], args.api_key, args.max_tokens, args.timeout)
+        print(f"warmup={warmup_index + 1}/{args.warmup}", flush=True)
     for prompt_index, prompt in enumerate(prompts, 1):
         for run_index in range(1, args.runs + 1):
             result = stream_completion(
