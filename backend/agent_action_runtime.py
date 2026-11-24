@@ -74,6 +74,20 @@ def propose_action(db, user_id: str, action: str, arguments: dict[str, Any]) -> 
         if arguments.get("email_consent") is not True:
             raise ActionValidationError("Explicit consent to email reminders is required.")
         persisted_arguments["email_consent_recorded_at"] = now.isoformat()
+    elif action == "request_clinician_review":
+        reason = str(arguments.get("reason", "")).strip()
+        if not reason or len(reason) > 1500:
+            raise ActionValidationError("Review reason must contain 1–1500 characters.")
+        persisted_arguments["reason"] = reason
+    elif action == "add_timeline_note":
+        note = str(arguments.get("note", "")).strip()
+        source = str(arguments.get("source", "")).strip()
+        if not note or len(note) > 4000:
+            raise ActionValidationError("Timeline note must contain 1–4000 characters.")
+        if not source or len(source) > 500:
+            raise ActionValidationError("Timeline note source must contain 1–500 characters.")
+        persisted_arguments["note"] = note
+        persisted_arguments["source"] = source
 
     idem = _stable_key(user_id, action, arguments)
     existing = (
