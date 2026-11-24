@@ -275,7 +275,7 @@ def chat_endpoint(request: ChatRequest, user=Depends(get_current_user)):
         print("GEMINI ERROR:", repr(e), flush=True)
         raise HTTPException(
             status_code=503,
-            detail="AI service temporarily unavailable"
+            detail="Dịch vụ AI đang quá tải hoặc không phản hồi trong thời gian cho phép. Vui lòng thử lại sau ít phút."
         )
 
     # 5. Save assistant response.
