@@ -57,3 +57,12 @@ The existing Model Gateway can target OpenAI-compatible local servers. Recommend
 - Benchmark each candidate on Vietnamese quality, tool-call validity, TTFT, inter-token latency, p50/p95 latency, peak VRAM/RAM and clinical safety regression.
 
 Quantization is not automatically faster on every device. Do not enable a quantized model for clinical use until its quality has been compared against the same model in higher precision on an expert-adjudicated evaluation set.
+
+
+## Gửi email nhắc lịch bằng Resend
+
+Worker gửi email chỉ xử lý `create_reminder` và chỉ khi request có `delivery_channel: "email"`; lựa chọn kênh phải được người dùng xác nhận trước khi phê duyệt hành động. Worker lấy địa chỉ email từ Supabase Auth, yêu cầu email đã xác minh, không nhận địa chỉ gửi đến tùy ý từ LLM.
+
+Cấu hình ở dịch vụ worker (không đặt trên frontend): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, tùy chọn `YTEMO_ACTION_POLL_SECONDS`. Chạy `python -m backend.companion_action_worker_service` từ thư mục gốc repo hoặc `python companion_action_worker_service.py` trong `backend`.
+
+Các action `request_clinician_review` và `add_timeline_note` chưa có handler thực thi; worker sẽ fail-closed, không giả lập thành công. Không bật worker trước khi migration được áp dụng và Resend domain/from address được xác minh.
