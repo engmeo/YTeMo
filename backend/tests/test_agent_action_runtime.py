@@ -57,8 +57,8 @@ class DB:
 def test_proposal_requires_explicit_approval_and_is_idempotent():
     db = DB()
     due = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-    first = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due})
-    second = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due})
+    first = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email"})
+    second = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email"})
     assert first["status"] == "awaiting_approval"
     assert second["id"] == first["id"]
     assert len(db.rows) == 1
@@ -69,7 +69,7 @@ def test_proposal_requires_explicit_approval_and_is_idempotent():
 def test_cannot_approve_another_users_action():
     db = DB()
     due = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-    action = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due})
+    action = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email"})
     with pytest.raises(LookupError):
         approve_action(db, "owner-b", action["id"])
 
@@ -87,6 +87,6 @@ def test_reminder_requires_timezone_aware_timestamp():
 def test_rejection_closes_pending_proposal():
     db = DB()
     due = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-    action = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due})
+    action = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email"})
     rejected = reject_action(db, "owner-a", action["id"])
     assert rejected["status"] == "rejected"
