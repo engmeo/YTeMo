@@ -28,6 +28,7 @@ alter table public.companion_action_tasks enable row level security;
 -- Browser access is intentionally denied; API uses the server-side secret key
 -- and enforces owner checks in every query.
 revoke all on public.companion_action_tasks from anon, authenticated;
+grant all on public.companion_action_tasks to service_role;
 
 create or replace function public.claim_companion_action_tasks(p_now timestamptz, p_limit integer default 10)
 returns setof public.companion_action_tasks
