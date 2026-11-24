@@ -1,0 +1,51 @@
+{
+  "policy": {
+    "default_allowlist": ["CC0-1.0", "CC-BY-4.0", "CC-BY-3.0", "US-GOV-PD"],
+    "exclude_by_default": ["CC-BY-NC-*", "CC-BY-ND-*", "all-rights-reserved", "unknown"],
+    "article_level_license_required": true,
+    "no_patient_records_without_separate_ethics_privacy_and_consent_approval": true,
+    "source_license_does_not_automatically_license_model_outputs_or_derivatives": true
+  },
+  "sources": [
+    {
+      "id": "europe-pmc-open-access",
+      "name": "Europe PMC Open Access subset",
+      "url": "https://europepmc.org/",
+      "access": "free_api_and_open_access_full_text_subset",
+      "license_rule": "Read each article's license metadata. Include only individually eligible licenses; do not assume all Europe PMC records are reusable.",
+      "training_default": "eligible_after_article_level_license_and_source_review"
+    },
+    {
+      "id": "pubmed-metadata",
+      "name": "PubMed",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/",
+      "access": "free_search_and_metadata",
+      "license_rule": "Abstract availability does not mean the abstract is public domain or licensed for model training. Track rights per record and do not bulk-train on unknown rights.",
+      "training_default": "metadata_and_discovery_only_until_rights_confirmed"
+    },
+    {
+      "id": "clinicaltrials-gov",
+      "name": "ClinicalTrials.gov",
+      "url": "https://clinicaltrials.gov/data-api/about-api",
+      "access": "free_api",
+      "license_rule": "Public registry records are useful for trial metadata and study status; inspect applicable data-use terms and third-party content before training.",
+      "training_default": "structured_metadata_only_after_terms_review"
+    },
+    {
+      "id": "who-publications",
+      "name": "WHO publications",
+      "url": "https://www.who.int/publications",
+      "access": "free_read_access_varies",
+      "license_rule": "WHO copyright and reuse terms vary by publication. Do not treat free-to-read as permission to train; record the exact publication license or written permission.",
+      "training_default": "evidence_retrieval_candidate_not_automatic_training_source"
+    },
+    {
+      "id": "cdc-publications",
+      "name": "CDC publications",
+      "url": "https://www.cdc.gov/",
+      "access": "free_read_access",
+      "license_rule": "US government works may be public domain, but third-party figures, photos, and incorporated materials can have separate rights. Verify each item.",
+      "training_default": "eligible_only_after_item_level_rights_review"
+    }
+  ]
+}
