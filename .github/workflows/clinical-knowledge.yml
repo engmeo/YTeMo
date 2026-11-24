@@ -17,7 +17,12 @@ on:
     branches: [main, feature/clinical-knowledge-governance]
     paths:
       - "backend/clinical_knowledge.py"
+      - "backend/clinical_knowledge_ingestion.py"
+      - "backend/clinical_knowledge_workflows.py"
       - "backend/test_clinical_knowledge.py"
+      - "backend/test_clinical_knowledge_ingestion.py"
+      - "backend/requirements-ocr.txt"
+      - "supabase/migrations/20261124000*.sql"
       - "backend/main.py"
       - "backend/requirements.txt"
       - ".github/workflows/clinical-knowledge.yml"
