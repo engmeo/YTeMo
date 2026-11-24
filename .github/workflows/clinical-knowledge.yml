@@ -22,6 +22,7 @@ on:
       - "backend/clinical_training/**"
       - "backend/requirements-training.txt"
       - "docs/CLINICAL_MODEL_TRAINING.vi.md"
+      - "docs/CLINICAL_DATA_COLLECTION.vi.md"
       - "docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md"
       - "supabase/migrations/20261124000*.sql"
       - "backend/main.py"
@@ -51,6 +52,7 @@ on:
       - "backend/main.py"
       - "backend/requirements.txt"
       - "docs/CLINICAL_MODEL_TRAINING.vi.md"
+      - "docs/CLINICAL_DATA_COLLECTION.vi.md"
       - "supabase/migrations/20261124000*.sql"
       - ".github/workflows/clinical-knowledge.yml"
 
@@ -78,7 +80,8 @@ jobs:
             backend/clinical_training/prepare_dataset.py \
             backend/clinical_training/train_lora.py \
             backend/clinical_training/benchmark.py \
-            backend/clinical_training/download_models.py
+            backend/clinical_training/download_models.py \
+            backend/clinical_training/collect_europe_pmc.py
       - name: Run clinical governance and model gateway tests
         working-directory: backend
         run: |
@@ -91,7 +94,8 @@ jobs:
             test_model_intelligence
       - name: Run training data governance tests
         working-directory: backend/clinical_training
-        run: python -m unittest -v test_prepare_dataset
+        run: |
+          python -m unittest -v test_prepare_dataset test_collect_europe_pmc
       - name: Syntax-check frontend JavaScript
         run: |
           python - <<'PY'
