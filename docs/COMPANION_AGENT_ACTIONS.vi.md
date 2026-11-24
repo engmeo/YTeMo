@@ -29,7 +29,7 @@ The last two are proposals only. A handler must be explicitly implemented and re
 
 ## Apply and operate
 
-1. Apply `supabase/migrations/202611240001_companion_action_tasks.sql` in the target Supabase project.
+1. Apply `supabase/migrations/202611240009_companion_action_tasks.sql` in the target Supabase project.
 2. Deploy the backend containing the API routes.
 3. Run a separate worker process only after registering reviewed handlers:
    `python -m temporal_action_worker` is not a standalone entrypoint yet; use a small deployment entrypoint that creates the service-role Supabase client and calls `serve(db)`.
