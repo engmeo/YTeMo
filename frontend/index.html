@@ -453,42 +453,6 @@ let zoom=1;function zoomGraph(d){zoom=Math.max(.8,Math.min(1.4,zoom+d*.1));docum
 const steps=[['orchestrator','[ORCHESTRATOR] Nhận yêu cầu, khởi tạo state và xác định luồng.',['e1']],['discovery','[DISCOVERY] Trích xuất mục tiêu: đưa người thân đi khám; phát hiện rào cản tài chính.',['e2']],['safety','[SAFETY] Kiểm tra dấu hiệu cảnh báo theo quy tắc demo; cần xác minh bằng chuyên gia.',['e3']],['navigation','[CARE NAVIGATION] Xác định thông tin còn thiếu: địa bàn, chuyên khoa, tuyến tiếp cận.',['e4']],['cost','[COST INTELLIGENCE] Yêu cầu dữ liệu giá và quyền lợi BHYT; chưa tự tạo con số.',['e5']],['review','[HUMAN REVIEW] Tạm dừng để người dùng xác nhận dữ liệu và lựa chọn.',['e6']]];
 let running=false;async function runDemo(){if(running)return;running=true;let backendHealth=null;try{backendHealth=await window.ytemoApiHealth();}catch(error){document.getElementById('log').innerHTML='<div class="logline">[BACKEND ERROR] '+error.message+'</div><div class="logline">Không chạy mô phỏng khi chưa xác nhận backend.</div>';toast('Không thể chạy: Backend chưa sẵn sàng.');running=false;return;}resetGraph();running=true;let log=document.getElementById('log');let apiLine=document.createElement('div');apiLine.className='logline';apiLine.textContent='[API CONNECTED] FastAPI '+backendHealth.status+' · '+backendHealth.timestamp;log.appendChild(apiLine);document.getElementById('runBtn').disabled=true;document.getElementById('runBtn').textContent='ĐANG CHẠY…';
 function toast(s){let t=document.getElementById('toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
-window.ytemoApiHealth = async function () {
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 12000);
-  try {
-    const response = await fetch(\`\${API_BASE}/health\`, {
-      headers: { 'Accept': 'application/json' }, cache: 'no-store', signal: controller.signal
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.status !== 'healthy') throw new Error(data.detail || \`Backend HTTP \${response.status}\`);
-    return { ...data, api_base: API_BASE };
-  } finally { window.clearTimeout(timer); }
-};
-window.ytemoShowApiStatus = async function () {
-  try {
-    const health = await window.ytemoApiHealth();
-    const configResponse = await fetch(\`\${API_BASE}/public-config\`, { cache: 'no-store' });
-    if (!configResponse.ok) throw new Error(\`public-config HTTP \${configResponse.status}\`);
-    const config = await configResponse.json();
-    const panel = document.createElement('section');
-    panel.style.cssText = 'position:fixed;z-index:1000;inset:10% 8%;overflow:auto;background:#fbfaf6;border:1px solid #9eaaa2;box-shadow:0 20px 80px #142c3160;padding:28px;border-radius:8px';
-    panel.innerHTML = '<button type="button" id="ytemoCloseStatus" class="btn outline" style="float:right">Đóng ✕</button><div class="mono eyebrow">LIVE BACKEND DIAGNOSTICS</div><h2 style="font:800 30px Manrope;margin:16px 0">Kết nối hệ thống</h2><div id="ytemoStatusBody"></div>';
-    document.body.appendChild(panel);
-    panel.querySelector('#ytemoCloseStatus').addEventListener('click',()=>panel.remove());
-    const body=panel.querySelector('#ytemoStatusBody');
-    const rows=[
-      ['FastAPI /health','HEALTHY',health.timestamp || 'Đã phản hồi'],
-      ['Supabase config','READY',config.supabase_url ? new URL(config.supabase_url).host : 'Thiếu URL'],
-      ['API endpoint',API_BASE,'Backend đang được frontend sử dụng'],
-      ['Authentication','READY','Supabase client đã được cấu hình']
-    ];
-    body.innerHTML=rows.map(([k,v,d])=>'<div style="padding:14px 0;border-top:1px solid #d9ded5"><b>'+k+'</b><div style="color:#087e73;font:700 12px DM Mono;margin:5px 0">'+v+'</div><small>'+d+'</small></div>').join('');
-  } catch(error) {
-    toast('Backend chưa sẵn sàng: '+(error.name==='AbortError'?'timeout 12 giây':error.message));
-    setAuthStatus('Kiểm tra Backend thất bại: '+error.message+' · '+API_BASE,true);
-  }
-};
 
 </script>
 <script type="module">
@@ -548,6 +512,43 @@ let supabase = null;
 let currentUser = null;
 let conversationId = null;
 let busy = false;
+
+window.ytemoApiHealth = async function () {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(\`\${API_BASE}/health\`, {
+      headers: { 'Accept': 'application/json' }, cache: 'no-store', signal: controller.signal
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.status !== 'healthy') throw new Error(data.detail || \`Backend HTTP \${response.status}\`);
+    return { ...data, api_base: API_BASE };
+  } finally { window.clearTimeout(timer); }
+};
+window.ytemoShowApiStatus = async function () {
+  try {
+    const health = await window.ytemoApiHealth();
+    const configResponse = await fetch(\`\${API_BASE}/public-config\`, { cache: 'no-store' });
+    if (!configResponse.ok) throw new Error(\`public-config HTTP \${configResponse.status}\`);
+    const config = await configResponse.json();
+    const panel = document.createElement('section');
+    panel.style.cssText = 'position:fixed;z-index:1000;inset:10% 8%;overflow:auto;background:#fbfaf6;border:1px solid #9eaaa2;box-shadow:0 20px 80px #142c3160;padding:28px;border-radius:8px';
+    panel.innerHTML = '<button type="button" id="ytemoCloseStatus" class="btn outline" style="float:right">Đóng ✕</button><div class="mono eyebrow">LIVE BACKEND DIAGNOSTICS</div><h2 style="font:800 30px Manrope;margin:16px 0">Kết nối hệ thống</h2><div id="ytemoStatusBody"></div>';
+    document.body.appendChild(panel);
+    panel.querySelector('#ytemoCloseStatus').addEventListener('click',()=>panel.remove());
+    const body=panel.querySelector('#ytemoStatusBody');
+    const rows=[
+      ['FastAPI /health','HEALTHY',health.timestamp || 'Đã phản hồi'],
+      ['Supabase config','READY',config.supabase_url ? new URL(config.supabase_url).host : 'Thiếu URL'],
+      ['API endpoint',API_BASE,'Backend đang được frontend sử dụng'],
+      ['Authentication','READY','Supabase client đã được cấu hình']
+    ];
+    body.innerHTML=rows.map(([k,v,d])=>'<div style="padding:14px 0;border-top:1px solid #d9ded5"><b>'+k+'</b><div style="color:#087e73;font:700 12px DM Mono;margin:5px 0">'+v+'</div><small>'+d+'</small></div>').join('');
+  } catch(error) {
+    toast('Backend chưa sẵn sàng: '+(error.name==='AbortError'?'timeout 12 giây':error.message));
+    setAuthStatus('Kiểm tra Backend thất bại: '+error.message+' · '+API_BASE,true);
+  }
+};
 
 function setAuthStatus(message, isError=false) {
   authStatus.textContent = message;
