@@ -634,21 +634,62 @@ async function getAccessToken() {
   return data.session.access_token;
 }
 async function fetchWithAuth(path, options = {}) {
+  const { timeoutMs, ...requestOptions } = options;
+  const method = String(requestOptions.method || 'GET').toUpperCase();
+  const timeoutDuration = timeoutMs || (
+    path.includes('/healthcare/documents/extract') ? 90000 :
+    path.startsWith('/chat') ? 60000 :
+    method === 'GET' ? 25000 : 60000
+  );
+  const controller = new AbortController();
+  const externalSignal = requestOptions.signal;
+  const onExternalAbort = () => controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort();
+    else externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+  }
+  const timeout = window.setTimeout(() => controller.abort(), timeoutDuration);
   const sendRequest = (accessToken) => {
-    const headers = new Headers(options.headers || {});
+    const headers = new Headers(requestOptions.headers || {});
     headers.set('Authorization', `Bearer ${accessToken}`);
-    return fetch(`${API_BASE}${path}`, { ...options, headers });
+    return fetch(`${API_BASE}${path}`, { ...requestOptions, headers, signal: controller.signal });
   };
 
-  const token = await getAccessToken();
-  const response = await sendRequest(token);
-
-  if (response.status !== 401) return response;
-
-  const { data, error } = await supabase.auth.refreshSession();
-  if (error || !data.session?.access_token) return response;
-
-  return sendRequest(data.session.access_token);
+  try {
+    let token = await getAccessToken();
+    let response;
+    let refreshed = false;
+    let retried = false;
+    const safeToRetry = method === 'GET';
+    while (true) {
+      try {
+        response = await sendRequest(token);
+      } catch (error) {
+        if (safeToRetry && !retried && error.name !== 'AbortError') {
+          retried = true;
+          await new Promise(resolve => window.setTimeout(resolve, 350));
+          continue;
+        }
+        throw error;
+      }
+      if (response.status === 401 && !refreshed) {
+        const refresh = await supabase.auth.refreshSession();
+        if (refresh.error || !refresh.data.session?.access_token) return response;
+        token = refresh.data.session.access_token;
+        refreshed = true;
+        continue;
+      }
+      if (safeToRetry && !retried && [502, 503, 504].includes(response.status)) {
+        retried = true;
+        await new Promise(resolve => window.setTimeout(resolve, 350));
+        continue;
+      }
+      return response;
+    }
+  } finally {
+    window.clearTimeout(timeout);
+    if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
+  }
 }
 
 window.ytemoRunBackendDemo = async function () {
