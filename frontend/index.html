@@ -323,7 +323,7 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
   <div class="health-card"><div class="mono eyebrow">01 / DOCUMENT INTAKE</div><h2>Đưa hồ sơ vào hệ thống</h2><p>Hỗ trợ PDF có lớp văn bản, DOCX, TXT và Markdown. File gốc được lưu trong vùng lưu trữ riêng theo tài khoản; người dùng có thể xem danh sách hồ sơ đã lưu và xóa hồ sơ của mình.</p>
    <label class="health-upload" for="healthFile"><span><strong id="healthFileName">Chọn hồ sơ y tế</strong><small>PDF · DOCX · TXT · MD · Tối đa 10 MB</small></span><input id="healthFile" type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"></label>
    <div class="health-meta" id="healthFileMeta">Chưa chọn tài liệu</div>
-   <div class="health-actions"><button id="extractBtn" type="button" disabled>TRÍCH XUẤT VĂN BẢN</button><button class="secondary" id="clearHealthBtn" type="button">LÀM MỚI</button></div>
+   <div class="health-actions"><button id="extractBtn" type="button" disabled>TRÍCH XUẤT VĂN BẢN</button><button class="secondary" id="clearHealthBtn" type="button">XÓA KHỎI PHIÊN</button></div>
    <div class="health-actions"><button id="loadHealthDocumentsBtn" class="secondary" type="button">LỊCH SỬ HỒ SƠ ĐÃ LƯU</button></div><div id="healthDocumentHistory" class="health-status" role="status" hidden style="margin-top:10px"></div><div class="health-status" id="extractStatus" role="status">Đăng nhập để tải lên và quản lý hồ sơ thuộc tài khoản của bạn.</div>
    <div id="extractedPreview" hidden style="margin-top:16px"><div class="mono eyebrow">EXTRACTED TEXT PREVIEW</div><textarea id="healthText" rows="9" style="width:100%;margin-top:8px;padding:12px;border:1px solid var(--line);font:12px/1.6 var(--sans);resize:vertical"></textarea><div class="health-meta" id="extractMeta"></div></div>
   </div>
@@ -1171,7 +1171,7 @@ extractBtn.addEventListener('click', async () => {
 });
 healthText.addEventListener('input',()=>{runHealthBtn.disabled=!healthText.value.trim() || !currentUser || healthBusy;});
 document.getElementById('clearHealthBtn').addEventListener('click',()=>{
-  healthFile.value=''; extractedDocument=null; healthText.value=''; document.getElementById('healthFileName').textContent='Chọn hồ sơ y tế'; document.getElementById('healthFileMeta').textContent='Chưa chọn tài liệu'; document.getElementById('extractedPreview').hidden=true; runHealthBtn.disabled=true; extractBtn.disabled=true; healthResults.replaceChildren(); healthStatus(extractStatus,'Đã xóa tài liệu khỏi giao diện.'); healthStatus(runHealthStatus,'Chưa có văn bản để phân tích.');
+  healthFile.value=''; extractedDocument=null; healthText.value=''; document.getElementById('healthFileName').textContent='Chọn hồ sơ y tế'; document.getElementById('healthFileMeta').textContent='Chưa chọn tài liệu'; document.getElementById('extractedPreview').hidden=true; runHealthBtn.disabled=true; extractBtn.disabled=true; healthResults.replaceChildren(); healthStatus(extractStatus,'Đã xóa nội dung khỏi phiên hiện tại. Hồ sơ đã lưu vẫn còn trong Lịch sử hồ sơ cho tới khi bạn xóa riêng.'); healthStatus(runHealthStatus,'Chưa có văn bản để phân tích.');
 });
 function renderHealthResults(data) {
   healthResults.replaceChildren();
