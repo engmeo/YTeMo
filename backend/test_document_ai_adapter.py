@@ -28,6 +28,7 @@ class DoclingAdapterTests(unittest.TestCase):
         base.DocumentStream = lambda name, stream: SimpleNamespace(name=name, stream=stream)
         pipeline = ModuleType("docling.datamodel.pipeline_options")
         pipeline.PdfPipelineOptions = lambda **kwargs: SimpleNamespace(**kwargs)
+        pipeline.TesseractCliOcrOptions = lambda **kwargs: SimpleNamespace(**kwargs)
         converter_module = ModuleType("docling.document_converter")
 
         class FakeConverter:
