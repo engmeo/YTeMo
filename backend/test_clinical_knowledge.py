@@ -1,5 +1,9 @@
 import unittest
-from clinical_knowledge import automated_document_checks, host_is_within, normalize_host, initial_document_status
+from pydantic import ValidationError
+from clinical_knowledge import (
+    KnowledgeDocumentCreate, automated_document_checks, host_is_within,
+    normalize_host, initial_document_status,
+)
 
 class ClinicalKnowledgeChecksTests(unittest.TestCase):
     def test_official_host_match_is_boundary_safe(self):
@@ -27,6 +31,24 @@ class ClinicalKnowledgeChecksTests(unittest.TestCase):
         self.assertFalse(result["passed"])
         self.assertIn("MISSING_JURISDICTION", result["issues"])
         self.assertIn("MISSING_TARGET_POPULATION", result["issues"])
+    def test_document_requires_full_iso_publication_date(self):
+        payload = {
+            "title": "Clinical guideline", "publisher": "MoH", "document_type": "guideline",
+            "source_url": "https://moh.gov.vn/document", "published_at": "2025",
+            "knowledge_domain": "national_guidelines", "jurisdiction": "VN",
+            "target_population": "Adults",
+        }
+        with self.assertRaises(ValidationError):
+            KnowledgeDocumentCreate(**payload)
+    def test_document_accepts_valid_provenance_dates(self):
+        payload = {
+            "title": "Clinical guideline", "publisher": "MoH", "document_type": "guideline",
+            "source_url": "https://moh.gov.vn/document", "published_at": "2025-01-15",
+            "effective_from": "2025-02-01", "effective_until": "2027-01-31",
+            "knowledge_domain": "national_guidelines", "jurisdiction": "VN",
+            "target_population": "Adults",
+        }
+        self.assertEqual(KnowledgeDocumentCreate(**payload).published_at, "2025-01-15")
     def test_http_url_fails(self):
         metadata = {"title":"Guideline","publisher":"MoH","document_type":"guideline","source_url":"http://moh.gov.vn/doc","published_at":"2025","knowledge_domain":"national_guidelines","jurisdiction":"VN","target_population":"Adults"}
         result = automated_document_checks(metadata)
