@@ -117,6 +117,7 @@ class ReviewDecision(BaseModel):
     evidence_assessment: str = Field(default="", max_length=5000)
     limitations: str = Field(default="", max_length=3000)
     has_conflict_of_interest: bool = False
+    extraction_quality_reviewed: bool = False
 
 
 def build_router(db, auth_dependency):
@@ -239,8 +240,15 @@ def build_router(db, auth_dependency):
                 raise HTTPException(status_code=409, detail="Reviewer phải xác minh tài liệu gốc, phiên bản hiện hành và quyền sử dụng trước khi phê duyệt.")
             if not (doc.get("automated_checks") or {}).get("passed"):
                 raise HTTPException(status_code=409, detail="Tài liệu chưa đạt kiểm tra metadata và toàn vẹn trích xuất.")
+            if not doc.get("original_storage_path") or not doc.get("original_sha256"):
+                raise HTTPException(status_code=409, detail="Không thể phê duyệt tài liệu chưa lưu bản gốc trong private storage và checksum.")
+            if doc.get("extraction_status") != "EXTRACTED":
+                raise HTTPException(status_code=409, detail="Tài liệu có trang chưa trích xuất đầy đủ; không thể phê duyệt.")
             if not str(doc.get("extracted_text") or "").strip() or len(str(doc.get("extracted_text") or "").strip()) < 200:
                 raise HTTPException(status_code=409, detail="Không thể phê duyệt khi chưa có nội dung tài liệu đã trích xuất đầy đủ.")
+            extraction_report = doc.get("extraction_report") or {}
+            if extraction_report.get("pages_needing_human_check") and not request.extraction_quality_reviewed:
+                raise HTTPException(status_code=409, detail="Phải xác nhận đã kiểm tra thủ công các trang có cảnh báo OCR/trích xuất.")
             if not request.scope or not request.evidence_assessment.strip():
                 raise HTTPException(status_code=422, detail="Phải ghi đánh giá bằng chứng và phạm vi sử dụng được phê duyệt.")
             if doc.get("specialty") and doc["specialty"] not in (reviewer.get("specialties") or []):
@@ -266,6 +274,7 @@ def build_router(db, auth_dependency):
                 "evidence_assessment": request.evidence_assessment,
                 "limitations": request.limitations,
                 "has_conflict_of_interest": request.has_conflict_of_interest,
+                "extraction_quality_reviewed": request.extraction_quality_reviewed,
             }).execute()
             updated = db.table("clinical_knowledge_documents").update({
                 "status": new_status, "reviewed_at": utc_now(),
@@ -278,7 +287,8 @@ def build_router(db, auth_dependency):
                 "details": {"status": new_status, "scope": request.scope, "rationale": request.rationale,
                             "evidence_assessment": request.evidence_assessment,
                             "limitations": request.limitations,
-                            "has_conflict_of_interest": request.has_conflict_of_interest},
+                            "has_conflict_of_interest": request.has_conflict_of_interest,
+                            "extraction_quality_reviewed": request.extraction_quality_reviewed},
             }).execute()
             return {"document": updated.data[0] if updated.data else None, "status": new_status,
                     "notice": "Tài liệu thuộc nhóm tác động cao chỉ được phê duyệt sau hai reviewer độc lập." if new_status == "AI_REVIEWED" else "Phê duyệt chỉ có hiệu lực trong approved_scope; không thay thế đánh giá lâm sàng tại từng ca."}
