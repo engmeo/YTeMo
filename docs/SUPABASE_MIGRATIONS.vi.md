@@ -12,6 +12,8 @@ Migration history của project trả về rỗng dù một số bảng nền đ
 2. 202611240010_healthcare_analysis_history.sql — tạo lịch sử phân tích; FK tham chiếu healthcare_documents từ migration 002.
 3. 202611240011_companion_action_tasks.sql — tạo action queue, retry/lease fields, RPC claim; bổ sung unique action_task_id vào companion_needs và companion_events.
 4. 202611240012_lockdown_rls_auto_enable.sql — thu hồi EXECUTE của public/anon/authenticated trên hàm event-trigger rls_auto_enable nếu hàm tồn tại.
+4. supabase/migrations/202611240013_healthcare_document_service_grants.sql
+5. 202611240013_healthcare_document_service_grants.sql — cấp quyền truy cập metadata hồ sơ cho service_role (backend); browser roles vẫn không được cấp quyền trực tiếp.
 
 Migration nền 202611180001_companion_persistence.sql phải có hai bảng companion_needs và companion_events trước khi chạy migration 011. Hai bảng này đã được xác nhận tồn tại trên project beta.
 
