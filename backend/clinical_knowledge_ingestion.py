@@ -239,10 +239,10 @@ def extract_pdf_pages(data: bytes, enable_ocr: bool = True) -> tuple[list[Extrac
                     raise IngestionError("Kích thước trang vượt giới hạn OCR an toàn.")
                 scale = min(1.8, (35_000_000 / page_area) ** 0.5)
                 pix = ocr_page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
-                image = Image.open(BytesIO(pix.tobytes("png")))
-                ocr_data = pytesseract.image_to_data(
-                    image, lang="vie+eng", output_type=pytesseract.Output.DICT
-                )
+                with Image.open(BytesIO(pix.tobytes("png"))) as image:
+                    ocr_data = pytesseract.image_to_data(
+                        image, lang="vie+eng", output_type=pytesseract.Output.DICT
+                    )
                 words, confidences = [], []
                 for word, raw_conf in zip(ocr_data.get("text", []), ocr_data.get("conf", [])):
                     word = str(word).strip()
@@ -262,6 +262,8 @@ def extract_pdf_pages(data: bytes, enable_ocr: bool = True) -> tuple[list[Extrac
                 ocr_error = type(exc).__name__
         total_chars += len(text)
         if total_chars > MAX_TOTAL_TEXT:
+            if ocr_pdf is not None:
+                ocr_pdf.close()
             raise IngestionError("Tổng nội dung trích xuất vượt giới hạn an toàn.")
         quality = _page_quality(text, method, confidence)
         status = "EXTRACTED" if text else ("OCR_UNAVAILABLE" if ocr_error else "EMPTY")
