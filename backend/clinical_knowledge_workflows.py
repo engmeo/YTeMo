@@ -156,6 +156,23 @@ def retrieve_approved_evidence(db, request: EvidenceRetrievalRequest) -> dict:
         "reviewer_status", "ACCEPTED"
     ).limit(1000).execute()
     claims = claim_result.data or []
+    unresolved_result = db.table("clinical_evidence_conflicts").select(
+        "claim_ids,conflict_summary,resolution_status"
+    ).in_("resolution_status", ["OPEN", "UNDER_REVIEW", "UNRESOLVED"]).limit(500).execute()
+    blocked_claim_ids = {
+        claim_id for conflict in (unresolved_result.data or [])
+        for claim_id in (conflict.get("claim_ids") or [])
+    }
+    resolved_result = db.table("clinical_evidence_conflicts").select(
+        "claim_ids,conflict_summary,resolution_rationale,resolution_status"
+    ).eq("resolution_status", "RESOLVED").limit(500).execute()
+    resolved_by_claim = {}
+    for conflict in (resolved_result.data or []):
+        for claim_id in (conflict.get("claim_ids") or []):
+            resolved_by_claim.setdefault(claim_id, []).append({
+                "summary": conflict.get("conflict_summary"),
+                "resolution": conflict.get("resolution_rationale"),
+            })
     doc_ids = list({item["document_id"] for item in claims})
     if not doc_ids:
         return {"evidence": [], "abstention": True, "reason": "NO_APPROVED_EVIDENCE", "retrieval_mode": "structured_lexical"}
@@ -166,6 +183,8 @@ def retrieve_approved_evidence(db, request: EvidenceRetrievalRequest) -> dict:
     docs = {item["id"]: item for item in (doc_result.data or [])}
     matches = []
     for claim in claims:
+        if claim["id"] in blocked_claim_ids:
+            continue
         doc = docs.get(claim["document_id"])
         if not doc or request.scope not in (doc.get("approved_scope") or []):
             continue
@@ -187,6 +206,7 @@ def retrieve_approved_evidence(db, request: EvidenceRetrievalRequest) -> dict:
             continue
         matches.append({
             "claim": claim, "document": doc, "matched_terms": overlap,
+            "resolved_conflicts": resolved_by_claim.get(claim["id"], []),
             "citation": {
                 "document_title": doc["title"], "publisher": doc["publisher"],
                 "source_url": doc["source_url"], "version": doc.get("version"),
@@ -200,7 +220,7 @@ def retrieve_approved_evidence(db, request: EvidenceRetrievalRequest) -> dict:
         "evidence": evidence, "abstention": not bool(evidence),
         "reason": None if evidence else "NO_SCOPE_AND_POPULATION_MATCHING_APPROVED_EVIDENCE",
         "retrieval_mode": "structured_lexical",
-        "notice": "Chỉ trả về claim đã được thẩm định, thuộc tài liệu hiện hành và đúng scope/quần thể/jurisdiction. Đây không phải chẩn đoán hoặc khuyến nghị điều trị.",
+        "notice": "Chỉ trả về claim đã được thẩm định, thuộc tài liệu hiện hành và đúng scope/quần thể/jurisdiction. Claim nằm trong conflict chưa giải quyết bị loại khỏi kết quả. Đây không phải chẩn đoán hoặc khuyến nghị điều trị.",
     }
 
 
