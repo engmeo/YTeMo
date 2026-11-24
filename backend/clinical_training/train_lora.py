@@ -26,7 +26,7 @@ def main():
     try:
         import torch
         from datasets import load_dataset
-        from peft import LoraConfig, prepare_model_for_kbit_training
+        from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
         from transformers import (
             AutoModelForCausalLM, AutoTokenizer, Trainer,
             TrainingArguments, DataCollatorForLanguageModeling, BitsAndBytesConfig,
@@ -74,8 +74,7 @@ def main():
         bias="none", task_type="CAUSAL_LM",
         target_modules="all-linear",
     )
-    model.add_adapter(lora)
-    model.enable_adapters()
+    model = get_peft_model(model, lora)
     model.print_trainable_parameters()
 
     def format_record(row):
