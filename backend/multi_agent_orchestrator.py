@@ -399,6 +399,10 @@ def run_multi_agent(
     document_context: str = "",
     requested_agents: list[str] | None = None,
 ) -> dict[str, Any]:
+    if len(document_context) > 16000:
+        raise ValueError("Hồ sơ quá dài cho một lượt Multi-Agent an toàn; cần chia theo phần và giữ nguyên số trang/dòng nguồn.")
+    if requested_agents and (len(requested_agents) > MAX_SPECIALISTS_PER_TURN or any(key not in SPECIALISTS for key in requested_agents)):
+        raise ValueError("Danh sách specialist không hợp lệ hoặc vượt quá giới hạn 5 Agent.")
     result = MULTI_AGENT_GRAPH.invoke({
         "message": message,
         "history": history,
