@@ -826,7 +826,10 @@ async function sendMessage(message) {
       }
       if (!dataLines.length) return;
       const payload = JSON.parse(dataLines.join('\n'));
-      if (eventName === 'token') {
+      if (eventName === 'status') {
+        if (!fullReply) streamedBody.textContent = String(payload.message || 'Đang xử lý...');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } else if (eventName === 'token') {
         const token = String(payload.token || '');
         fullReply += token;
         streamedBody.textContent = fullReply;
