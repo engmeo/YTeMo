@@ -12,6 +12,12 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
+ALLOWED_APPROVED_SCOPES = {
+    "patient_education", "self_care", "prevention", "screening",
+    "diagnostic_reference", "treatment_reference", "medication_safety",
+    "professional_decision_support", "public_health",
+}
+
 ALLOWED_STATUSES = {
     "DISCOVERED", "SOURCE_VERIFIED", "PROCESSING", "AI_REVIEWED",
     "CLINICAL_APPROVED", "SUPERSEDED", "REJECTED",
@@ -118,6 +124,14 @@ class ReviewDecision(BaseModel):
     limitations: str = Field(default="", max_length=3000)
     has_conflict_of_interest: bool = False
     extraction_quality_reviewed: bool = False
+
+    @field_validator("scope")
+    @classmethod
+    def validate_scope(cls, value: list[str]) -> list[str]:
+        invalid = set(value) - ALLOWED_APPROVED_SCOPES
+        if invalid:
+            raise ValueError(f"Unsupported approval scope: {', '.join(sorted(invalid))}")
+        return value
 
 
 def build_router(db, auth_dependency):
