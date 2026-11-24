@@ -48,3 +48,26 @@ jobs:
         run: |
           python -m py_compile clinical_knowledge.py clinical_knowledge_ingestion.py clinical_knowledge_workflows.py main.py
           python -m unittest -v test_clinical_knowledge test_clinical_knowledge_ingestion
+      - name: Syntax-check frontend JavaScript
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("frontend/index.html").read_text(encoding="utf-8-sig")
+          scripts = re.findall(r"<script\\b[^>]*>(.*?)</script>", html, flags=re.S | re.I)
+          inline = [script for script in scripts if script.strip()]
+          if not inline:
+              raise SystemExit("No inline frontend script found")
+          Path("/tmp/ytemo-frontend.js").write_text(inline[-1], encoding="utf-8")
+          PY
+          node --check /tmp/ytemo-frontend.js
+      - name: Validate unique Supabase migration versions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          files = sorted(Path("supabase/migrations").glob("*.sql"))
+          versions = [p.name.split("_", 1)[0] for p in files]
+          if len(versions) != len(set(versions)):
+              raise SystemExit("Duplicate Supabase migration version prefix found")
+          print(f"Validated {len(files)} unique migration versions")
+          PY
