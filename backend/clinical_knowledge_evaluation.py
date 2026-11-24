@@ -18,6 +18,10 @@ def evaluate_case(case: dict[str, Any], result: dict[str, Any]) -> dict[str, Any
     actual_ids = {str(item.get("claim", {}).get("id")) for item in actual_items if item.get("claim", {}).get("id")}
     expected_ids = {str(item) for item in case.get("expected_claim_ids", [])}
     forbidden_ids = {str(item) for item in case.get("forbidden_claim_ids", [])}
+    stale_document_ids = {str(item) for item in case.get("stale_document_ids", [])}
+    population_mismatch_ids = {str(item) for item in case.get("population_mismatch_claim_ids", [])}
+    scope_mismatch_ids = {str(item) for item in case.get("scope_mismatch_claim_ids", [])}
+    unresolved_conflict_ids = {str(item) for item in case.get("unresolved_conflict_claim_ids", [])}
     true_positive = len(actual_ids & expected_ids)
     precision = true_positive / len(actual_ids) if actual_ids else (1.0 if not expected_ids else 0.0)
     recall = true_positive / len(expected_ids) if expected_ids else (1.0 if not actual_ids else 0.0)
@@ -32,9 +36,12 @@ def evaluate_case(case: dict[str, Any], result: dict[str, Any]) -> dict[str, Any
         claim = item.get("claim") or {}
         citation = item.get("citation") or {}
         claim_id = str(claim.get("id") or "")
+        document = item.get("document") or {}
         expected = citation_expectations.get(claim_id)
         valid = bool(
             expected
+            and str(document.get("id")) == str(expected.get("document_id"))
+            and document.get("version") == expected.get("version")
             and citation.get("page") == expected.get("page")
             and _normalize(citation.get("exact_quote")) == _normalize(expected.get("exact_quote"))
             and citation.get("source_url") == expected.get("source_url")
@@ -51,6 +58,10 @@ def evaluate_case(case: dict[str, Any], result: dict[str, Any]) -> dict[str, Any
         "abstention_correct": actual_abstention == expected_abstention,
         "forbidden_claim_ids_returned": sorted(actual_ids & forbidden_ids),
         "unexpected_claim_ids_returned": sorted(actual_ids - expected_ids),
+        "stale_document_ids_returned": sorted({str((item.get("document") or {}).get("id")) for item in actual_items} & stale_document_ids),
+        "population_mismatch_claim_ids_returned": sorted(actual_ids & population_mismatch_ids),
+        "scope_mismatch_claim_ids_returned": sorted(actual_ids & scope_mismatch_ids),
+        "unresolved_conflict_claim_ids_returned": sorted(actual_ids & unresolved_conflict_ids),
         "actual_abstention": actual_abstention,
         "expected_abstention": expected_abstention,
     }
@@ -87,6 +98,10 @@ def evaluate_dataset(cases: list[dict[str, Any]], results: dict[str, dict[str, A
             "abstention_accuracy": mean("abstention_correct"),
             "forbidden_claim_return_count": sum(len(item["forbidden_claim_ids_returned"]) for item in eligible),
             "unexpected_claim_return_count": sum(len(item["unexpected_claim_ids_returned"]) for item in eligible),
+            "stale_source_return_count": sum(len(item["stale_document_ids_returned"]) for item in eligible),
+            "population_mismatch_return_count": sum(len(item["population_mismatch_claim_ids_returned"]) for item in eligible),
+            "scope_mismatch_return_count": sum(len(item["scope_mismatch_claim_ids_returned"]) for item in eligible),
+            "unresolved_conflict_return_count": sum(len(item["unresolved_conflict_claim_ids_returned"]) for item in eligible),
         },
         "case_results": eligible,
         "notice": "Only expert-adjudicated cases with at least two distinct credential-verified reviewers are scored. These metrics measure retrieval/citation behavior, not clinical safety or correctness.",
