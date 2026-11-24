@@ -189,6 +189,7 @@ Migrations (chạy theo thứ tự):
 - `202611240004_evidence_grade_clinical_knowledge.sql`
 - `202611240005_clinical_knowledge_ingestion_evidence_workflows.sql`
 - `202611240006_clinical_knowledge_independent_resolution.sql`
+- `202611240007_clinical_knowledge_review_state_precision.sql`
 
 
 ## 10. Đóng góp
