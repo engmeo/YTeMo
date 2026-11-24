@@ -32,7 +32,8 @@ alter table public.clinical_knowledge_reviews
   add column if not exists version_current boolean not null default false,
   add column if not exists license_cleared boolean not null default false,
   add column if not exists evidence_assessment text not null default '',
-  add column if not exists limitations text not null default '';
+  add column if not exists limitations text not null default '',
+  add column if not exists has_conflict_of_interest boolean not null default false;
 
 create unique index if not exists uq_ck_one_approval_per_reviewer
   on public.clinical_knowledge_reviews(document_id, reviewer_id)
