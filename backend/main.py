@@ -116,6 +116,8 @@ def get_current_user(
         print("AUTH ERROR:", repr(e), flush=True)
         raise HTTPException(status_code=401, detail="Authentication failed")
 
+app.include_router(build_clinical_knowledge_router(db_client, get_current_user))
+
 
 @app.get("/")
 def root():
