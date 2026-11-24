@@ -183,6 +183,7 @@ Backend đã có các workflow kỹ thuật cho source discovery, bản gốc b�
 - Không dùng làm chẩn đoán/kê đơn độc lập. Chỉ sử dụng trong clinical workflow sau khi reviewer credential, scope, migrations, deployment và đánh giá chuyên gia đã hoàn tất.
 
 Tài liệu kiến trúc, quy trình, API và giới hạn: [docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md](docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md).
+Evaluation protocol và deterministic harness: [docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md](docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md). Chưa có expert-adjudicated clinical gold dataset hoặc external clinical validation.
 
 Migrations (chạy theo thứ tự):
 - `202611240003_clinical_knowledge_governance.sql`
