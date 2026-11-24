@@ -1,3 +1,6 @@
+alter table public.clinical_evidence_claim_reviews
+  add column if not exists source_quote_verified boolean not null default false;
+
 alter table public.clinical_knowledge_document_relations
   add column if not exists review_status text not null default 'UNDER_REVIEW'
     check (review_status in ('UNDER_REVIEW','CONFIRMED','REJECTED'));
