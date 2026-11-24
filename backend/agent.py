@@ -10,12 +10,14 @@ try:
         choose_profile,
         generate_companion_response,
         generate_stream,
+        route_request,
     )
 except ImportError:  # pragma: no cover - preserves older deployment layout
     ModelGatewayError = RuntimeError
     choose_profile = None
     generate_companion_response = None
     generate_stream = None
+    route_request = None
 
 load_dotenv()
 
@@ -27,6 +29,8 @@ class AgentState(TypedDict):
     history: str
     evidence_context: str
     reply: str
+    route: dict
+    emergency: bool
 
 
 def build_companion_prompt(message: str, history: str = "", evidence_context: str = "") -> str:
@@ -68,6 +72,32 @@ def _gateway_enabled() -> bool:
     return bool(os.getenv("YTEMO_MODEL_BACKEND") or os.getenv("OPENROUTER_API_KEY"))
 
 
+
+EMERGENCY_RESPONSE = (
+    "Những dấu hiệu bạn mô tả có thể cần xử trí khẩn cấp. "
+    "Hãy gọi 115 hoặc nhờ người bên cạnh đưa bạn đến khoa cấp cứu ngay; "
+    "không tự lái xe. Nếu đang ở một mình, hãy gọi người thân/người ở gần hỗ trợ. "
+    "Tôi không thể xác định nguyên nhân qua trò chuyện."
+)
+
+
+def intent_router(state: AgentState):
+    route = route_request(
+        state.get("message", ""),
+        state.get("evidence_context", ""),
+    ) if route_request else {"profile": "fast", "intents": ["general"], "emergency_signal": False}
+    return {"route": route, "emergency": bool(route.get("emergency_signal"))}
+
+
+def route_after_intent(state: AgentState) -> str:
+    return "emergency" if state.get("emergency") else "discovery"
+
+
+def emergency_triage_agent(state: AgentState):
+    # Deterministic fast path: do not wait for an LLM when an emergency signal
+    # is detected. This is a precautionary escalation, not a diagnosis.
+    return {"reply": EMERGENCY_RESPONSE}
+
 def discovery_agent(state: AgentState):
     prompt = build_companion_prompt(
         state["message"],
@@ -104,6 +134,11 @@ def chat_stream(
     evidence_context: str = "",
 ) -> Iterator[str]:
     """Stream text deltas for interactive chat; legacy providers emit one chunk."""
+    route = route_request(message, evidence_context) if route_request else {"emergency_signal": False}
+    if route.get("emergency_signal"):
+        yield EMERGENCY_RESPONSE
+        return
+
     prompt = build_companion_prompt(message, history, evidence_context)
     if _gateway_enabled() and generate_stream and choose_profile:
         profile = choose_profile(message, evidence_context)
@@ -127,8 +162,16 @@ def chat_stream(
 
 
 graph_builder = StateGraph(AgentState)
+graph_builder.add_node("intent_router", intent_router)
+graph_builder.add_node("emergency_triage", emergency_triage_agent)
 graph_builder.add_node("discovery", discovery_agent)
-graph_builder.add_edge(START, "discovery")
+graph_builder.add_edge(START, "intent_router")
+graph_builder.add_conditional_edges(
+    "intent_router",
+    route_after_intent,
+    {"emergency": "emergency_triage", "discovery": "discovery"},
+)
+graph_builder.add_edge("emergency_triage", END)
 graph_builder.add_edge("discovery", END)
 
 agent = graph_builder.compile()
@@ -139,6 +182,8 @@ def chat(message: str, history: str = "", evidence_context: str = ""):
         "message": message,
         "history": history,
         "evidence_context": evidence_context,
-        "reply": ""
+        "reply": "",
+        "route": {},
+        "emergency": False,
     })
     return result["reply"]
