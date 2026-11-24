@@ -241,6 +241,28 @@ def build_router(db, auth_dependency):
         return {"embedded_count": embedded, "skipped_not_current_approved": skipped,
                 "notice": "Embedding chỉ phục vụ tìm kiếm; không làm thay đổi trạng thái phê duyệt claim."}
 
+    @router.post("/synthesis/meta-analysis")
+    def meta_analysis_draft(payload: dict, user=Depends(auth_dependency)):
+        from clinical_meta_analysis import pool_effects
+        studies = payload.get("studies") if isinstance(payload, dict) else None
+        method = payload.get("method", "random") if isinstance(payload, dict) else "random"
+        if not isinstance(studies, list) or len(studies) < 2 or len(studies) > 100:
+            raise HTTPException(status_code=422, detail="Cần từ 2 đến 100 study effects có cấu trúc.")
+        required = {"study_id", "effect_measure", "effect", "standard_error"}
+        if any(not isinstance(item, dict) or not required.issubset(item) for item in studies):
+            raise HTTPException(status_code=422, detail="Mỗi study cần study_id, effect_measure, effect và standard_error.")
+        try:
+            result = pool_effects(studies, method=method)
+        except (ValueError, TypeError, KeyError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        result["provenance"] = [
+            {"study_id": item["study_id"], "source_url": item.get("source_url"),
+             "document_id": item.get("document_id"), "claim_id": item.get("claim_id")}
+            for item in studies
+        ]
+        result["synthesis_status"] = "STATISTICAL_DRAFT_REQUIRES_METHODS_AND_CLINICAL_REVIEW"
+        return result
+
     @router.get("/graph/entities")
     def graph_entities(entity_type: str | None = None, limit: int = 100, user=Depends(auth_dependency)):
         limit = max(1, min(limit, 200))
