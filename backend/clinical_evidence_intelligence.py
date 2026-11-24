@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+from datetime import date
 from typing import Any
 
 import requests
@@ -70,6 +71,62 @@ def vector_literal(vector: list[float]) -> str:
     return "[" + ",".join(f"{float(value):.8f}" for value in vector) + "]"
 
 
+def _governed_candidates(db, request) -> list[dict[str, Any]]:
+    """Build the full eligible set before semantic ranking; never use vector similarity as an approval filter."""
+    claims_result = db.table("clinical_evidence_claims").select("*").eq("reviewer_status", "ACCEPTED").limit(1000).execute()
+    claims = claims_result.data or []
+    if not claims:
+        return []
+    doc_ids = list({item["document_id"] for item in claims})
+    docs_result = db.table("clinical_knowledge_documents").select(
+        "id,title,publisher,source_url,official_identifier,version,published_at,effective_from,effective_until,knowledge_domain,jurisdiction,target_population,specialty,status,is_current,approved_scope,original_sha256"
+    ).in_("id", doc_ids).eq("status", "CLINICAL_APPROVED").eq("is_current", True).limit(1000).execute()
+    docs = {item["id"]: item for item in (docs_result.data or [])}
+    conflicts = db.table("clinical_evidence_conflicts").select("claim_ids").in_(
+        "resolution_status", ["OPEN", "UNDER_REVIEW", "UNRESOLVED"]
+    ).limit(500).execute()
+    blocked = {cid for row in (conflicts.data or []) for cid in (row.get("claim_ids") or [])}
+    as_of = date.today()
+    candidates = []
+    for claim in claims:
+        if claim["id"] in blocked:
+            continue
+        doc = docs.get(claim["document_id"])
+        if not doc or request.scope not in (doc.get("approved_scope") or []):
+            continue
+        if doc.get("jurisdiction") not in {request.jurisdiction, "GLOBAL"}:
+            continue
+        if claim.get("jurisdiction") and claim["jurisdiction"] not in {request.jurisdiction, "GLOBAL"}:
+            continue
+        if request.specialty and doc.get("specialty") != request.specialty:
+            continue
+        requested_population = normalize(request.population)
+        claim_population = normalize(claim.get("population", ""))
+        if requested_population not in claim_population:
+            continue
+        doc_tokens = set(re.findall(r"[\\w-]{3,}", normalize(doc.get("target_population", ""))))
+        requested_tokens = set(re.findall(r"[\\w-]{3,}", requested_population))
+        if not doc_tokens.issubset(requested_tokens):
+            continue
+        try:
+            start = date.fromisoformat(doc["effective_from"]) if doc.get("effective_from") else None
+            end = date.fromisoformat(doc["effective_until"]) if doc.get("effective_until") else None
+        except ValueError:
+            continue
+        if (start and as_of < start) or (end and as_of > end):
+            continue
+        candidates.append({
+            "claim": claim, "document": doc,
+            "citation": {
+                "document_title": doc["title"], "publisher": doc["publisher"],
+                "source_url": doc["source_url"], "version": doc.get("version"),
+                "page": claim.get("source_page_number"), "locator": claim.get("source_locator"),
+                "exact_quote": claim.get("exact_quote"), "document_sha256": doc.get("original_sha256"),
+            },
+        })
+    return candidates
+
+
 def build_router(db, auth_dependency):
     router = APIRouter(prefix="/clinical-intelligence", tags=["Clinical Evidence Intelligence"])
 
@@ -97,19 +154,20 @@ def build_router(db, auth_dependency):
         # Run the existing governance filters first; vector search can only rerank
         # eligible, approved claims and must never widen the candidate set.
         governed = retrieve_approved_evidence(db, evidence_request)
-        eligible = governed.get("evidence") or []
-        if not eligible:
-            return {**governed, "retrieval_mode": "hybrid", "embedding_used": False}
         try:
+            # Unlike the lexical endpoint, this candidate pool contains every claim
+            # that passes governance filters, so semantic matches need not share words.
+            eligible = _governed_candidates(db, evidence_request)
+            if not eligible:
+                return {**governed, "retrieval_mode": "hybrid", "embedding_used": False}
             vector, model = embed_query(request.query)
             rpc = db.rpc("match_clinical_evidence", {
                 "query_embedding": vector_literal(vector),
-                "match_count": min(100, request.limit * 5),
+                "match_count": min(100, request.limit * 10),
                 "min_similarity": request.min_similarity,
             }).execute()
             vector_rows = rpc.data or []
         except Exception as exc:
-            # Safe fallback: never fail open or silently imply vector retrieval ran.
             return {
                 **governed, "retrieval_mode": "structured_lexical_fallback",
                 "embedding_used": False, "vector_search_error": type(exc).__name__,
@@ -142,6 +200,45 @@ def build_router(db, auth_dependency):
             "retrieval_mode": "hybrid", "embedding_used": True, "embedding_model": model,
             "notice": "Hybrid ranking chỉ sắp xếp lại claim đã qua bộ lọc phê duyệt, phạm vi, quần thể, jurisdiction và conflict; điểm tương đồng không phải độ đúng lâm sàng.",
         }
+
+    @router.post("/embeddings/backfill")
+    def backfill_embeddings(limit: int = 100, user=Depends(auth_dependency)):
+        reviewer = db.table("clinical_knowledge_reviewers").select("role,is_active").eq(
+            "user_id", str(user.id)
+        ).eq("is_active", True).limit(1).execute()
+        if not reviewer.data or reviewer.data[0].get("role") != "knowledge_admin":
+            raise HTTPException(status_code=403, detail="Chỉ knowledge_admin được tạo embedding.")
+        limit = max(1, min(limit, 250))
+        claims = db.table("clinical_evidence_claims").select(
+            "id,document_id,claim_text,exact_quote,population,intervention,comparator,outcomes"
+        ).eq("reviewer_status", "ACCEPTED").limit(limit).execute()
+        if not claims.data:
+            return {"embedded_count": 0, "notice": "Không có claim ACCEPTED."}
+        doc_ids = list({row["document_id"] for row in claims.data})
+        docs = db.table("clinical_knowledge_documents").select("id,status,is_current").in_(
+            "id", doc_ids
+        ).eq("status", "CLINICAL_APPROVED").eq("is_current", True).execute()
+        approved = {row["id"] for row in (docs.data or [])}
+        embedded, skipped = 0, 0
+        for claim in claims.data:
+            if claim["document_id"] not in approved:
+                skipped += 1
+                continue
+            source = "\\n".join(str(claim.get(key) or "") for key in (
+                "claim_text", "exact_quote", "population", "intervention", "comparator", "outcomes"
+            ))
+            try:
+                vector, model = embed_query(source)
+                db.table("clinical_evidence_embeddings").upsert({
+                    "claim_id": claim["id"], "embedding": vector_literal(vector),
+                    "embedding_model": model,
+                    "embedding_input_sha256": hashlib.sha256(source.encode("utf-8")).hexdigest(),
+                }).execute()
+                embedded += 1
+            except Exception as exc:
+                raise HTTPException(status_code=503, detail=f"Embedding thất bại ({type(exc).__name__}); đã xử lý {embedded} claim.") from exc
+        return {"embedded_count": embedded, "skipped_not_current_approved": skipped,
+                "notice": "Embedding chỉ phục vụ tìm kiếm; không làm thay đổi trạng thái phê duyệt claim."}
 
     @router.get("/graph/entities")
     def graph_entities(entity_type: str | None = None, limit: int = 100, user=Depends(auth_dependency)):
