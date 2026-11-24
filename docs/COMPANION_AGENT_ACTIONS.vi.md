@@ -14,7 +14,7 @@
 All endpoints require the user's Supabase access token:
 
 - `POST /companion/actions/propose`
-  `{"action":"create_reminder","arguments":{"title":"Tái khám","due_at":"2026-12-01T09:00:00+07:00"}}`
+  `{"action":"create_reminder","arguments":{"title":"Tái khám","due_at":"2026-12-01T09:00:00+07:00","delivery_channel":"email"}}`
 - `GET /companion/actions`
 - `POST /companion/actions/{action_id}/approve`
 - `POST /companion/actions/{action_id}/reject`
@@ -29,11 +29,11 @@ The last two are proposals only. A handler must be explicitly implemented and re
 
 ## Apply and operate
 
-1. Apply `supabase/migrations/202611240009_companion_action_tasks.sql` in the target Supabase project.
+1. Apply `supabase/migrations/202611240009_companion_action_tasks.sql` and `supabase/migrations/202611240010_healthcare_analysis_history.sql` in order in the target Supabase project.
 2. Deploy the backend containing the API routes.
-3. Run a separate worker process only after registering reviewed handlers:
-   `python -m temporal_action_worker` is not a standalone entrypoint yet; use a small deployment entrypoint that creates the service-role Supabase client and calls `serve(db)`.
-4. Configure exactly one worker deployment initially. The database claim RPC prevents two workers from claiming the same queued row concurrently.
+3. Configure the separate worker service with `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` and optional `YTEMO_ACTION_POLL_SECONDS`.
+4. Run `python companion_action_worker_service.py` from the `backend` directory. It registers the `create_reminder` email handler and refuses to start without Resend configuration.
+5. Configure exactly one worker deployment initially. The database claim RPC prevents two workers from claiming the same queued row concurrently.
 
 Do not expose the Supabase service-role key to the browser. The API checks ownership on every action read/update. RLS is enabled and browser roles have no table privileges.
 
@@ -41,8 +41,8 @@ Do not expose the Supabase service-role key to the browser. The API checks owner
 
 - The LLM may suggest an action but never approves it.
 - User approval is persisted separately from proposal creation.
-- Reminders are scheduled at `due_at`; they are not a notification delivery integration yet.
-- No email, SMS, hospital booking, prescription, medication change, or clinical order handler is enabled.
+- Reminders are scheduled at `due_at`. The Resend handler sends email only when the proposal explicitly sets `delivery_channel: "email"` and the owner has a verified Supabase Auth email.
+- Email delivery is implemented as an opt-in Resend worker handler, but it is not active until the worker and provider credentials are configured. No SMS, hospital booking, prescription, medication change, or clinical order handler is enabled.
 - `request_clinician_review` and `add_timeline_note` remain queued proposals until a separately reviewed handler is registered.
 - A failed worker handler is recorded as failed; automatic retries/dead-letter policy and operator dashboard remain follow-up work.
 - This is workflow infrastructure, not clinical validation or autonomous medical decision-making.
