@@ -7,7 +7,7 @@ from prepare_dataset import prepare
 
 
 class ClinicalDatasetPreparationTests(unittest.TestCase):
-    def test_accepts_reviewed_licensed_record_and_rejects_duplicate(self):
+    def test_accepts_reviewed_licensed_record_and_merges_duplicate_provenance(self):
         record = {
             "instruction": "Giải thích huyết áp",
             "input": "Người trưởng thành hỏi về chỉ số huyết áp.",
@@ -23,6 +23,7 @@ class ClinicalDatasetPreparationTests(unittest.TestCase):
             "source_verified": True,
             "contains_patient_data": False,
         }
+        second_source = {**record, "source_id": "SRC-002", "source_url": "https://example.org/source-2"}
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             input_path = root / "input.jsonl"
@@ -30,7 +31,7 @@ class ClinicalDatasetPreparationTests(unittest.TestCase):
             rejects_path = root / "rejects.jsonl"
             input_path.write_text(
                 json.dumps(record, ensure_ascii=False) + "\n" +
-                json.dumps(record, ensure_ascii=False) + "\n",
+                json.dumps(second_source, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
             result = prepare(input_path, output_path, rejects_path, {"CC-BY-4.0"})
@@ -38,7 +39,11 @@ class ClinicalDatasetPreparationTests(unittest.TestCase):
             self.assertEqual(result["deduplicated"], 1)
             output = json.loads(output_path.read_text(encoding="utf-8").strip())
             self.assertEqual(output["evidence_state"], "STRONG")
-            self.assertEqual(output["source_id"], "SRC-001")
+            self.assertEqual(len(output["source_provenance"]), 2)
+            self.assertEqual(
+                {item["source_id"] for item in output["source_provenance"]},
+                {"SRC-001", "SRC-002"},
+            )
 
     def test_rejects_unlicensed_or_unreviewed_records(self):
         record = {
