@@ -128,6 +128,8 @@ values
 
 Đây là thao tác quản trị có trách nhiệm pháp lý/tổ chức; phần mềm hiện không kết nối cơ quan cấp phép để tự xác minh credential.
 
+Reviewer phải độc lập với người đăng ký tài liệu và khai báo xung đột lợi ích; reviewer có xung đột lợi ích không được phê duyệt.
+
 Reviewer phải ghi:
 - Xác minh bản tài liệu gốc.
 - Xác minh phiên bản/hiệu lực hiện hành.
