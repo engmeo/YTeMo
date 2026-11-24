@@ -170,6 +170,16 @@ class ClinicalKnowledgeIngestionTests(unittest.TestCase):
         result = retrieve_approved_evidence(db, request)
         self.assertTrue(result["abstention"])
         self.assertEqual(result["evidence"], [])
+    def test_ingestion_rejects_inverted_effective_dates(self):
+        payload = {
+            "title": "Guideline", "document_type": "guideline",
+            "knowledge_domain": "national_guidelines", "jurisdiction": "VN",
+            "target_population": "Adults", "published_at": "2025-01-01",
+            "effective_from": "2026-01-01", "effective_until": "2025-01-01",
+        }
+        with self.assertRaises(ValidationError):
+            from clinical_knowledge_workflows import IngestCandidateRequest
+            IngestCandidateRequest(**payload)
     def test_non_pdf_is_rejected(self):
         with self.assertRaises(IngestionError):
             extract_pdf_pages(b"not a pdf", enable_ocr=False)
