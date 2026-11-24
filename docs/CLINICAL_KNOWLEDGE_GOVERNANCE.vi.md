@@ -270,7 +270,7 @@ Hai migration Clinical Knowledge ban đầu từng bị trùng version với mig
 - Chưa có OCR runtime được cài và kiểm thử trên dữ liệu scan thực tế.
 - Đã có reviewer/admin console cơ bản trong frontend cho discovery, ingest, document review, claim drafts/appraisal, version relation, conflict resolution và retrieval smoke test; chưa có usability/security review hoặc E2E verification trên môi trường triển khai.
 - Chưa có vector/hybrid retrieval, reranker, terminology service tích hợp thực tế.
-- Chưa có bộ benchmark lâm sàng đại diện, đánh giá độc lập của chuyên gia y tế hoặc xác nhận an toàn.
+- Đã có deterministic retrieval evaluation harness và template gold cases; chưa có bộ benchmark lâm sàng đại diện được hai chuyên gia độc lập adjudicate, chưa có đánh giá độc lập thực tế hoặc xác nhận an toàn. Xem [Evaluation Protocol](CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md).
 - Chưa có tài liệu/claim nào được phê duyệt lâm sàng thực tế.
 
 Không bật clinical decision support cho bệnh nhân chỉ vì các API này tồn tại. Cần hoàn thành migrations, deployment, security review, dữ liệu chính thống, credential verification, reviewer workflow, evaluation và external clinical validation trước khi tuyên bố đạt chuẩn sử dụng lâm sàng.
