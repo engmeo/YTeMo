@@ -682,7 +682,7 @@ class HealthcareAnalysisRequest(BaseModel):
 
 # ---------------------------------------------------------------------------
 # Healthcare document extraction and specialist-agent orchestration.
-# Uploaded files are processed in memory; this endpoint does not persist them.
+# Uploaded files are validated in memory, then stored in the private owner-scoped healthcare-documents bucket.
 # ---------------------------------------------------------------------------
 
 # STT16_PERSISTENT_STORAGE: upload file bytes and owner-scoped metadata.
