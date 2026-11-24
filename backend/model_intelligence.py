@@ -89,7 +89,7 @@ def route_request(message: str, evidence_context: str = "") -> dict[str, Any]:
         normalized_term = _normalize_vietnamese(term)
         for match in re.finditer(re.escape(normalized_term), normalized):
             prefix = normalized[max(0, match.start() - 28):match.start()]
-            if re.search(r"\\b(khong|chua|khong bi|khong con)\\s*$", prefix):
+            if re.search(r"\b(khong|chua|khong bi|khong con)\s*$", prefix):
                 continue
             emergency = True
             break
