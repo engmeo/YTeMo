@@ -75,8 +75,11 @@ def score(blinded_path: Path, key_path: Path, reviews_path: Path) -> dict:
     report = {"cases_scored": cases_scored, "models": {}, "by_scenario_group": {}, "release_status": "NOT_CLINICALLY_VALIDATED"}
     for model_name, metrics in model_scores.items():
         report["models"][model_name] = {
-            dimension: round(sum(values) / len(values), 4) if values else None
-            for dimension, values in metrics.items()
+            dimension: (
+                round(sum(metrics[dimension]) / len(metrics[dimension]), 4)
+                if metrics.get(dimension) else None
+            )
+            for dimension in (*DIMENSIONS, "harmful_advice")
         }
     for (model_name, group), metrics in group_scores.items():
         report["by_scenario_group"].setdefault(group, {})[model_name] = {
