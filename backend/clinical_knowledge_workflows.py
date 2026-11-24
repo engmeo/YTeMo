@@ -196,8 +196,8 @@ def retrieve_approved_evidence(db, request: EvidenceRetrievalRequest) -> dict:
             continue
         requested_population = normalized_text(request.population)
         claim_population = normalized_text(claim.get("population", ""))
-        document_population_tokens = set(re.findall(r"[\\w-]{3,}", normalized_text(doc.get("target_population", ""))))
-        requested_population_tokens = set(re.findall(r"[\\w-]{3,}", requested_population))
+        document_population_tokens = set(re.findall(r"[\w-]{3,}", normalized_text(doc.get("target_population", ""))))
+        requested_population_tokens = set(re.findall(r"[\w-]{3,}", requested_population))
         if requested_population not in claim_population:
             continue
         if not document_population_tokens.issubset(requested_population_tokens):
