@@ -60,6 +60,15 @@ class ClinicalKnowledgeChecksTests(unittest.TestCase):
         self.assertFalse(reviewer_is_independent("user-1", "user-1"))
         self.assertTrue(reviewer_is_independent("user-1", "user-2"))
         self.assertTrue(reviewer_is_independent(None, "user-2"))
+    def test_approval_scope_is_from_controlled_taxonomy(self):
+        base = {
+            "decision": "APPROVED", "rationale": "Reviewer rationale is sufficiently detailed.",
+            "scope": ["patient_education"],
+        }
+        self.assertEqual(ReviewDecision(**base).scope, ["patient_education"])
+        base["scope"] = ["unrestricted_clinical_advice"]
+        with self.assertRaises(ValidationError):
+            ReviewDecision(**base)
     def test_http_url_fails(self):
         metadata = {"title":"Guideline","publisher":"MoH","document_type":"guideline","source_url":"http://moh.gov.vn/doc","published_at":"2025","knowledge_domain":"national_guidelines","jurisdiction":"VN","target_population":"Adults"}
         result = automated_document_checks(metadata)
