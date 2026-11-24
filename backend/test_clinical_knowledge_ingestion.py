@@ -68,6 +68,7 @@ class ClinicalKnowledgeIngestionTests(unittest.TestCase):
             "https://127.0.0.1/file.pdf",
             "https://localhost/file.pdf",
             "https://moh.gov.vn:8443/file.pdf",
+            "https://moh.gov.vn:notaport/file.pdf",
             "https://user:pass@moh.gov.vn/file.pdf",
         ):
             with self.subTest(url=url):
