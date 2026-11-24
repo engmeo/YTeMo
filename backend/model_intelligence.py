@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from typing import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -135,6 +136,73 @@ def generate(
         raise ModelGatewayError(f"Model provider unavailable: {type(exc).__name__}") from exc
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         raise ModelGatewayError("Model provider returned an invalid response.") from exc
+
+
+
+def generate_stream(
+    messages: list[dict[str, str]],
+    profile: str = "fast",
+    max_tokens: int = 700,
+    temperature: float = 0.2,
+) -> Iterator[str]:
+    """Yield provider text deltas as they arrive; never buffer the full answer."""
+    if profile not in {"fast", "reasoning", "medical"}:
+        raise ValueError("Unknown model profile.")
+    backend, endpoint, key = _endpoint_config(profile)
+    model = _model_for_profile(profile)
+    timeout = max(5, min(int(os.getenv("YTEMO_MODEL_TIMEOUT_SECONDS", "18")), 30))
+    payload = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max(64, min(int(max_tokens), 1800)),
+        "temperature": max(0.0, min(float(temperature), 1.0)),
+        "stream": True,
+    }
+    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+    if backend == "openrouter":
+        headers["X-Title"] = "Y TE MO"
+        site_url = os.getenv("OPENROUTER_SITE_URL")
+        if site_url:
+            headers["HTTP-Referer"] = site_url
+
+    try:
+        with requests.post(
+            f"{endpoint}/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=(3, timeout),
+            stream=True,
+        ) as response:
+            response.raise_for_status()
+            for raw_line in response.iter_lines(decode_unicode=True):
+                if not raw_line:
+                    continue
+                line = raw_line.decode("utf-8", errors="replace") if isinstance(raw_line, bytes) else raw_line
+                if not line.startswith("data:"):
+                    continue
+                data = line[5:].strip()
+                if data == "[DONE]":
+                    break
+                try:
+                    event = json.loads(data)
+                except json.JSONDecodeError:
+                    continue
+                choices = event.get("choices") or []
+                if not choices:
+                    continue
+                delta = choices[0].get("delta") or {}
+                content = delta.get("content")
+                if isinstance(content, str) and content:
+                    yield content
+                elif isinstance(content, list):
+                    for part in content:
+                        if isinstance(part, dict) and isinstance(part.get("text"), str):
+                            if part["text"]:
+                                yield part["text"]
+    except requests.Timeout as exc:
+        raise ModelGatewayError("Model stream timeout; provider stopped sending data.") from exc
+    except requests.RequestException as exc:
+        raise ModelGatewayError(f"Model stream unavailable: {type(exc).__name__}") from exc
 
 
 def model_catalog() -> dict[str, Any]:
