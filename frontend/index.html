@@ -781,11 +781,12 @@ async function sendMessage(message) {
   chatInput.value = '';
   setBusy(true);
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), 25000);
+  const timeoutId = window.setTimeout(() => controller.abort(), 60000);
+  let streamedNode = null;
   try {
-    const response = await fetchWithAuth('/chat', {
+    const response = await fetchWithAuth('/chat?stream=true', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
       body: JSON.stringify({
         message: clean,
         conversation_id: conversationId,
@@ -802,14 +803,61 @@ async function sendMessage(message) {
       }),
       signal: controller.signal
     });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.detail || ('Máy chủ trả về HTTP ' + response.status));
-    if (!result.reply || !String(result.reply).trim()) throw new Error('AI đã phản hồi nhưng không có nội dung. Bạn có thể gửi lại yêu cầu.');
-    conversationId = result.conversation_id;
-    if (conversationId) localStorage.setItem(storageKey(), conversationId);
-    appendMessage(result.reply, 'assistant');
-    if (result.evidence_retrieval) {
-      const evidence = result.evidence_retrieval;
+    if (!response.ok) {
+      const failure = await response.json().catch(() => ({}));
+      throw new Error(failure.detail || ('Máy chủ trả về HTTP ' + response.status));
+    }
+    if (!response.body) throw new Error('Trình duyệt không hỗ trợ nhận dữ liệu streaming.');
+
+    streamedNode = appendMessage('', 'assistant');
+    const streamedBody = streamedNode.querySelector('p');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullReply = '';
+    let metadata = null;
+
+    const processEvent = block => {
+      let eventName = 'message';
+      const dataLines = [];
+      for (const line of block.split('\n')) {
+        if (line.startsWith('event:')) eventName = line.slice(6).trim();
+        else if (line.startsWith('data:')) dataLines.push(line.slice(5).trim());
+      }
+      if (!dataLines.length) return;
+      const payload = JSON.parse(dataLines.join('\n'));
+      if (eventName === 'token') {
+        const token = String(payload.token || '');
+        fullReply += token;
+        streamedBody.textContent = fullReply;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } else if (eventName === 'done') {
+        metadata = payload;
+      } else if (eventName === 'error') {
+        throw new Error(payload.detail || 'Luồng phản hồi AI bị gián đoạn.');
+      }
+    };
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+      let boundary;
+      while ((boundary = buffer.indexOf('\n\n')) >= 0) {
+        const block = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        if (block.trim()) processEvent(block);
+      }
+    }
+    buffer += decoder.decode();
+    if (buffer.trim()) processEvent(buffer);
+    if (!fullReply.trim()) throw new Error('AI đã kết thúc nhưng không có nội dung phản hồi.');
+    if (!metadata?.conversation_id) throw new Error('Luồng AI kết thúc nhưng thiếu mã hội thoại.');
+
+    conversationId = metadata.conversation_id;
+    localStorage.setItem(storageKey(), conversationId);
+    if (metadata.evidence_retrieval) {
+      const evidence = metadata.evidence_retrieval;
       if (evidence.abstention) {
         appendMessage('Tra cứu bằng chứng: Không tìm thấy claim đã được thẩm định phù hợp với đối tượng, phạm vi và bối cảnh đã chọn. Không sử dụng phản hồi này làm căn cứ cho quyết định lâm sàng.', 'system');
       } else {
@@ -817,11 +865,12 @@ async function sendMessage(message) {
           const citation = item.citation || {};
           return (citation.document_title || 'Tài liệu') + ' — trang ' + (citation.page || '?') + (citation.version ? ' — phiên bản ' + citation.version : '');
         });
-        appendMessage('Nguồn bằng chứng đã truy xuất:\\n' + refs.join('\\n'), 'system');
+        appendMessage('Nguồn bằng chứng đã truy xuất:\n' + refs.join('\n'), 'system');
       }
     }
   } catch (error) {
-    const message = error.name === 'AbortError' ? 'Yêu cầu đã quá 25 giây và được dừng để tránh chờ vô hạn. Dịch vụ AI có thể đang quá tải; hãy thử gửi lại sau ít phút.' : error.message;
+    if (streamedNode) streamedNode.remove();
+    const message = error.name === 'AbortError' ? 'Yêu cầu đã quá 60 giây và được dừng để tránh chờ vô hạn. Dịch vụ AI có thể đang quá tải; hãy thử gửi lại sau ít phút.' : error.message;
     appendMessage('Chưa nhận được phản hồi: ' + message, 'system');
   } finally {
     window.clearTimeout(timeoutId);
