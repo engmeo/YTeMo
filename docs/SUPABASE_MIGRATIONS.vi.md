@@ -1,75 +1,77 @@
-# Hướng dẫn áp dụng migration Supabase cho prototype
+# Hướng dẫn migration Supabase cho Y TẾ MỞ
 
-## Các migration mới trong PR #5
+## Project được kiểm tra
 
-Chạy theo thứ tự version:
+Trong kết nối hiện tại có project y-te-mo-beta (ref vmueimzrwhtvjyjydbzj) với các bảng Companion/Memory đã tồn tại. Kiểm tra schema cho thấy healthcare_documents, bucket healthcare-documents, healthcare_analysis_runs và companion_action_tasks chưa tồn tại. Không áp dụng thay đổi vào project khác.
 
-1. `202611240010_healthcare_analysis_history.sql`
-   - Tạo bảng lưu kết quả phân tích sức khỏe theo user.
-   - Chỉ backend dùng `SUPABASE_SECRET_KEY` được truy cập; RLS bật, browser roles bị revoke.
-   - Kết quả chỉ được lưu khi người dùng bật lựa chọn lưu lịch sử ở frontend.
+Migration history của project trả về rỗng dù một số bảng nền đã tồn tại; vì vậy không chạy supabase db push hàng loạt trước khi đối chiếu lịch sử. Chỉ áp dụng các migration còn thiếu đã kiểm tra bên dưới.
 
-2. `202611240011_companion_action_tasks.sql`
-   - Tạo bảng đề xuất/tác vụ Companion có owner scope, approval và idempotency.
-   - Tạo RPC claim worker có khóa hàng và điều kiện `scheduled_at <= p_now`.
-   - Chỉ service role được truy cập bảng/RPC.
+## Thứ tự phụ thuộc
 
-Migration `202611240009_clinical_evidence_intelligence.sql` đã tồn tại trước phần thay đổi này. Không chạy lại migration đã có trong remote history. Bảng `healthcare_documents` phải tồn tại trước khi chạy migration 010 vì migration này tạo foreign key tới bảng đó.
+1. 202611240002_healthcare_document_storage.sql — tạo bảng metadata hồ sơ y tế và private Storage bucket healthcare-documents.
+2. 202611240010_healthcare_analysis_history.sql — tạo lịch sử phân tích; FK tham chiếu healthcare_documents từ migration 002.
+3. 202611240011_companion_action_tasks.sql — tạo action queue, retry/lease fields, RPC claim; bổ sung unique action_task_id vào companion_needs và companion_events.
 
-## Cách khuyến nghị: Supabase CLI
+Migration nền 202611180001_companion_persistence.sql phải có hai bảng companion_needs và companion_events trước khi chạy migration 011. Hai bảng này đã được xác nhận tồn tại trên project beta.
 
-Chạy từ thư mục gốc repository trong PowerShell hoặc terminal:
+## Đã thực hiện
+
+Chưa áp dụng migration nào trong lần kiểm tra này. Đây là tài liệu và kế hoạch an toàn; thay đổi DB chỉ chạy sau khi xác nhận đúng project và dependency state.
+
+## Quy trình CLI
 
 ```powershell
 supabase login
-supabase link --project-ref <PROJECT_REF>
-supabase migration list
-supabase db push
+supabase link --project-ref vmueimzrwhtvjyjydbzj
 supabase migration list
 ```
 
-- Đăng nhập bằng tài khoản có quyền quản trị project.
-- Kiểm tra migration list trước khi push; chỉ áp dụng các version chưa có trong remote history.
-- Không chia sẻ hoặc commit access token, database password hay service-role/secret key.
-- Nếu CLI báo migration history không khớp, dừng lại và đối chiếu trước; không tự ý xóa record lịch sử migration.
+Do remote migration history đang trống nhưng schema nền đã có sẵn, không chạy supabase db push ngay. Đối chiếu từng file với schema thực tế và đồng bộ migration history trước khi dùng CLI để triển khai tiếp.
 
-## Nếu bắt buộc dùng Dashboard SQL Editor
+## Áp dụng từng migration bằng SQL Editor
 
-1. Mở đúng Supabase project → SQL Editor.
-2. Mở file `supabase/migrations/202611240010_healthcare_analysis_history.sql`, chạy toàn bộ một lần.
-3. Chạy tiếp toàn bộ file `supabase/migrations/202611240011_companion_action_tasks.sql`.
-4. Kiểm tra hai bảng và RPC đã tồn tại.
-5. Đồng bộ migration history với Supabase CLI trước lần `supabase db push` tiếp theo; chạy `supabase migration repair --status applied 202611240010` và `supabase migration repair --status applied 202611240011` chỉ sau khi xác nhận SQL đã chạy thành công.
+Mở Supabase Dashboard của đúng project y-te-mo-beta → SQL Editor. Chạy tuần tự từng file, kiểm tra kết quả sau mỗi file:
 
-Không chạy file 010 và 011 đồng thời trong hai SQL Editor session.
+1. supabase/migrations/202611240002_healthcare_document_storage.sql
+2. supabase/migrations/202611240010_healthcare_analysis_history.sql
+3. supabase/migrations/202611240011_companion_action_tasks.sql
 
-## SQL kiểm tra sau triển khai
+Không chạy song song. Không chạy file nếu bảng prerequisite không tồn tại hoặc nếu bảng đã tồn tại với schema khác. Không chạy các file 003–009 trong cùng lượt này.
+
+## SQL xác minh
 
 ```sql
 select table_name
 from information_schema.tables
 where table_schema = 'public'
-  and table_name in ('healthcare_analysis_runs', 'companion_action_tasks')
+  and table_name in ('healthcare_documents','healthcare_analysis_runs','companion_action_tasks','companion_needs','companion_events')
 order by table_name;
 
-select routine_name
+select id, name, public, file_size_limit
+from storage.buckets where id = 'healthcare-documents';
+
+select routine_name, specific_name
 from information_schema.routines
-where routine_schema = 'public'
-  and routine_name = 'claim_companion_action_tasks';
+where routine_schema = 'public' and routine_name = 'claim_companion_action_tasks';
 
 select c.relname, c.relrowsecurity
-from pg_class c
-join pg_namespace n on n.oid = c.relnamespace
+from pg_class c join pg_namespace n on n.oid = c.relnamespace
 where n.nspname = 'public'
-  and c.relname in ('healthcare_analysis_runs', 'companion_action_tasks')
+  and c.relname in ('healthcare_documents','healthcare_analysis_runs','companion_action_tasks')
 order by c.relname;
+
+select table_name, column_name, data_type
+from information_schema.columns
+where table_schema = 'public'
+  and table_name in ('companion_needs','companion_events')
+  and column_name = 'action_task_id';
 ```
 
-Kết quả mong đợi: hai bảng tồn tại, RPC tồn tại và `relrowsecurity = true` cho cả hai bảng.
+Kết quả mong đợi: ba bảng tồn tại và RLS bật; bucket private (public=false); RPC tồn tại; hai bảng Companion có cột action_task_id.
 
-## Sau migration
+## Vận hành sau migration
 
-- Deploy backend mới để bật các API lịch sử và action.
-- Chỉ deploy worker riêng sau khi cấu hình `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`.
-- Không đặt secret key ở Vercel frontend hoặc gửi xuống trình duyệt.
-- Kiểm thử bằng tài khoản test riêng; không dùng hồ sơ sức khỏe thật để smoke test.
+- Backend và worker phải trỏ cùng Supabase project.
+- Backend sử dụng SUPABASE_SECRET_KEY; không đưa secret key vào frontend.
+- Worker cần SUPABASE_URL và SUPABASE_SECRET_KEY; email cần thêm RESEND_API_KEY và RESEND_FROM_EMAIL.
+- Kiểm thử bằng tài khoản test và hồ sơ giả lập; không dùng hồ sơ sức khỏe thật để smoke test.
