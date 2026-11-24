@@ -458,7 +458,44 @@ function toast(s){let t=document.getElementById('toast');t.textContent=s;t.class
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const API_BASE = window.YTEMO_API_BASE || 'https://ytemo-api.onrender.com';
+let API_BASE = normalizeApiBase(
+  window.YTEMO_API_BASE ||
+  localStorage.getItem('ytemo_api_base') ||
+  'https://ytemo-api.onrender.com'
+);
+function normalizeApiBase(value) {
+  const raw = String(value || '').trim().replace(/\/+$/, '');
+  const parsed = new URL(raw);
+  if (parsed.protocol !== 'https:' && parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
+    throw new Error('Backend URL phải dùng HTTPS (trừ localhost).');
+  }
+  return parsed.origin;
+}
+function configureBackend() {
+  const entered = window.prompt('Nhập URL Backend FastAPI (ví dụ https://ytemo-api.onrender.com):', API_BASE);
+  if (entered === null) return;
+  try {
+    const next = normalizeApiBase(entered);
+    localStorage.setItem('ytemo_api_base', next);
+    window.location.reload();
+  } catch (error) {
+    window.alert('URL Backend không hợp lệ: ' + error.message);
+  }
+}
+function installBackendActions() {
+  if (document.getElementById('backendActions')) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'backendActions';
+  wrap.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px';
+  const retry = document.createElement('button');
+  retry.type = 'button'; retry.className = 'btn outline'; retry.textContent = '↻ Kiểm tra lại kết nối';
+  retry.addEventListener('click', initialize);
+  const config = document.createElement('button');
+  config.type = 'button'; config.className = 'btn outline'; config.textContent = '⚙ Cấu hình Backend';
+  config.addEventListener('click', configureBackend);
+  wrap.append(retry, config);
+  authStatus.insertAdjacentElement('afterend', wrap);
+}
 const authPanel = document.getElementById('authPanel');
 const chatPanel = document.getElementById('chatPanel');
 const authStatus = document.getElementById('authStatus');
@@ -557,13 +594,27 @@ async function showSignedIn(user) {
   chatInput.focus();
 }
 async function initialize() {
+  installBackendActions();
+  setAuthStatus(`Đang kiểm tra Backend: ${API_BASE} …`);
   try {
-    const response = await fetch(`${API_BASE}/public-config`);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 12000);
+    let response;
+    try {
+      response = await fetch(`${API_BASE}/public-config`, {
+        method: 'GET', headers: { 'Accept': 'application/json' }, cache: 'no-store',
+        signal: controller.signal
+      });
+    } finally {
+      window.clearTimeout(timeout);
+    }
     if (!response.ok) throw new Error(`Backend trả về HTTP ${response.status}`);
     const config = await response.json();
-    if (!config.supabase_url || !config.supabase_publishable_key) throw new Error('Thiếu cấu hình Supabase công khai ở backend.');
-    supabase = createClient(config.supabase_url, config.supabase_publishable_key);
-    setAuthStatus('Đã kết nối backend. Đăng nhập bằng tài khoản Supabase của bạn.');
+    if (!config.supabase_url || !config.supabase_publishable_key) throw new Error('Backend chưa cấu hình SUPABASE_URL hoặc SUPABASE_PUBLISHABLE_KEY.');
+    supabase = createClient(config.supabase_url, config.supabase_publishable_key, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+    setAuthStatus(`✓ Backend hoạt động · Supabase đã sẵn sàng · ${API_BASE}`);
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) await showSignedIn(session.user);
     if (typeof syncHealthcareAccess === 'function') syncHealthcareAccess();
@@ -593,7 +644,7 @@ async function initialize() {
       }
     });
   } catch (error) {
-    setAuthStatus(`Không kết nối được backend: ${error.message}. Hãy kiểm tra Uvicorn tại ${API_BASE}.`, true);
+    supabase = null;\n    const reason = error.name === 'AbortError' ? 'Backend không phản hồi trong 12 giây (có thể Render đang cold start).' : error.message;\n    setAuthStatus(`✕ Không kết nối được Backend: ${reason} · URL: ${API_BASE}. Bạn có thể thử lại hoặc cấu hình URL Backend.`, true);\n    installBackendActions();
   }
 }
 
@@ -601,7 +652,7 @@ document.getElementById('loginOpenBtn').addEventListener('click', () => { docume
 document.querySelectorAll('[data-close-login]').forEach(node => node.addEventListener('click', () => { document.getElementById('loginScreen').hidden = true; }));
 document.getElementById('avatarBtn').addEventListener('click', () => { const menu=document.getElementById('userDropdown'); menu.hidden=!menu.hidden; });
 document.getElementById('profileBtn').addEventListener('click', () => toast('Tài khoản: '+(currentUser?.email || 'chưa đăng nhập')));
-document.getElementById('settingsBtn').addEventListener('click', () => toast('Cài đặt quyền riêng tư sẽ được mở rộng theo cấu hình tài khoản.'));
+document.getElementById('settingsBtn').addEventListener('click', () => { document.getElementById('userDropdown').hidden=true; configureBackend(); });
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!supabase) return setAuthStatus('Backend chưa sẵn sàng. Hãy kiểm tra Uvicorn.', true);
