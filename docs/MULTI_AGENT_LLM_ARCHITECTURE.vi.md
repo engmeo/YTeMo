@@ -26,10 +26,10 @@ User message + consented context + approved clinical evidence
 - Supervisor Planner dùng LLM để đề xuất specialist; các miền đã được router nhận diện là bắt buộc, planner không được bỏ sót.
 - Các specialist là LLM call độc lập với system role/prompt và model override riêng. LangGraph fan-out chúng trong cùng superstep; chỉ các agent được chọn mới gọi model.
 - Supervisor Synthesis tổng hợp báo cáo, nêu agent lỗi và bất đồng.
-- Independent Reviewer kiểm tra draft trước khi phát hành. Nếu reviewer lỗi hoặc từ chối, hệ thống trả thông báo an toàn thay vì phát hành draft.
+- Reviewer là một agent role riêng kiểm tra draft trước khi phát hành. Nếu reviewer lỗi hoặc từ chối, hệ thống trả thông báo an toàn thay vì phát hành draft.
 - Với chat streaming, frontend nhận trạng thái từng bước; nội dung cuối chỉ xuất hiện sau khi reviewer hoàn tất.
 
-Đây là **multi-agent LLM orchestration** thực sự, nhưng reviewer vẫn là mô hình tự động, không phải bác sĩ phản biện và chưa được chứng minh độc lập về độ chính xác lâm sàng.
+Đây là **multi-agent LLM orchestration** thực sự. Tuy nhiên, nếu không cấu hình `YTEMO_REVIEWER_MODEL` riêng thì reviewer có thể dùng cùng model nền với supervisor/synthesis. Reviewer tự động không phải bác sĩ phản biện, không bảo đảm độc lập thống kê và chưa được xác nhận độ chính xác lâm sàng.
 
 ## Specialist roles
 
