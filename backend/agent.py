@@ -37,9 +37,12 @@ TIN NHẮN MỚI:
 
 Hãy phản hồi phù hợp và hỏi tối đa một câu tiếp theo nếu cần.
 """
+    # Interactive Companion requests should fail fast rather than retrying
+    # a congested free model for up to ~96 seconds.
     response = generate_content(
         model=MODEL,
-        contents=prompt
+        contents=prompt,
+        max_attempts=1,
     )
     return {"reply": response.text}
 
