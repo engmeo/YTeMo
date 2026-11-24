@@ -4,6 +4,8 @@ from io import BytesIO
 
 from reportlab.pdfgen import canvas
 
+from pydantic import ValidationError
+from clinical_knowledge_workflows import EvidenceRetrievalRequest
 from clinical_knowledge_ingestion import (
     IngestionError, _page_quality, discover_pdf_links, extract_pdf_pages,
     is_allowed_source_url, normalize_host,
@@ -61,6 +63,15 @@ class ClinicalKnowledgeIngestionTests(unittest.TestCase):
         self.assertEqual(pages[0].text_sha256, hashlib.sha256(pages[0].text.encode()).hexdigest())
         self.assertEqual(report["overall_status"], "EXTRACTED")
 
+    def test_evidence_retrieval_requires_controlled_scope_and_population(self):
+        payload = {
+            "query": "hypertension guideline", "jurisdiction": "VN",
+            "population": "Adults", "scope": "patient_education",
+        }
+        self.assertEqual(EvidenceRetrievalRequest(**payload).jurisdiction, "VN")
+        payload["scope"] = "unrestricted"
+        with self.assertRaises(ValidationError):
+            EvidenceRetrievalRequest(**payload)
     def test_non_pdf_is_rejected(self):
         with self.assertRaises(IngestionError):
             extract_pdf_pages(b"not a pdf", enable_ocr=False)
