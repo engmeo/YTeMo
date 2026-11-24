@@ -29,7 +29,7 @@ The last two are proposals only. A handler must be explicitly implemented and re
 
 ## Apply and operate
 
-1. Apply `supabase/migrations/202611240011_companion_action_tasks.sql` and `supabase/migrations/202611240010_healthcare_analysis_history.sql` in order in the target Supabase project.
+1. Apply `supabase/migrations/202611240010_healthcare_analysis_history.sql`, then `supabase/migrations/202611240011_companion_action_tasks.sql` in the target Supabase project. Migration `202611240009_clinical_evidence_intelligence.sql` is an existing clinical-knowledge migration; do not re-run it if it has already been applied.
 2. Deploy the backend containing the API routes.
 3. Configure the separate worker service with `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` and optional `YTEMO_ACTION_POLL_SECONDS`.
 4. Run `python companion_action_worker_service.py` from the `backend` directory. It registers the `create_reminder` email handler and refuses to start without Resend configuration.
