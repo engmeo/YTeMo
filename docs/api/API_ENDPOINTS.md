@@ -970,3 +970,6 @@ Các endpoint yêu cầu Bearer token. Owner ID luôn lấy từ phiên đăng n
 
 
 | GET | `/conversations?limit=30` | Liệt kê hội thoại của người dùng đăng nhập; giới hạn tối đa 100 bản ghi. |
+
+| GET | `/healthcare/analysis-runs?limit=30` | Liệt kê lịch sử phân tích của người dùng đăng nhập. Cần migration `202611240010_healthcare_analysis_history.sql`. |
+| GET | `/healthcare/analysis-runs/{run_id}` | Tải chi tiết kết quả phân tích đã lưu, có kiểm tra quyền sở hữu. |
