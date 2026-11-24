@@ -31,7 +31,7 @@ on:
       - "docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md"
       - ".github/workflows/clinical-knowledge.yml"
   push:
-    branches: [main, feature/clinical-knowledge-governance]
+    branches: [main, feature/clinical-knowledge-governance, feature/clinical-evidence-intelligence]
     paths:
       - "backend/clinical_knowledge.py"
       - "backend/clinical_knowledge_ingestion.py"
