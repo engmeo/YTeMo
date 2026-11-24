@@ -36,6 +36,7 @@ from healthcare_cost_intelligence import (
     CostIntelligenceError, build_cost_intelligence_report,
 )
 from clinical_knowledge import build_router as build_clinical_knowledge_router
+from clinical_knowledge_workflows import build_workflow_router as build_clinical_knowledge_workflow_router
 
 load_dotenv()
 
@@ -118,6 +119,7 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="Authentication failed")
 
 app.include_router(build_clinical_knowledge_router(db_client, get_current_user))
+app.include_router(build_clinical_knowledge_workflow_router(db_client, db_client.storage, get_current_user))
 
 
 @app.get("/")
