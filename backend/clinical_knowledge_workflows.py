@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 from gemini_service import generate_content
 
+from clinical_knowledge import ALLOWED_APPROVED_SCOPES
 from clinical_knowledge_ingestion import (
     IngestionError, MAX_HTML_BYTES, MAX_SOURCE_BYTES, discover_pdf_links,
     extract_pdf_pages, fetch_registered_url, is_allowed_source_url, normalize_host,
