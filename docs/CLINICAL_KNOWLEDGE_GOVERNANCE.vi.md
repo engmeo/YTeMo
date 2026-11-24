@@ -172,10 +172,101 @@ Không bật clinical retrieval hoặc để Companion dùng nội dung như că
 
 Khi không đủ bằng chứng, dữ liệu bệnh nhân hoặc chuyên môn để kết luận, hệ thống phải nói rõ giới hạn, hỏi thêm dữ kiện phù hợp hoặc chuyển người có chuyên môn. Không tạo cảm giác chắc chắn giả.
 
-## 10. Trạng thái triển khai trung thực
+## 10. Pipeline thu thập và lưu bản gốc
 
-Đã có nền tảng schema/API, registry khởi tạo, metadata/integrity checks, reviewer workflow, evidence-domain taxonomy, terminology registry, claim/conflict schema và focused unit tests.
+Các API mới (yêu cầu Supabase Bearer token):
 
-Chưa có: crawler/downloader an toàn, OCR pipeline, document/version resolver, claim extraction pipeline, appraisal workflow hoàn chỉnh, xác minh giấy phép reviewer, claim-level approval UI, conflict-resolution UI, vector/hybrid retrieval, citation-grounded Companion integration, evaluation dataset, external clinical validation hoặc production deployment.
+- `POST /clinical-knowledge/sources/{source_key}/discover`: đọc trang danh mục đã đăng ký và tìm liên kết PDF cùng domain.
+- `POST /clinical-knowledge/candidates/{candidate_id}/ingest`: tải PDF, kiểm tra magic bytes, tính SHA-256, lưu private Storage theo content-addressed path và tạo bản ghi trang.
+- `GET /clinical-knowledge/documents/{id}/original-url`: tạo signed URL ngắn hạn 5 phút cho reviewer.
+- `GET /clinical-knowledge/documents/{id}/pages` và `GET /clinical-knowledge/documents/{id}/page/{page_number}`: xem chẩn đoán trích xuất theo trang.
 
-Migration chưa tự chạy trên Supabase. Reviewer chưa được xác minh chỉ bằng cách thêm UUID vào bảng. Không có tài liệu nào được tự động xem là clinical-approved từ migration này.
+Chỉ `knowledge_admin` được chạy discovery/ingestion. URL phải là HTTPS, host thuộc source registry, không dùng IP literal, localhost, port khác 443 hoặc redirect ra ngoài allowlist. Mỗi redirect được kiểm tra lại. Kích thước PDF tối đa 25 MB, HTML discovery tối đa 5 MB, tối đa 300 trang. Các giới hạn này là biện pháp giảm rủi ro, không phải sandbox hoàn chỉnh chống mọi kiểu DNS rebinding hoặc tấn công parser.
+
+Original được lưu trong bucket private `clinical-knowledge-originals`, đường dẫn chứa source key và SHA-256, upload dùng `upsert=false`. API không cung cấp chức năng ghi đè hoặc xóa bản gốc. Đây là append-only ở tầng ứng dụng, **không phải WORM/retention lock** chống quản trị viên Supabase có quyền đặc biệt xóa dữ liệu.
+
+Discovery hiện là API được kích hoạt thủ công hoặc bởi scheduler bên ngoài; chưa có crawler scheduler chạy nền. Parser chỉ tìm liên kết PDF trên cùng domain. Không tự suy đoán title, số hiệu, ngày ban hành, phiên bản hay hiệu lực; admin phải cung cấp metadata và reviewer phải xác minh.
+
+## 11. PDF extraction và chất lượng từng trang
+
+`backend/clinical_knowledge_ingestion.py`:
+- Trích xuất text theo từng trang bằng pypdf.
+- Trang ít text có thể chuyển sang Tesseract OCR tiếng Việt/Anh nếu cài optional packages và binary/traineddata.
+- Lưu text hash, phương pháp trích xuất, số ký tự, tỷ lệ alphanumeric, replacement characters, OCR confidence và warning theo từng trang.
+- Báo cáo EMPTY/PARTIAL/EXTRACTED; tài liệu PARTIAL không đủ điều kiện phê duyệt.
+- Các cảnh báo OCR buộc reviewer xác nhận đã kiểm tra trang gốc trước khi duyệt.
+
+Cài OCR trong môi trường triển khai:
+```bash
+pip install -r backend/requirements-ocr.txt
+```
+Đồng thời cài Tesseract OCR binary và dữ liệu ngôn ngữ `vie` + `eng`, cấu hình `TESSERACT_CMD` nếu binary không nằm trong PATH.
+
+Các chỉ số chất lượng chỉ phát hiện dấu hiệu trích xuất kém; không đo độ chính xác y khoa, không bảo đảm OCR đúng và không thay thế kiểm tra PDF gốc. Ảnh, biểu đồ, bảng phức tạp, công thức và layout nhiều cột vẫn cần reviewer đối chiếu.
+
+## 12. Claim extraction, appraisal và review
+
+- `POST /clinical-knowledge/documents/{id}/claims/suggest`: AI tạo tối đa 10 claim draft từ tối đa 3 trang.
+- Mỗi draft phải có exact quote khớp nội dung trang sau chuẩn hóa khoảng trắng; quote không khớp bị loại.
+- AI draft không được lưu hoặc phê duyệt tự động. Reviewer phải chọn, sửa và tạo claim bằng `POST /clinical-knowledge/documents/{id}/claims`.
+- Claim lưu population, intervention, comparator, outcomes, effect estimate (chỉ khi nguồn nêu), certainty, recommendation strength, page number, exact quote và locator.
+- `POST /clinical-knowledge/claims/{id}/review`: reviewer thẩm định theo AGREE II, GRADE, AMSTAR 2, RoB 2, ROBINS-I, QUADAS-2 hoặc OTHER; các framework có bộ domain bắt buộc.
+- Claim ở trạng thái UNREVIEWED cho tới khi đủ số reviewer độc lập theo domain. Claim chưa ACCEPTED không được retrieval.
+
+AI chỉ hỗ trợ trích xuất. Nó không xác định effect estimate, certainty hoặc recommendation strength khi nguồn không nêu; không tự chuyển nội dung thành khuyến nghị. Việc quote khớp text chỉ chứng minh quote có trong bản trích xuất, không bảo đảm OCR không sai.
+
+## 13. Document identity, version và conflict resolution
+
+- `GET /clinical-knowledge/documents/{id}/version-candidates`: tìm tài liệu có cùng official identifier để reviewer đối chiếu.
+- `POST /clinical-knowledge/documents/{id}/version-relations`: ghi nhận quan hệ SUPERSEDES/UPDATE_OF/CORRECTION_OF/TRANSLATION_OF.
+- Hai reviewer độc lập phải xác nhận quan hệ trước khi predecessor được đánh dấu SUPERSEDED.
+- `POST /clinical-knowledge/conflicts`: tạo conflict từ các claim đã ACCEPTED.
+- `GET /clinical-knowledge/conflicts`: xem hàng đợi conflict.
+- `POST /clinical-knowledge/conflicts/{id}/review`: hai reviewer độc lập xác nhận giải quyết; nếu có phiếu UNRESOLVED, conflict không được tự động đóng.
+
+Hệ thống chỉ gợi ý ứng viên theo official identifier. Không tự kết luận bản nào mới hơn hoặc văn bản nào có hiệu lực pháp lý. Quyết định thay thế phải dựa trên văn bản chính thức và xác nhận con người.
+
+## 14. Evidence retrieval và Companion
+
+`POST /clinical-knowledge/retrieve` nhận query, jurisdiction, population, scope, specialty và ngày tham chiếu. Kết quả chỉ gồm claim ACCEPTED thuộc document CLINICAL_APPROVED, is_current, đúng thời gian hiệu lực, jurisdiction, population và approved_scope; trả exact quote, trang và URL nguồn. Không có kết quả phù hợp thì trả `abstention=true`.
+
+Retrieval hiện tại là **structured lexical matching**, chưa phải semantic/vector/hybrid retrieval và không đủ để tự hiểu mọi câu hỏi y khoa. Đây là một evidence gateway fail-closed, không phải máy tạo câu trả lời lâm sàng.
+
+Companion `POST /chat` nhận thêm trường tùy chọn `evidence_request`. Khi có request, backend truy xuất bằng chứng đã duyệt, ghi audit và chuyển evidence context vào agent. Prompt yêu cầu agent chỉ dùng claim/citation được cung cấp, không vượt quá scope; khi retrieval rỗng/lỗi thì phải nói rõ không có bằng chứng đã thẩm định và không đưa ra kết luận lâm sàng. Frontend hiện chưa cung cấp form nhập evidence_request, vì vậy cần bổ sung UI trước khi người dùng cuối khai thác luồng này thường xuyên.
+
+## 15. Migration order
+
+Các migration phải chạy đúng thứ tự, dùng version duy nhất:
+
+1. `202611240001_core_backend_persistence.sql`
+2. `202611240002_healthcare_document_storage.sql`
+3. `202611240003_clinical_knowledge_governance.sql`
+4. `202611240004_evidence_grade_clinical_knowledge.sql`
+5. `202611240005_clinical_knowledge_ingestion_evidence_workflows.sql`
+6. `202611240006_clinical_knowledge_independent_resolution.sql`
+
+Hai migration Clinical Knowledge ban đầu từng bị trùng version với migration core/document storage; đã đổi thành 003 và 004 để tránh xung đột version của Supabase CLI. Không chạy các file cũ có tên 001/002 của Clinical Knowledge nếu chúng còn tồn tại trong bản checkout cũ.
+
+## 16. Trạng thái triển khai trung thực
+
+**Đã có trong branch hiện tại:**
+- Source registry, bảy knowledge domains và terminology registry.
+- Governance/document APIs, reviewer credential gate, audit, approval scope và fail-closed status.
+- Allowlisted official-source discovery, PDF fetch, private original storage theo SHA-256.
+- PDF page extraction, optional OCR fallback và page-level quality report.
+- AI-assisted claim draft có kiểm tra exact quote; claim appraisal/review API.
+- Version candidate/relation workflow với hai reviewer.
+- Conflict registry và independent resolution API.
+- Structured lexical evidence retrieval và backend Companion evidence-context integration.
+- Focused CI cho module governance/ingestion.
+
+**Chưa có hoặc chưa được xác nhận:**
+- Migration chưa chạy trên Supabase; backend chưa deploy.
+- Chưa có scheduler crawler tự chạy, queue worker bền vững hoặc retry orchestration.
+- Chưa có OCR runtime được cài và kiểm thử trên dữ liệu scan thực tế.
+- Chưa có reviewer UI, conflict-resolution UI, claim appraisal UI hoặc frontend evidence request form.
+- Chưa có vector/hybrid retrieval, reranker, terminology service tích hợp thực tế.
+- Chưa có bộ benchmark lâm sàng đại diện, đánh giá độc lập của chuyên gia y tế hoặc xác nhận an toàn.
+- Chưa có tài liệu/claim nào được phê duyệt lâm sàng thực tế.
+
+Không bật clinical decision support cho bệnh nhân chỉ vì các API này tồn tại. Cần hoàn thành migrations, deployment, security review, dữ liệu chính thống, credential verification, reviewer workflow, evaluation và external clinical validation trước khi tuyên bố đạt chuẩn sử dụng lâm sàng.
