@@ -49,9 +49,13 @@ class DoclingAdapterTests(unittest.TestCase):
 
         converter_module.DocumentConverter = FakeConverter
         converter_module.PdfFormatOption = lambda **kwargs: kwargs
+        docling_package = ModuleType("docling")
+        docling_package.__path__ = []
+        datamodel_package = ModuleType("docling.datamodel")
+        datamodel_package.__path__ = []
         modules = {
-            "docling": ModuleType("docling"),
-            "docling.datamodel": ModuleType("docling.datamodel"),
+            "docling": docling_package,
+            "docling.datamodel": datamodel_package,
             "docling.datamodel.base_models": base,
             "docling.datamodel.pipeline_options": pipeline,
             "docling.document_converter": converter_module,
