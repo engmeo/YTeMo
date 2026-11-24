@@ -35,6 +35,9 @@ from healthcare_documents import (
 from healthcare_specialists import (
     DEFAULT_AGENT_KEYS, HealthcareAgentService,
 )
+from agent_action_runtime import (
+    ActionValidationError, propose_action, approve_action, reject_action, list_actions,
+)
 from healthcare_cost_intelligence import (
     CostIntelligenceError, build_cost_intelligence_report,
 )
@@ -114,6 +117,10 @@ app.add_middleware(
 security = HTTPBearer()
 
 
+class AgentActionProposalRequest(BaseModel):
+    action: str = Field(min_length=1, max_length=80)
+    arguments: dict = Field(default_factory=dict)
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     conversation_id: Optional[str] = None
@@ -138,6 +145,50 @@ def get_current_user(
 app.include_router(build_clinical_knowledge_router(db_client, get_current_user))
 app.include_router(build_clinical_knowledge_workflow_router(db_client, db_client.storage, get_current_user))
 app.include_router(build_clinical_intelligence_router(db_client, get_current_user))
+
+
+@app.post("/companion/actions/propose")
+def propose_companion_action(request: AgentActionProposalRequest, user=Depends(get_current_user)):
+    try:
+        return {"action": propose_action(db_client, str(user.id), request.action, request.arguments)}
+    except ActionValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except Exception as exc:
+        print("ACTION PROPOSAL ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=500, detail="Could not create action proposal")
+
+
+@app.get("/companion/actions")
+def get_companion_actions(limit: int = 50, user=Depends(get_current_user)):
+    try:
+        return {"actions": list_actions(db_client, str(user.id), limit)}
+    except Exception as exc:
+        print("ACTION LIST ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=500, detail="Could not load action proposals")
+
+
+@app.post("/companion/actions/{action_id}/approve")
+def approve_companion_action(action_id: str, user=Depends(get_current_user)):
+    try:
+        return {"action": approve_action(db_client, str(user.id), action_id)}
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Action proposal not found")
+    except ActionValidationError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except Exception as exc:
+        print("ACTION APPROVAL ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=500, detail="Could not approve action")
+
+
+@app.post("/companion/actions/{action_id}/reject")
+def reject_companion_action(action_id: str, user=Depends(get_current_user)):
+    try:
+        return {"action": reject_action(db_client, str(user.id), action_id)}
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Pending action proposal not found")
+    except Exception as exc:
+        print("ACTION REJECTION ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=500, detail="Could not reject action")
 
 
 @app.get("/")
