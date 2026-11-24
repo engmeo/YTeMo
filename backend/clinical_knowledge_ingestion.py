@@ -107,8 +107,11 @@ def fetch_registered_url(url: str, registered_hosts: list[str], max_bytes: int =
                 if total > max_bytes:
                     raise IngestionError("Tài liệu vượt giới hạn dung lượng cho phép.")
                 chunks.append(chunk)
+        except requests.RequestException as exc:
+            raise IngestionError("Kết nối bị gián đoạn khi tải tài liệu.") from exc
         finally:
             response.close()
+            session.close()
         data = b"".join(chunks)
         return data, response.headers.get("Content-Type", "").split(";")[0].lower(), response.url
     raise IngestionError("Nguồn chuyển hướng quá nhiều lần.")
