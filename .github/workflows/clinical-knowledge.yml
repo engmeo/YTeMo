@@ -24,6 +24,13 @@ on:
       - "docs/DOCUMENT_AI_WORKER.vi.md"
       - "docs/AGENT_QUALITY_ROADMAP.vi.md"
       - "backend/agent.py"
+      - "backend/agent_action_runtime.py"
+      - "backend/temporal_action_worker.py"
+      - "backend/companion_email_notifications.py"
+      - "backend/companion_action_worker_service.py"
+      - "backend/tests/**"
+      - "docs/api/**"
+      - "docs/COMPANION_AGENT_ACTIONS.vi.md"
       - "backend/multi_agent_orchestrator.py"
       - "backend/test_multi_agent_orchestrator.py"
       - "docs/MULTI_AGENT_LLM_ARCHITECTURE.vi.md"
@@ -37,7 +44,7 @@ on:
       - "docs/CLINICAL_DATA_COLLECTION.vi.md"
       - "docs/OPEN_MODEL_SETUP.vi.md"
       - "docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md"
-      - "supabase/migrations/20261124000*.sql"
+      - "supabase/migrations/202611240*.sql"
       - "backend/main.py"
       - "backend/requirements.txt"
       - "frontend/index.html"
@@ -94,6 +101,10 @@ jobs:
             backend/main.py \
             backend/document_ai_adapter.py \
             backend/memory_conflict_engine.py \
+            backend/agent_action_runtime.py \
+            backend/temporal_action_worker.py \
+            backend/companion_email_notifications.py \
+            backend/companion_action_worker_service.py \
             backend/clinical_training/prepare_dataset.py \
             backend/clinical_training/draft_sft_examples.py \
             backend/clinical_training/train_lora.py \
