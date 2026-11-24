@@ -109,7 +109,7 @@ def reject_action(db, user_id: str, action_id: str) -> dict[str, Any]:
         db.table("companion_action_tasks")
         .update({"status": "rejected", "completed_at": datetime.now(timezone.utc).isoformat()})
         .eq("id", action_id).eq("user_id", user_id)
-        .eq("status", "awaiting_approval").execute()
+        .eq("status", "awaiting_approval").select("*").execute()
     )
     if not updated.data:
         raise LookupError("Pending action proposal not found.")
