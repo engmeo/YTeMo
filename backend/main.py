@@ -667,6 +667,7 @@ class ProposalStatusRequest(BaseModel):
     status: ProposalStatus
 
 
+# Analysis output is persisted only after the authenticated user explicitly opts in.
 class HealthcareAnalysisRequest(BaseModel):
     document_text: str = Field(min_length=1, max_length=200000)
     document_id: Optional[str] = None
