@@ -94,3 +94,19 @@ Runner đo latency và xuất hai file: A/B outputs cho reviewers, cùng unblind
 - Free hosted model không đảm bảo ổn định, riêng tư hoặc tốc độ.
 - Model weights, LoRA adapter và benchmark không phải chứng nhận lâm sàng.
 - Không bật diagnosis/prescription cho bệnh nhân trước khi hoàn thành kiểm định và phê duyệt.
+
+
+## 7. Tổng hợp điểm review A/B sau khi khóa đánh giá
+
+Reviewers chấm file A/B bằng rubric 0–2, kèm reviewer_id và xác nhận độc lập. Schema xem docstring của `backend/clinical_training/score_benchmark.py`.
+
+```bash
+cd backend
+python -m clinical_training.score_benchmark \
+  --blinded artifacts/clinical_benchmark_blinded.jsonl \
+  --key artifacts/restricted_benchmark_key.jsonl \
+  --reviews artifacts/independent_reviews.jsonl \
+  --output artifacts/clinical_benchmark_score_report.json
+```
+
+Script chỉ unblind khi mỗi case có ít nhất hai reviewer độc lập đã xác minh. Báo cáo so sánh base/fine-tuned theo từng dimension và scenario group; không cấp trạng thái clinical-ready.
