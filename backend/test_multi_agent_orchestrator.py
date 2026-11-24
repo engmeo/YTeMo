@@ -33,6 +33,21 @@ class MultiAgentOrchestrationTests(unittest.TestCase):
         # planner + each selected specialist + synthesis + independent reviewer
         self.assertEqual(generate.call_count, len(result["selected_agents"]) + 3)
 
+    def test_independent_specialists_execute_concurrently(self):
+        import threading
+        barrier = threading.Barrier(2, timeout=3)
+
+        def concurrent_generate(messages, profile="fast", max_tokens=500, temperature=0.1, model_override=None):
+            prompt = messages[-1]["content"]
+            if "ĐỊNH DẠNG BÁO CÁO" in prompt:
+                barrier.wait()
+            return fake_generate(messages, profile, max_tokens, temperature, model_override)
+
+        with patch("multi_agent_orchestrator.generate", side_effect=concurrent_generate):
+            result = orchestration.run_multi_agent("Tổng hợp xét nghiệm và chi phí")
+        completed = {item["agent"] for item in result["agent_results"] if item["status"] == "completed"}
+        self.assertTrue({"laboratory", "cost"}.issubset(completed))
+
     @patch("multi_agent_orchestrator.generate", side_effect=fake_generate)
     def test_reviewer_rejection_prevents_unverified_draft_from_reaching_user(self, generate):
         def reject(messages, profile="fast", max_tokens=500, temperature=0.1, model_override=None):
