@@ -120,3 +120,16 @@ alter table public.clinical_knowledge_domains enable row level security;
 alter table public.clinical_terminology_systems enable row level security;
 alter table public.clinical_evidence_claims enable row level security;
 alter table public.clinical_evidence_conflicts enable row level security;
+
+-- Seed only official publisher/regulator domains. A registered domain is a
+-- discovery allow-list, not a document-level authenticity or quality verdict.
+insert into public.clinical_knowledge_sources(source_key,name,base_url,source_type,country,trust_tier)
+values
+('esc','European Society of Cardiology','https://www.escardio.org','professional_society','GLOBAL','A'),
+('kdigo','Kidney Disease: Improving Global Outcomes','https://kdigo.org','professional_society','GLOBAL','A'),
+('gina','Global Initiative for Asthma','https://ginasthma.org','professional_society','GLOBAL','A'),
+('gold','Global Initiative for Chronic Obstructive Lung Disease','https://goldcopd.org','professional_society','GLOBAL','A'),
+('ada','American Diabetes Association','https://diabetes.org','professional_society','GLOBAL','A'),
+('dav_vn','Cục Quản lý Dược Việt Nam','https://dav.gov.vn','government','VN','A')
+on conflict(source_key) do update set name=excluded.name,base_url=excluded.base_url,
+  source_type=excluded.source_type,country=excluded.country,trust_tier=excluded.trust_tier,updated_at=now();
