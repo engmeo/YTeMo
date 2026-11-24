@@ -17,6 +17,11 @@ on:
       - "backend/test_clinical_meta_analysis.py"
       - "backend/model_intelligence.py"
       - "backend/model_registry.json"
+      - "backend/document_ai_adapter.py"
+      - "backend/healthcare_documents.py"
+      - "backend/test_document_ai_adapter.py"
+      - "backend/requirements-document-ai.txt"
+      - "docs/DOCUMENT_AI_WORKER.vi.md"
       - "backend/agent.py"
       - "backend/test_model_intelligence.py"
       - "backend/clinical_training/**"
@@ -78,6 +83,7 @@ jobs:
             backend/clinical_meta_analysis.py \
             backend/model_intelligence.py \
             backend/agent.py \
+            backend/document_ai_adapter.py \
             backend/clinical_training/prepare_dataset.py \
             backend/clinical_training/draft_sft_examples.py \
             backend/clinical_training/train_lora.py \
@@ -94,7 +100,8 @@ jobs:
             test_clinical_knowledge_evaluation \
             test_clinical_evidence_intelligence \
             test_clinical_meta_analysis \
-            test_model_intelligence
+            test_model_intelligence \
+            test_document_ai_adapter
       - name: Run training data governance tests
         working-directory: backend/clinical_training
         run: |
