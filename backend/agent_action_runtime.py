@@ -14,7 +14,7 @@ from typing import Any
 ALLOWED_ACTIONS = {
     "create_reminder": {
         "description": "Create a user-approved follow-up reminder.",
-        "required": {"title", "due_at"},
+        "required": {"title", "due_at", "delivery_channel"},
         "approval_required": True,
     },
     "request_clinician_review": {
@@ -62,6 +62,8 @@ def propose_action(db, user_id: str, action: str, arguments: dict[str, Any]) -> 
             raise ActionValidationError("due_at must be an ISO-8601 timestamp.") from exc
         if parsed.tzinfo is None:
             raise ActionValidationError("due_at must include a timezone.")
+        if arguments.get("delivery_channel") != "email":
+            raise ActionValidationError("Reminder delivery_channel must be explicitly set to email.")
     idem = _stable_key(user_id, action, arguments)
     existing = (
         db.table("companion_action_tasks").select("*")
