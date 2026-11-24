@@ -30,8 +30,8 @@ class MultiAgentOrchestrationTests(unittest.TestCase):
         self.assertIn("cost", result["selected_agents"])
         completed = {item["agent"] for item in result["agent_results"] if item["status"] == "completed"}
         self.assertTrue({"laboratory", "cost"}.issubset(completed))
-        # planner + two specialists + synthesis + independent reviewer
-        self.assertEqual(generate.call_count, 5)
+        # planner + each selected specialist + synthesis + independent reviewer
+        self.assertEqual(generate.call_count, len(result["selected_agents"]) + 3)
 
     @patch("multi_agent_orchestrator.generate", side_effect=fake_generate)
     def test_reviewer_rejection_prevents_unverified_draft_from_reaching_user(self, generate):
