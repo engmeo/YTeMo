@@ -130,6 +130,63 @@ class EvidenceRetrievalRequest(BaseModel):
     limit: int = Field(default=10, ge=1, le=30)
 
 
+def retrieve_approved_evidence(db, request: EvidenceRetrievalRequest) -> dict:
+    as_of = parse_iso_date(request.as_of) or date.today()
+    terms = [term for term in re.findall(r"[\\w-]{3,}", request.query.casefold())]
+    if not terms:
+        raise HTTPException(status_code=422, detail="Query cần ít nhất một từ khóa có nghĩa.")
+    claim_result = db.table("clinical_evidence_claims").select("*").eq(
+        "reviewer_status", "ACCEPTED"
+    ).limit(1000).execute()
+    claims = claim_result.data or []
+    doc_ids = list({item["document_id"] for item in claims})
+    if not doc_ids:
+        return {"evidence": [], "abstention": True, "reason": "NO_APPROVED_EVIDENCE", "retrieval_mode": "structured_lexical"}
+    doc_result = db.table("clinical_knowledge_documents").select(
+        "id,title,publisher,source_url,official_identifier,version,published_at,effective_from,effective_until,"
+        "knowledge_domain,jurisdiction,target_population,specialty,status,is_current,approved_scope,original_sha256"
+    ).in_("id", doc_ids).eq("status", "CLINICAL_APPROVED").eq("is_current", True).limit(1000).execute()
+    docs = {item["id"]: item for item in (doc_result.data or [])}
+    matches = []
+    for claim in claims:
+        doc = docs.get(claim["document_id"])
+        if not doc or request.scope not in (doc.get("approved_scope") or []):
+            continue
+        if request.jurisdiction not in {doc.get("jurisdiction"), "GLOBAL"}:
+            continue
+        if claim.get("jurisdiction") and claim["jurisdiction"] not in {request.jurisdiction, "GLOBAL"}:
+            continue
+        if request.specialty and doc.get("specialty") != request.specialty:
+            continue
+        if normalized_text(request.population) not in normalized_text(claim.get("population", "")):
+            continue
+        start = parse_iso_date(doc.get("effective_from"))
+        end = parse_iso_date(doc.get("effective_until"))
+        if (start and as_of < start) or (end and as_of > end):
+            continue
+        haystack = normalized_text(claim.get("claim_text", "") + " " + claim.get("exact_quote", ""))
+        overlap = sum(1 for term in terms if term in haystack)
+        if overlap == 0:
+            continue
+        matches.append({
+            "claim": claim, "document": doc, "matched_terms": overlap,
+            "citation": {
+                "document_title": doc["title"], "publisher": doc["publisher"],
+                "source_url": doc["source_url"], "version": doc.get("version"),
+                "page": claim.get("source_page_number"), "locator": claim.get("source_locator"),
+                "exact_quote": claim.get("exact_quote"), "document_sha256": doc.get("original_sha256"),
+            },
+        })
+    matches.sort(key=lambda item: item["matched_terms"], reverse=True)
+    evidence = matches[:request.limit]
+    return {
+        "evidence": evidence, "abstention": not bool(evidence),
+        "reason": None if evidence else "NO_SCOPE_AND_POPULATION_MATCHING_APPROVED_EVIDENCE",
+        "retrieval_mode": "structured_lexical",
+        "notice": "Chỉ trả về claim đã được thẩm định, thuộc tài liệu hiện hành và đúng scope/quần thể/jurisdiction. Đây không phải chẩn đoán hoặc khuyến nghị điều trị.",
+    }
+
+
 def build_workflow_router(db, storage, auth_dependency):
     router = APIRouter(prefix="/clinical-knowledge", tags=["Clinical Knowledge Workflows"])
 
@@ -623,60 +680,7 @@ def build_workflow_router(db, storage, auth_dependency):
         return {"relation": relation, "confirmations": len(confirmed), "status": relation_status}
 
     @router.post("/retrieve")
-    def retrieve_approved_evidence(request: EvidenceRetrievalRequest, user=Depends(auth_dependency)):
-        as_of = parse_iso_date(request.as_of) or date.today()
-        terms = [term for term in re.findall(r"[\w-]{3,}", request.query.casefold())]
-        if not terms:
-            raise HTTPException(status_code=422, detail="Query cần ít nhất một từ khóa có nghĩa.")
-        claim_result = db.table("clinical_evidence_claims").select("*").eq(
-            "reviewer_status", "ACCEPTED"
-        ).limit(1000).execute()
-        claims = claim_result.data or []
-        doc_ids = list({item["document_id"] for item in claims})
-        if not doc_ids:
-            return {"evidence": [], "abstention": True, "reason": "NO_APPROVED_EVIDENCE"}
-        doc_result = db.table("clinical_knowledge_documents").select(
-            "id,title,publisher,source_url,official_identifier,version,published_at,effective_from,effective_until,"
-            "knowledge_domain,jurisdiction,target_population,specialty,status,is_current,approved_scope,original_sha256"
-        ).in_("id", doc_ids).eq("status", "CLINICAL_APPROVED").eq("is_current", True).limit(1000).execute()
-        docs = {item["id"]: item for item in (doc_result.data or [])}
-        matches = []
-        for claim in claims:
-            doc = docs.get(claim["document_id"])
-            if not doc or request.scope not in (doc.get("approved_scope") or []):
-                continue
-            if request.jurisdiction not in {doc.get("jurisdiction"), "GLOBAL"}:
-                continue
-            if claim.get("jurisdiction") and claim["jurisdiction"] not in {request.jurisdiction, "GLOBAL"}:
-                continue
-            if request.specialty and doc.get("specialty") != request.specialty:
-                continue
-            if not normalized_text(request.population) in normalized_text(claim.get("population", "")):
-                continue
-            start = parse_iso_date(doc.get("effective_from"))
-            end = parse_iso_date(doc.get("effective_until"))
-            if start and as_of < start or end and as_of > end:
-                continue
-            haystack = normalized_text(claim.get("claim_text", "") + " " + claim.get("exact_quote", ""))
-            overlap = sum(1 for term in terms if term in haystack)
-            if overlap == 0:
-                continue
-            matches.append({
-                "claim": claim, "document": doc, "matched_terms": overlap,
-                "citation": {
-                    "document_title": doc["title"], "publisher": doc["publisher"],
-                    "source_url": doc["source_url"], "version": doc.get("version"),
-                    "page": claim.get("source_page_number"), "locator": claim.get("source_locator"),
-                    "exact_quote": claim.get("exact_quote"), "document_sha256": doc.get("original_sha256"),
-                },
-            })
-        matches.sort(key=lambda item: item["matched_terms"], reverse=True)
-        evidence = matches[:request.limit]
-        return {
-            "evidence": evidence, "abstention": not bool(evidence),
-            "reason": None if evidence else "NO_SCOPE_AND_POPULATION_MATCHING_APPROVED_EVIDENCE",
-            "retrieval_mode": "structured_lexical",
-            "notice": "Chỉ trả về claim đã được thẩm định, thuộc tài liệu hiện hành và đúng scope/quần thể/jurisdiction. Đây không phải chẩn đoán hoặc khuyến nghị điều trị.",
-        }
+    def retrieve_approved_evidence_route(request: EvidenceRetrievalRequest, user=Depends(auth_dependency)):
+        return retrieve_approved_evidence(db, request)
 
     return router
