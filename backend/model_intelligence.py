@@ -27,24 +27,101 @@ def load_model_registry() -> dict[str, Any]:
         return json.load(handle)
 
 
-def choose_profile(message: str, evidence_context: str = "", requested_profile: str | None = None) -> str:
+def _normalize_vietnamese(value: str) -> str:
+    import unicodedata
+    text = (value or "").casefold().replace("đ", "d")
+    return "".join(
+        char for char in unicodedata.normalize("NFD", text)
+        if unicodedata.category(char) != "Mn"
+    )
+
+
+_INTENT_TERMS = {
+    "medication": (
+        "thuoc", "lieu dung", "tuong tac", "tac dung phu", "don thuoc",
+        "uống", "tiem", "vien", "mg", "mcg", "ml",
+    ),
+    "laboratory": (
+        "xet nghiem", "ket qua", "hba1c", "glucose", "creatinin",
+        "cholesterol", "triglycerid", "men gan", "cong thuc mau",
+    ),
+    "cost": (
+        "chi phi", "gia tien", "vien phi", "hoa don", "tong tien",
+        "bao nhieu tien", "chi tra",
+    ),
+    "insurance": (
+        "bhyt", "bao hiem y te", "muc huong", "dung tuyen", "trai tuyen",
+    ),
+    "care_navigation": (
+        "dat lich", "lich kham", "benh vien", "phong kham", "bac si",
+        "chuyen khoa", "di kham",
+    ),
+    "clinical": (
+        "trieu chung", "dau bung", "sot", "chan doan", "dieu tri",
+        "benh nen", "ket luan y khoa", "nguy co", "phac do",
+    ),
+}
+
+_EMERGENCY_TERMS = (
+    "kho tho", "khong tho duoc", "dau nguc", "bat tinh", "hon me",
+    "dot quy", "meo mieng", "liet nua nguoi", "chay mau khong cam",
+    "co giat", "soc phan ve", "phu luoi", "tu tu", "muon tu sat",
+)
+
+_COMPLEXITY_TERMS = (
+    "nhieu benh", "nhieu thuoc", "tuong tac thuoc", "benh nen",
+    "dien bien", "mau thuan", "phan biet", "so sanh", "tong hop",
+    "danh gia nguy co", "khong ro nguyen nhan", "nhieu ket qua",
+)
+
+
+def route_request(message: str, evidence_context: str = "") -> dict[str, Any]:
+    """Transparent multi-signal routing; no extra LLM call is added to TTFT."""
+    normalized = _normalize_vietnamese(message)
+    evidence = _normalize_vietnamese(evidence_context)
+    intents = [
+        name for name, terms in _INTENT_TERMS.items()
+        if any(_normalize_vietnamese(term) in normalized for term in terms)
+    ]
+    emergency = any(term in normalized for term in _EMERGENCY_TERMS)
+    complexity_reasons = [
+        term for term in _COMPLEXITY_TERMS
+        if _normalize_vietnamese(term) in normalized
+    ]
+    if len(intents) >= 2:
+        complexity_reasons.append("multiple_intent_domains")
+    if len(normalized) >= 900:
+        complexity_reasons.append("long_context")
+    if normalized.count("?") >= 2:
+        complexity_reasons.append("multiple_questions")
+    if any(term in evidence for term in ("abstention", "conflict", "unresolved", "retrieval_error")):
+        complexity_reasons.append("evidence_uncertainty")
+
+    if emergency or complexity_reasons:
+        profile = "reasoning"
+    elif intents:
+        profile = "medical"
+    else:
+        profile = "fast"
+
+    return {
+        "profile": profile,
+        "intents": intents or ["general"],
+        "emergency_signal": emergency,
+        "complexity_reasons": complexity_reasons,
+    }
+
+
+def choose_profile(
+    message: str,
+    evidence_context: str = "",
+    requested_profile: str | None = None,
+) -> str:
     """Select inference budget; clinical authorization and safety are separate."""
     allowed = {"fast", "reasoning", "medical"}
     if requested_profile in allowed:
         return requested_profile
-    text = (message or "").casefold()
-    evidence = (evidence_context or "").casefold()
-    if any(term in text for term in (
-        "nhiều bệnh", "nhiều thuốc", "tương tác thuốc", "bệnh nền",
-        "kết quả xét nghiệm", "diễn biến", "mâu thuẫn", "không rõ nguyên nhân",
-        "phân biệt", "so sánh", "đánh giá nguy cơ",
-    )):
-        return "reasoning"
-    if any(term in evidence for term in ("abstention", "conflict", "unresolved")):
-        return "reasoning"
-    if any(term in text for term in ("liều", "thuốc", "chẩn đoán", "điều trị", "xét nghiệm")):
-        return "medical"
-    return "fast"
+    return route_request(message, evidence_context)["profile"]
 
 
 def _endpoint_config(profile: str) -> tuple[str, str, str]:
