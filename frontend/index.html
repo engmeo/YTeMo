@@ -1066,18 +1066,20 @@ async function loadClinicalClaims(id) {
     const quoteCheck=document.createElement('label'); quoteCheck.style.cssText='display:block;font-size:11px;margin:8px 0';
     const quoteCheckInput=document.createElement('input'); quoteCheckInput.type='checkbox';
     quoteCheck.append(quoteCheckInput,document.createTextNode(' Đã đối chiếu trích dẫn với PDF gốc'));
-    const accept=document.createElement('button'); accept.className='mini-btn'; accept.textContent='Chấp nhận claim';
-    accept.addEventListener('click',async()=>{
+    const submitClaimReview = decision => async()=>{
       try {
         await ckRequest('/clinical-knowledge/claims/'+encodeURIComponent(claim.id)+'/review','POST',{
-          decision:'ACCEPTED',appraisal_framework:framework.value,appraisal:JSON.parse(appraisal.value),
+          decision,appraisal_framework:framework.value,appraisal:JSON.parse(appraisal.value),
           rationale:rationale.value.trim(),has_conflict_of_interest:coiCheckInput.checked,source_quote_verified:quoteCheckInput.checked
         });
-        ckSetStatus('Đã ghi appraisal. Claim chỉ ACCEPTED sau đủ reviewer độc lập.');
+        ckSetStatus('Đã ghi appraisal: '+decision+'. Claim chỉ ACCEPTED sau đủ reviewer độc lập.');
         await loadClinicalClaims(id);
       } catch(error){ckSetStatus(error.message,true);}
-    });
-    card.append(title,quote,framework,appraisal,rationale,coiCheck,quoteCheck,accept); host.append(card);
+    };
+    const accept=document.createElement('button'); accept.className='mini-btn'; accept.textContent='Chấp nhận claim'; accept.addEventListener('click',submitClaimReview('ACCEPTED'));
+    const revise=document.createElement('button'); revise.className='mini-btn'; revise.style.marginLeft='6px'; revise.textContent='Yêu cầu sửa'; revise.addEventListener('click',submitClaimReview('NEEDS_REVISION'));
+    const reject=document.createElement('button'); reject.className='mini-btn'; reject.style.marginLeft='6px'; reject.textContent='Từ chối'; reject.addEventListener('click',submitClaimReview('REJECTED'));
+    card.append(title,quote,framework,appraisal,rationale,coiCheck,quoteCheck,accept,revise,reject); host.append(card);
   });
 }
 ck('LoadClaims').addEventListener('click',async()=>{
