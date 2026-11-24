@@ -150,6 +150,23 @@ Sáu phase release gates đã được chạy PASS theo log người dùng cung 
 - Không dùng dữ liệu bệnh nhân thật trong môi trường thử nghiệm chưa được phê duyệt.
 - Unit tests và release gates không thay thế đánh giá lâm sàng.
 
+## Clinical Knowledge Governance — nền tảng tri thức y khoa
+
+Backend bổ sung module quản trị nguồn và tài liệu y khoa, gồm provenance, kiểm tra metadata/chất lượng trích xuất, hàng đợi thẩm định chuyên gia, phê duyệt theo phạm vi và audit.
+
+| Endpoint | Chức năng |
+|---|---|
+| GET /clinical-knowledge/sources | Danh mục nguồn tri thức được đăng ký |
+| POST /clinical-knowledge/documents | Đăng ký tài liệu và chạy kiểm tra tự động |
+| GET /clinical-knowledge/documents | Danh sách tài liệu, có thể lọc theo status |
+| GET /clinical-knowledge/review-queue | Hàng đợi dành cho reviewer được cấp quyền |
+| POST /clinical-knowledge/documents/{id}/review | Ghi nhận phê duyệt/từ chối/yêu cầu sửa |
+
+**Ranh giới an toàn:** automated checks chỉ kiểm tra nguồn/domain, metadata và tính toàn vẹn trích xuất; không xác minh nội dung y khoa đúng. Chỉ reviewer có quyền phù hợp mới được phê duyệt và phải chỉ rõ approved_scope. Tài liệu chưa được phê duyệt không được coi là clinical evidence. Module hiện chưa có crawler, OCR scheduler, vector retrieval hay clinical decision support.
+
+- Kiến trúc, quy trình và hướng dẫn: [docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md](docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md)
+- Migration: [supabase/migrations/202611240001_clinical_knowledge_governance.sql](supabase/migrations/202611240001_clinical_knowledge_governance.sql)
+
 ## 10. Đóng góp
 
 Các nhóm Frontend, Backend, AI/Agent, Data, Clinical Governance và QA cần làm việc theo API contract, responsibility boundaries và tiêu chí nghiệm thu. Không xây giao diện giả cho năng lực chưa có API; ghi rõ Planned/Implemented/Integrated/E2E verified.
