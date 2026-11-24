@@ -108,7 +108,8 @@ jobs:
             test_clinical_meta_analysis \
             test_model_intelligence \
             test_document_ai_adapter \
-            test_agent_orchestration
+            test_agent_orchestration \
+            test_memory_conflict_engine
       - name: Full backend regression suite
         working-directory: backend
         run: |
