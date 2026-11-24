@@ -119,15 +119,15 @@ class ClinicalKnowledgeIngestionTests(unittest.TestCase):
         claims = [
             {"id":"claim-1","document_id":"doc-1","reviewer_status":"ACCEPTED",
              "claim_text":"Hypertension treatment evidence for adults","exact_quote":"Hypertension treatment is recommended for adults with hypertension.",
-             "population":"Adults with hypertension","jurisdiction":"VN","source_page_number":2,"source_locator":"Page 2"},
+             "population":"Adults with hypertension","jurisdiction":"GLOBAL","source_page_number":2,"source_locator":"Page 2"},
             {"id":"claim-2","document_id":"doc-2","reviewer_status":"ACCEPTED",
              "claim_text":"Alternative hypertension treatment evidence for adults","exact_quote":"Alternative hypertension treatment in adults with hypertension.",
              "population":"Adults with hypertension","jurisdiction":"VN","source_page_number":4,"source_locator":"Page 4"},
         ]
         docs = [
             {"id":"doc-1","title":"Guideline A","publisher":"MoH","source_url":"https://moh.gov.vn/a.pdf",
-             "version":"1","effective_from":None,"effective_until":None,"knowledge_domain":"national_guidelines",
-             "jurisdiction":"VN","target_population":"Adults","specialty":None,"status":"CLINICAL_APPROVED",
+             "version":"1","effective_from":None,"effective_until":None,"knowledge_domain":"who_guidelines",
+             "jurisdiction":"GLOBAL","target_population":"Adults","specialty":None,"status":"CLINICAL_APPROVED",
              "is_current":True,"approved_scope":["patient_education"],"original_sha256":"abc"},
             {"id":"doc-2","title":"Guideline B","publisher":"WHO","source_url":"https://who.int/b.pdf",
              "version":"2","effective_from":None,"effective_until":None,"knowledge_domain":"who_guidelines",
