@@ -815,6 +815,15 @@ def run_healthcare_agents(
     user=Depends(get_current_user),
 ):
     try:
+        source_document_id = request.document_id
+        if source_document_id:
+            owned_document = (
+                db_client.table("healthcare_documents").select("id")
+                .eq("id", source_document_id).eq("user_id", str(user.id))
+                .limit(1).execute()
+            )
+            if not owned_document.data:
+                raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ thuộc tài khoản.")
         result = healthcare_agent_service.run(
             request.document_text,
             request.agent_keys,
@@ -888,15 +897,6 @@ def run_healthcare_agents(
                 "status": "not_requested",
                 "message": "Chưa gửi nội dung hồ sơ tới LLM. Chỉ chạy các extractor và phép tính xác định hiện có.",
             }
-        source_document_id = request.document_id
-        if source_document_id:
-            owned_document = (
-                db_client.table("healthcare_documents").select("id")
-                .eq("id", source_document_id).eq("user_id", str(user.id))
-                .limit(1).execute()
-            )
-            if not owned_document.data:
-                raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ thuộc tài khoản.")
         try:
             history_insert = db_client.table("healthcare_analysis_runs").insert({
                 "user_id": str(user.id),
@@ -904,7 +904,7 @@ def run_healthcare_agents(
                 "agent_keys": request.agent_keys or list(DEFAULT_AGENT_KEYS),
                 "status": "completed",
                 "result": result,
-            }).execute()
+            }).select("id").execute()
             history_row = (history_insert.data or [{}])[0]
             result["analysis_history"] = {
                 "persisted": bool(history_row.get("id")),
