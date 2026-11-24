@@ -966,7 +966,8 @@ async function openClinicalDocument(id) {
       '<label style="font-size:11px"><input type="checkbox" id="ckVersionCurrent"> Đã xác minh phiên bản và hiệu lực</label>'+
       '<label style="font-size:11px"><input type="checkbox" id="ckLicenseCleared"> Đã xác minh quyền sử dụng</label>'+
       '<label style="font-size:11px"><input type="checkbox" id="ckExtractionReviewed"> Đã kiểm tra trang có cảnh báo OCR</label></div>'+
-      '<select id="ckDocDecision" style="width:100%;padding:10px;margin:8px 0;border:1px solid var(--line)"><option value="APPROVED">APPROVED</option><option value="REQUEST_REVISION">REQUEST_REVISION</option><option value="REJECTED">REJECTED</option></select>'+\n      '<textarea id="ckEvidenceAssessment" placeholder="Đánh giá phương pháp, chất lượng bằng chứng, COI, phạm vi áp dụng và giới hạn (bắt buộc khi APPROVED)" style="width:100%;min-height:90px;padding:10px;border:1px solid var(--line)"></textarea>'+
+      '<select id="ckDocDecision" style="width:100%;padding:10px;margin:8px 0;border:1px solid var(--line)"><option value="APPROVED">APPROVED</option><option value="REQUEST_REVISION">REQUEST_REVISION</option><option value="REJECTED">REJECTED</option></select>'+
+      '<textarea id="ckEvidenceAssessment" placeholder="Đánh giá phương pháp, chất lượng bằng chứng, COI, phạm vi áp dụng và giới hạn (bắt buộc khi APPROVED)" style="width:100%;min-height:90px;padding:10px;border:1px solid var(--line)"></textarea>'+
       '<label style="display:block;font-size:11px;margin:8px 0"><input type="checkbox" id="ckDocCOI"> Tôi có xung đột lợi ích (nếu bật, quyết định sẽ bị từ chối)</label>'+
       '<textarea id="ckDocRationale" placeholder="Lý do phê duyệt (tối thiểu 10 ký tự)" style="width:100%;min-height:65px;padding:10px;border:1px solid var(--line);margin-top:8px"></textarea>'+
       '<div style="font-size:11px;margin:10px 0">Approved scope:</div>'+
