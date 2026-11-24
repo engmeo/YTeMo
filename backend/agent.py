@@ -19,6 +19,17 @@ except ImportError:  # pragma: no cover - preserves older deployment layout
     generate_stream = None
     route_request = None
 
+try:
+    from multi_agent_orchestrator import (
+        is_multi_agent_request,
+        run_multi_agent,
+        stream_multi_agent_events,
+    )
+except ImportError:  # pragma: no cover - preserve legacy deployments
+    is_multi_agent_request = None
+    run_multi_agent = None
+    stream_multi_agent_events = None
+
 load_dotenv()
 
 MODEL = "openrouter/free"
@@ -128,15 +139,42 @@ def discovery_agent(state: AgentState):
     return {"reply": response.text}
 
 
+def _multi_agent_enabled() -> bool:
+    configured = _gateway_enabled() and run_multi_agent and is_multi_agent_request
+    return configured and os.getenv("YTEMO_MULTI_AGENT_ENABLED", "true").strip().lower() not in {"0", "false", "no", "off"}
+
+
+def chat_events(
+    message: str,
+    history: str = "",
+    evidence_context: str = "",
+):
+    """Yield typed progress/token events for the SSE API."""
+    route = route_request(message, evidence_context) if route_request else {"emergency_signal": False}
+    if route.get("emergency_signal"):
+        yield {"event": "token", "token": EMERGENCY_RESPONSE}
+        return
+    if _multi_agent_enabled() and is_multi_agent_request(message, evidence_context):
+        yield from stream_multi_agent_events(message, history, evidence_context)
+        return
+    for token in chat_stream(message, history, evidence_context):
+        yield {"event": "token", "token": token}
+
+
 def chat_stream(
     message: str,
     history: str = "",
     evidence_context: str = "",
 ) -> Iterator[str]:
-    """Stream text deltas for interactive chat; legacy providers emit one chunk."""
-    route = route_request(message, evidence_context) if route_request else {"emergency_signal": False}
+    """Yield approved answer text; multi-agent status events are exposed by chat_events."""
     if route.get("emergency_signal"):
         yield EMERGENCY_RESPONSE
+        return
+
+    if _multi_agent_enabled() and is_multi_agent_request(message, evidence_context):
+        for event in stream_multi_agent_events(message, history, evidence_context):
+            if event.get("event") == "token" and event.get("token"):
+                yield event["token"]
         return
 
     prompt = build_companion_prompt(message, history, evidence_context)
@@ -178,6 +216,10 @@ agent = graph_builder.compile()
 
 
 def chat(message: str, history: str = "", evidence_context: str = ""):
+    if _multi_agent_enabled() and is_multi_agent_request(message, evidence_context):
+        result = run_multi_agent(message, history, evidence_context)
+        return result["reply"]
+
     result = agent.invoke({
         "message": message,
         "history": history,
