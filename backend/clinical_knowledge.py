@@ -103,12 +103,20 @@ def build_router(db, auth_dependency):
     def require_reviewer(user):
         result = (
             db.table("clinical_knowledge_reviewers")
-            .select("user_id,role,specialties,is_active,credential_verified,credential_type,credential_identifier")
+            .select("user_id,role,specialties,is_active,credential_verified,credential_type,credential_identifier,credential_verified_at,credential_verified_by")
             .eq("user_id", str(user.id))
             .eq("is_active", True)
             .limit(1).execute()
         )
-        if not result.data or result.data[0].get("role") not in {"physician", "pharmacist", "clinical_reviewer"} or not result.data[0].get("credential_verified"):
+        if (
+            not result.data
+            or result.data[0].get("role") not in {"physician", "pharmacist", "clinical_reviewer"}
+            or not result.data[0].get("credential_verified")
+            or not result.data[0].get("credential_type")
+            or not result.data[0].get("credential_identifier")
+            or not result.data[0].get("credential_verified_at")
+            or not result.data[0].get("credential_verified_by")
+        ):
             raise HTTPException(status_code=403, detail="Tài khoản chưa được cấp quyền thẩm định lâm sàng.")
         return result.data[0]
 
@@ -166,7 +174,7 @@ def build_router(db, auth_dependency):
     def list_documents(status: str | None = None, limit: int = 50, user=Depends(auth_dependency)):
         limit = max(1, min(limit, 100))
         query = db.table("clinical_knowledge_documents").select(
-            "id,title,publisher,document_type,source_url,published_at,effective_from,effective_until,version,language,specialty,license_status,source_verified,automated_checks,status,created_at,updated_at"
+            "id,title,publisher,document_type,source_url,published_at,effective_from,effective_until,version,language,specialty,knowledge_domain,jurisdiction,target_population,license_status,source_verified,source_domain_matched,automated_checks,status,created_at,updated_at"
         )
         if status:
             if status not in ALLOWED_STATUSES:
@@ -179,7 +187,7 @@ def build_router(db, auth_dependency):
     def review_queue(user=Depends(auth_dependency)):
         require_reviewer(user)
         result = db.table("clinical_knowledge_documents").select(
-            "id,title,publisher,document_type,source_url,published_at,effective_from,effective_until,version,specialty,automated_checks,status,created_at"
+            "id,title,publisher,document_type,source_url,published_at,effective_from,effective_until,version,specialty,knowledge_domain,jurisdiction,target_population,automated_checks,status,created_at"
         ).in_("status", ["SOURCE_VERIFIED", "AI_REVIEWED", "DISCOVERED"]).order("created_at").limit(100).execute()
         return {"documents": result.data or []}
 
