@@ -232,6 +232,8 @@ Hệ thống chỉ gợi ý ứng viên theo official identifier. Không tự k�
 
 Retrieval hiện tại là **structured lexical matching**, chưa phải semantic/vector/hybrid retrieval và không đủ để tự hiểu mọi câu hỏi y khoa. Đây là một evidence gateway fail-closed, không phải máy tạo câu trả lời lâm sàng.
 
+Các scope `diagnostic_reference`, `treatment_reference`, `medication_safety` và `professional_decision_support` chỉ truy xuất được bởi tài khoản reviewer/chuyên gia có credential đã xác minh. Scope giáo dục người bệnh, tự chăm sóc, dự phòng, sàng lọc và y tế công cộng mới có thể truy cập bởi tài khoản người dùng thông thường, vẫn phải đúng approved_scope.
+
 Companion `POST /chat` nhận thêm trường tùy chọn `evidence_request`. Khi có request, backend truy xuất bằng chứng đã duyệt, ghi audit và chuyển evidence context vào agent. Prompt yêu cầu agent chỉ dùng claim/citation được cung cấp, không vượt quá scope; khi retrieval rỗng/lỗi thì phải nói rõ không có bằng chứng đã thẩm định và không đưa ra kết luận lâm sàng. Frontend đã có form tùy chọn nhập population, scope và specialty để gửi evidence_request từ Companion chat. Nếu bật mà không có population, UI chặn gửi request.
 
 ## 15. Migration order
