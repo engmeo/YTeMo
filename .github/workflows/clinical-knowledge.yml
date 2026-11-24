@@ -1,59 +1,64 @@
-name: Clinical Knowledge Governance Tests
+name: Clinical Knowledge and Model Intelligence Tests
 
 on:
   pull_request:
     paths:
-      - "backend/clinical_meta_analysis.py"
-      - "backend/test_clinical_meta_analysis.py"
-      - "backend/clinical_evidence_intelligence.py"
-      - "backend/test_clinical_evidence_intelligence.py"
-      - "docs/CLINICAL_EVIDENCE_INTELLIGENCE.vi.md"
-      - "backend/clinical_evidence_intelligence.py"
-      - "backend/test_clinical_evidence_intelligence.py"
-      - "docs/CLINICAL_EVIDENCE_INTELLIGENCE.vi.md"
       - "backend/clinical_knowledge.py"
       - "backend/clinical_knowledge_ingestion.py"
       - "backend/clinical_knowledge_workflows.py"
       - "backend/clinical_knowledge_evaluation.py"
-      - "backend/test_clinical_knowledge_evaluation.py"
-      - "backend/run_clinical_knowledge_eval.py"
-      - "docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md"
-      - "backend/clinical_knowledge_eval_cases.template.json"
       - "backend/test_clinical_knowledge.py"
       - "backend/test_clinical_knowledge_ingestion.py"
-      - "backend/requirements-ocr.txt"
+      - "backend/test_clinical_knowledge_evaluation.py"
+      - "backend/run_clinical_knowledge_eval.py"
+      - "backend/clinical_evidence_intelligence.py"
+      - "backend/test_clinical_evidence_intelligence.py"
+      - "backend/clinical_meta_analysis.py"
+      - "backend/test_clinical_meta_analysis.py"
+      - "backend/model_intelligence.py"
+      - "backend/model_registry.json"
+      - "backend/agent.py"
+      - "backend/test_model_intelligence.py"
+      - "backend/clinical_training/**"
+      - "backend/requirements-training.txt"
+      - "docs/CLINICAL_MODEL_TRAINING.vi.md"
+      - "docs/CLINICAL_DATA_COLLECTION.vi.md"
+      - "docs/OPEN_MODEL_SETUP.vi.md"
+      - "docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md"
       - "supabase/migrations/20261124000*.sql"
-      - "supabase/migrations/202611240009_clinical_evidence_intelligence.sql"
       - "backend/main.py"
       - "backend/requirements.txt"
       - "frontend/index.html"
       - "README.md"
-      - "docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md"
       - ".github/workflows/clinical-knowledge.yml"
   push:
-    branches: [main, feature/clinical-knowledge-governance, feature/clinical-evidence-intelligence]
+    branches:
+      - main
+      - feature/clinical-knowledge-governance
+      - feature/clinical-evidence-intelligence
+      - feature/open-model-clinical-training
     paths:
       - "backend/clinical_knowledge.py"
       - "backend/clinical_knowledge_ingestion.py"
       - "backend/clinical_knowledge_workflows.py"
       - "backend/clinical_knowledge_evaluation.py"
-      - "backend/test_clinical_knowledge_evaluation.py"
-      - "backend/run_clinical_knowledge_eval.py"
-      - "docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md"
-      - "backend/clinical_knowledge_eval_cases.template.json"
-      - "backend/test_clinical_knowledge.py"
-      - "backend/test_clinical_knowledge_ingestion.py"
-      - "backend/requirements-ocr.txt"
-      - "supabase/migrations/20261124000*.sql"
+      - "backend/clinical_evidence_intelligence.py"
+      - "backend/clinical_meta_analysis.py"
+      - "backend/model_intelligence.py"
+      - "backend/model_registry.json"
+      - "backend/agent.py"
+      - "backend/test_model_intelligence.py"
+      - "backend/clinical_training/**"
+      - "backend/requirements-training.txt"
       - "backend/main.py"
       - "backend/requirements.txt"
-      - "frontend/index.html"
-      - "README.md"
-      - "docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md"
+      - "docs/CLINICAL_MODEL_TRAINING.vi.md"
+      - "docs/CLINICAL_DATA_COLLECTION.vi.md"
+      - "supabase/migrations/20261124000*.sql"
       - ".github/workflows/clinical-knowledge.yml"
 
 jobs:
-  clinical-knowledge-unit-tests:
+  clinical-and-model-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,11 +67,38 @@ jobs:
           python-version: "3.12"
       - name: Install backend dependencies
         run: python -m pip install -r backend/requirements.txt
-      - name: Compile module and run focused tests
+      - name: Compile changed modules
+        run: |
+          python -m py_compile \
+            backend/clinical_knowledge.py \
+            backend/clinical_knowledge_ingestion.py \
+            backend/clinical_knowledge_workflows.py \
+            backend/clinical_knowledge_evaluation.py \
+            backend/clinical_evidence_intelligence.py \
+            backend/clinical_meta_analysis.py \
+            backend/model_intelligence.py \
+            backend/agent.py \
+            backend/clinical_training/prepare_dataset.py \
+            backend/clinical_training/draft_sft_examples.py \
+            backend/clinical_training/train_lora.py \
+            backend/clinical_training/benchmark.py \
+            backend/clinical_training/score_benchmark.py \
+            backend/clinical_training/download_models.py \
+            backend/clinical_training/collect_europe_pmc.py
+      - name: Run clinical governance and model gateway tests
         working-directory: backend
         run: |
-          python -m py_compile clinical_knowledge.py clinical_knowledge_ingestion.py clinical_knowledge_workflows.py clinical_knowledge_evaluation.py clinical_evidence_intelligence.py clinical_meta_analysis.py run_clinical_knowledge_eval.py main.py
-          python -m unittest -v test_clinical_knowledge test_clinical_knowledge_ingestion test_clinical_knowledge_evaluation test_clinical_evidence_intelligence test_clinical_meta_analysis
+          python -m unittest -v \
+            test_clinical_knowledge \
+            test_clinical_knowledge_ingestion \
+            test_clinical_knowledge_evaluation \
+            test_clinical_evidence_intelligence \
+            test_clinical_meta_analysis \
+            test_model_intelligence
+      - name: Run training data governance tests
+        working-directory: backend/clinical_training
+        run: |
+          python -m unittest -v test_prepare_dataset test_collect_europe_pmc test_draft_sft_examples test_score_benchmark
       - name: Syntax-check frontend JavaScript
         run: |
           python - <<'PY'
@@ -85,7 +117,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           files = sorted(Path("supabase/migrations").glob("*.sql"))
-          versions = [p.name.split("_", 1)[0] for p in files]
+          versions = [path.name.split("_", 1)[0] for path in files]
           if len(versions) != len(set(versions)):
               raise SystemExit("Duplicate Supabase migration version prefix found")
           print(f"Validated {len(files)} unique migration versions")

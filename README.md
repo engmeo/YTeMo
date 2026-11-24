@@ -209,3 +209,14 @@ Các nhóm Frontend, Backend, AI/Agent, Data, Clinical Governance và QA cần l
 - `POST /healthcare/agents/run` — run selected specialists against extracted text.
 
 See [`docs/api/API_ENDPOINTS.md`](docs/api/API_ENDPOINTS.md) and [`docs/API_FRONTEND_INTEGRATION.vi.md`](docs/API_FRONTEND_INTEGRATION.vi.md) for request contracts and integration guidance.
+
+
+## Open Model Intelligence & Clinical Training
+
+Y TẾ MỞ đang bổ sung Model Portfolio theo hướng free-first, kết hợp inference nhanh, reasoning theo ngữ cảnh và kiểm chứng bằng chứng. Xem hướng dẫn triển khai và các giới hạn:
+
+- [Cài đặt Open Models miễn phí / self-host](docs/OPEN_MODEL_SETUP.vi.md)
+- [Kiến trúc mô hình và pipeline Clinical Training](docs/CLINICAL_MODEL_TRAINING.vi.md)
+- [Thu thập dữ liệu y khoa có license và provenance](docs/CLINICAL_DATA_COLLECTION.vi.md)
+
+**Trạng thái:** model gateway, registry, data preparation, Europe PMC OA collector, LoRA/QLoRA runner và benchmark runner đã có mã nguồn trên nhánh phát triển. Model weights chưa được tải lên máy chủ, chưa chạy training thật, chưa đo latency trên hạ tầng production và chưa có clinical validation. Không sử dụng như hệ thống chẩn đoán/kê đơn độc lập.

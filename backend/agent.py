@@ -1,13 +1,18 @@
-
 import os
 from typing import TypedDict
 from dotenv import load_dotenv
-from gemini_service import generate_content
 from langgraph.graph import StateGraph, START, END
+from gemini_service import generate_content
+
+try:
+    from model_intelligence import ModelGatewayError, generate_companion_response
+except ImportError:  # pragma: no cover - preserves older deployment layout
+    ModelGatewayError = RuntimeError
+    generate_companion_response = None
 
 load_dotenv()
 
-MODEL = "gemini-3.5-flash-lite"
+MODEL = "openrouter/free"
 
 
 class AgentState(TypedDict):
@@ -49,10 +54,32 @@ QUY TẮC BẰNG CHỨNG BẮT BUỘC:
 
 Hãy phản hồi phù hợp và hỏi tối đa một câu tiếp theo nếu cần.
 """
-    # Interactive Companion requests should fail fast rather than retrying
-    # a congested free model for up to ~96 seconds.
+    gateway_enabled = bool(
+        os.getenv("YTEMO_MODEL_BACKEND") or os.getenv("OPENROUTER_API_KEY")
+    )
+    if gateway_enabled and generate_companion_response:
+        try:
+            result = generate_companion_response(
+                prompt,
+                state["message"],
+                state.get("evidence_context", ""),
+            )
+            print(
+                "MODEL_GATEWAY:",
+                result.get("profile"),
+                result.get("model"),
+                result.get("latency_ms"),
+                "ms",
+                flush=True,
+            )
+            return {"reply": result["text"]}
+        except ModelGatewayError:
+            # No silent fallback to a different provider/model or a paid route.
+            raise
+
+    # Compatibility fallback for deployments still using the existing provider.
     response = generate_content(
-        model=MODEL,
+        model=os.getenv("OPENROUTER_MODEL", MODEL),
         contents=prompt,
         max_attempts=1,
     )
