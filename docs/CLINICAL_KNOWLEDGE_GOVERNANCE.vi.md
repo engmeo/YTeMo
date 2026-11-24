@@ -105,7 +105,7 @@ Phải quản lý version, mapping, provenance và license riêng. Đặc biệt
 
 1. DISCOVERED — tài liệu vừa được đăng ký.
 2. Automated metadata/extraction checks — kiểm tra trường bắt buộc, HTTPS, độ dài và tính toàn vẹn; không xác minh tính đúng.
-3. SOURCE_DOMAIN_MATCHED — hostname khớp registry; không phải xác thực tài liệu.
+3. Domain match — lưu ở thuộc tính `source_domain_matched`; không phải trạng thái và không phải xác thực tài liệu.
 4. AI_REVIEWED — AI hỗ trợ lập báo cáo/đánh dấu vấn đề; không phải phê duyệt.
 5. CLINICAL_APPROVED — chỉ khi reviewer đã xác minh bản gốc, phiên bản hiện hành, quyền sử dụng, bằng chứng và phạm vi.
 6. SUPERSEDED/REJECTED — không được dùng làm bằng chứng hiện hành.
