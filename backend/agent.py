@@ -13,6 +13,7 @@ MODEL = "gemini-3.5-flash-lite"
 class AgentState(TypedDict):
     message: str
     history: str
+    evidence_context: str
     reply: str
 
 
@@ -35,6 +36,17 @@ LỊCH SỬ:
 TIN NHẮN MỚI:
 {state["message"]}
 
+BẰNG CHỨNG LÂM SÀNG ĐƯỢC TRUY XUẤT TỪ HỆ THỐNG (CÓ THỂ RỖNG):
+{state.get("evidence_context", "")}
+
+QUY TẮC BẰNG CHỨNG BẮT BUỘC:
+- Chỉ trình bày nhận định y khoa như thông tin có căn cứ khi evidence context có claim đã được duyệt và citation tương ứng.
+- Mọi nhận định dựa trên claim phải nêu tên tài liệu, phiên bản nếu có, trang và trích dẫn nguồn.
+- Không suy diễn rộng hơn population, jurisdiction, scope hoặc thời hạn hiệu lực được duyệt.
+- Nếu evidence context rỗng, có abstention=true hoặc retrieval lỗi: nói rõ chưa truy xuất được bằng chứng đã thẩm định; không tự lấp chỗ trống bằng kiến thức mô hình, không chẩn đoán, không kê đơn, không đề xuất liều hoặc thay đổi điều trị.
+- Nếu thiếu dữ kiện người bệnh, hỏi tối đa một câu cần thiết; với dấu hiệu cấp cứu, hướng dẫn liên hệ cấp cứu ngay.
+- Trình bày mâu thuẫn chưa được giải quyết như bất đồng, không tự chọn một hướng.
+
 Hãy phản hồi phù hợp và hỏi tối đa một câu tiếp theo nếu cần.
 """
     # Interactive Companion requests should fail fast rather than retrying
@@ -55,10 +67,11 @@ graph_builder.add_edge("discovery", END)
 agent = graph_builder.compile()
 
 
-def chat(message: str, history: str = ""):
+def chat(message: str, history: str = "", evidence_context: str = ""):
     result = agent.invoke({
         "message": message,
         "history": history,
+        "evidence_context": evidence_context,
         "reply": ""
     })
     return result["reply"]

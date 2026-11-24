@@ -150,6 +150,50 @@ Sáu phase release gates đã được chạy PASS theo log người dùng cung 
 - Không dùng dữ liệu bệnh nhân thật trong môi trường thử nghiệm chưa được phê duyệt.
 - Unit tests và release gates không thay thế đánh giá lâm sàng.
 
+## Clinical Knowledge — Evidence-grade foundation
+
+Backend đã có các workflow kỹ thuật cho source discovery, bản gốc bất biến ở tầng ứng dụng, PDF/page extraction, OCR fallback tùy cấu hình, claim extraction drafts, appraisal/review, version relations, conflict resolution và evidence retrieval có scope. Tất cả vẫn fail-closed: AI không phê duyệt lâm sàng; claim/document chưa đủ reviewer độc lập không được retrieval.
+
+### API chính
+
+| Endpoint | Chức năng |
+|---|---|
+| GET `/clinical-knowledge/sources` | Source Registry |
+| POST `/clinical-knowledge/sources/{source_key}/discover` | Tìm PDF trên domain nguồn đã đăng ký (knowledge_admin) |
+| POST `/clinical-knowledge/candidates/{id}/ingest` | Fetch PDF, lưu bản gốc private theo SHA-256, trích xuất từng trang (knowledge_admin) |
+| GET `/clinical-knowledge/documents/{id}/original-url` | Signed URL 5 phút cho reviewer |
+| GET `/clinical-knowledge/documents/{id}/pages` | Báo cáo chất lượng từng trang |
+| POST `/clinical-knowledge/documents/{id}/claims/suggest` | AI tạo claim draft, quote phải khớp trang; không tự lưu/duyệt |
+| POST `/clinical-knowledge/documents/{id}/claims` | Tạo evidence claim có exact quote và locator |
+| POST `/clinical-knowledge/claims/{id}/review` | Appraisal theo AGREE II/GRADE/AMSTAR 2/RoB 2/ROBINS-I/QUADAS-2 |
+| GET `/clinical-knowledge/documents/{id}/version-candidates` | Tìm ứng viên phiên bản cùng official identifier |
+| POST `/clinical-knowledge/documents/{id}/version-relations` | Thẩm định quan hệ phiên bản; hai reviewer độc lập |
+| POST `/clinical-knowledge/conflicts` | Đăng ký xung đột giữa các claim đã duyệt |
+| POST `/clinical-knowledge/conflicts/{id}/review` | Xử lý conflict với hai reviewer độc lập |
+| POST `/clinical-knowledge/retrieve` | Truy xuất claim đã duyệt, citation và scope |
+| POST `/chat` | Có thể nhận thêm `evidence_request` để đưa evidence context đã lọc vào Companion |
+
+### Ranh giới an toàn
+
+- Source-domain match, SHA-256, OCR confidence và exact-quote matching không chứng minh tài liệu chính thống hoặc kết luận y khoa đúng.
+- OCR, claim draft và retrieval đều có thể sai; claim phải được đối chiếu bản PDF gốc.
+- Retrieval hiện là structured lexical matching, chưa phải semantic/vector/hybrid retrieval; scope chẩn đoán/điều trị/thuốc chỉ dành cho reviewer hoặc chuyên gia có credential đã xác minh.
+- Frontend đã có reviewer/admin console cơ bản và Companion có form evidence_request tùy chọn; chưa có usability/security review hoặc E2E verification.
+- Chưa có scheduler crawler, OCR runtime validation trên tài liệu scan hoặc external clinical validation.
+- Không dùng làm chẩn đoán/kê đơn độc lập. Chỉ sử dụng trong clinical workflow sau khi reviewer credential, scope, migrations, deployment và đánh giá chuyên gia đã hoàn tất.
+
+Tài liệu kiến trúc, quy trình, API và giới hạn: [docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md](docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md).
+Evaluation protocol và deterministic harness: [docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md](docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md). Chưa có expert-adjudicated clinical gold dataset hoặc external clinical validation.
+
+Migrations (chạy theo thứ tự):
+- `202611240003_clinical_knowledge_governance.sql`
+- `202611240004_evidence_grade_clinical_knowledge.sql`
+- `202611240005_clinical_knowledge_ingestion_evidence_workflows.sql`
+- `202611240006_clinical_knowledge_independent_resolution.sql`
+- `202611240007_clinical_knowledge_review_state_precision.sql`
+- `202611240008_clinical_knowledge_conflict_declarations.sql`
+
+
 ## 10. Đóng góp
 
 Các nhóm Frontend, Backend, AI/Agent, Data, Clinical Governance và QA cần làm việc theo API contract, responsibility boundaries và tiêu chí nghiệm thu. Không xây giao diện giả cho năng lực chưa có API; ghi rõ Planned/Implemented/Integrated/E2E verified.
