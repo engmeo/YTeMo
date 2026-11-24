@@ -159,7 +159,7 @@ Backend bổ sung module quản trị nguồn và tài liệu y khoa, gồm prov
 | GET /clinical-knowledge/sources | Danh mục nguồn tri thức được đăng ký |
 | POST /clinical-knowledge/documents | Đăng ký tài liệu và chạy kiểm tra tự động |
 | GET /clinical-knowledge/documents | Danh sách tài liệu, có thể lọc theo status |
-| GET /clinical-knowledge/review-queue | Hàng đợi dành cho reviewer được cấp quyền |
+| GET /clinical-knowledge/review-queue | Hàng đợi dành cho reviewer được cấp quyền |\n| GET /clinical-knowledge/documents/{id} | Reviewer đọc nội dung gốc đã trích xuất |
 | POST /clinical-knowledge/documents/{id}/review | Ghi nhận phê duyệt/từ chối/yêu cầu sửa |
 
 **Ranh giới an toàn:** automated checks chỉ kiểm tra nguồn/domain, metadata và tính toàn vẹn trích xuất; không xác minh nội dung y khoa đúng. Chỉ reviewer có quyền phù hợp mới được phê duyệt và phải chỉ rõ approved_scope. Tài liệu chưa được phê duyệt không được coi là clinical evidence. Module hiện chưa có crawler, OCR scheduler, vector retrieval hay clinical decision support.
