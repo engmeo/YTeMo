@@ -550,6 +550,59 @@ window.ytemoShowApiStatus = async function () {
   }
 };
 
+async function openCompanionDashboard() {
+  if (!currentUser) { document.getElementById('loginScreen').hidden = false; return; }
+  document.getElementById('userDropdown').hidden = true;
+  const panel = document.createElement('section');
+  panel.id = 'companionDashboard';
+  panel.style.cssText = 'position:fixed;z-index:1000;inset:5% 5%;overflow:auto;background:#fbfaf6;border:1px solid #9eaaa2;box-shadow:0 20px 80px #142c3160;padding:26px;border-radius:8px';
+  panel.innerHTML = '<button type="button" id="companionDashClose" class="btn outline" style="float:right">Đóng ✕</button><div class="mono eyebrow">PERSONAL HEALTHCARE COMPANION</div><h2 style="font:800 30px Manrope;margin:16px 0">Không gian dữ liệu Companion</h2><p id="companionDashState">Đang tải dữ liệu từ backend…</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0"><button class="btn" id="companionDashInit">Khởi tạo Companion</button><button class="btn outline" id="companionDashRefresh">↻ Tải lại dữ liệu</button></div><div id="companionDashCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px"></div>';
+  document.body.appendChild(panel);
+  panel.querySelector('#companionDashClose').addEventListener('click',()=>panel.remove());
+  const state=panel.querySelector('#companionDashState');
+  const cards=panel.querySelector('#companionDashCards');
+  const load=async(path)=>{
+    try {
+      const response=await fetchWithAuth(path);
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(data.detail||('HTTP '+response.status));
+      return {ok:true,data};
+    } catch(error) { return {ok:false,error:error.message}; }
+  };
+  const render=async()=>{
+    state.textContent='Đang gọi Companion, memory, needs và proactive APIs…';
+    const results=await Promise.all([
+      load('/companion'),
+      load('/companion/context'),
+      load('/companion/needs'),
+      load('/companion/proactive/proposals')
+    ]);
+    const names=['Companion snapshot','Memory context','Healthcare needs','Proactive proposals'];
+    cards.innerHTML='';
+    results.forEach((result,index)=>{
+      const card=document.createElement('article');
+      card.style.cssText='background:#fff;border:1px solid #d9ded5;padding:14px;min-width:0';
+      const heading=document.createElement('b');heading.textContent=names[index];
+      const status=document.createElement('div');status.style.cssText='font:700 11px DM Mono;margin:8px 0;color:'+(result.ok?'#087e73':'#a34f37');status.textContent=result.ok?'API OK':'API ERROR';
+      const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;font:11px/1.5 DM Mono;color:#52665d';
+      pre.textContent=result.ok?JSON.stringify(result.data,null,2):result.error;
+      card.append(heading,status,pre);cards.appendChild(card);
+    });
+    const failed=results.filter(x=>!x.ok).length;
+    state.textContent=failed?(4-failed)+' / 4 API thành công. Các lỗi bên dưới cần kiểm tra quyền truy cập hoặc migration.':'Đã tải dữ liệu trực tiếp từ 4 API của backend.';
+  };
+  panel.querySelector('#companionDashRefresh').addEventListener('click',render);
+  panel.querySelector('#companionDashInit').addEventListener('click',async()=>{
+    try {
+      const response=await fetchWithAuth('/companion/initialize',{method:'POST'});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(data.detail||('HTTP '+response.status));
+      toast('Companion đã được khởi tạo.'); await render();
+    } catch(error) { state.textContent='Không thể khởi tạo Companion: '+error.message; }
+  });
+  await render();
+}
+
 function setAuthStatus(message, isError=false) {
   authStatus.textContent = message;
   authStatus.style.color = isError ? '#a34f37' : '#668071';
@@ -688,7 +741,7 @@ async function initialize() {
 document.getElementById('loginOpenBtn').addEventListener('click', () => { document.getElementById('loginScreen').hidden = false; document.getElementById('loginEmail').focus(); });
 document.querySelectorAll('[data-close-login]').forEach(node => node.addEventListener('click', () => { document.getElementById('loginScreen').hidden = true; }));
 document.getElementById('avatarBtn').addEventListener('click', () => { const menu=document.getElementById('userDropdown'); menu.hidden=!menu.hidden; });
-document.getElementById('profileBtn').addEventListener('click', () => toast('Tài khoản: '+(currentUser?.email || 'chưa đăng nhập')));
+document.getElementById('profileBtn').addEventListener('click', openCompanionDashboard);
 document.getElementById('settingsBtn').addEventListener('click', () => { document.getElementById('userDropdown').hidden=true; configureBackend(); });
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
