@@ -300,6 +300,16 @@ def build_workflow_router(db, storage, auth_dependency):
             "notice": "Chỉ tìm liên kết PDF trên domain đã đăng ký; chưa xác thực tài liệu hay nội dung y khoa.",
         }
 
+    @router.get("/candidates")
+    def list_candidates(status: str = "DISCOVERED", user=Depends(auth_dependency)):
+        require_knowledge_admin(user)
+        if status not in {"DISCOVERED", "INGESTED", "REJECTED", "DUPLICATE", "FAILED"}:
+            raise HTTPException(status_code=422, detail="Candidate status không hợp lệ.")
+        result = db.table("clinical_knowledge_discovery_candidates").select("*").eq(
+            "status", status
+        ).order("discovered_at", desc=True).limit(100).execute()
+        return {"candidates": result.data or []}
+
     @router.post("/candidates/{candidate_id}/ingest", status_code=201)
     def ingest_candidate(candidate_id: str, request: IngestCandidateRequest, user=Depends(auth_dependency)):
         require_knowledge_admin(user)
@@ -530,6 +540,17 @@ VĂN BẢN NGUỒN KẾT THÚC.
             "discarded_count": max(0, len(parsed) - len(suggestions)) if isinstance(parsed, list) else 0,
             "notice": "AI chỉ gợi ý bản nháp. Quote phải khớp nguyên văn với trang; reviewer vẫn phải kiểm tra bản PDF gốc và thẩm định độc lập. Không claim nào được lưu hoặc chấp nhận tự động.",
         }
+
+    @router.get("/documents/{document_id}/claims")
+    def list_document_claims(document_id: str, status: str | None = None, user=Depends(auth_dependency)):
+        reviewer_for(user)
+        query = db.table("clinical_evidence_claims").select("*").eq("document_id", document_id)
+        if status:
+            if status not in {"UNREVIEWED", "ACCEPTED", "REJECTED", "NEEDS_REVISION"}:
+                raise HTTPException(status_code=422, detail="Claim status không hợp lệ.")
+            query = query.eq("reviewer_status", status)
+        result = query.order("created_at", desc=True).limit(200).execute()
+        return {"claims": result.data or []}
 
     @router.post("/documents/{document_id}/claims", status_code=201)
     def create_claim(document_id: str, request: ClaimCreate, user=Depends(auth_dependency)):
