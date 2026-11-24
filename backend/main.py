@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from dataclasses import asdict
 from supabase import create_client
 
-from agent import chat, chat_stream
+from agent import chat, chat_stream, chat_events
 from agent_core import AgentCore, AgentCoreError
 from companion_core import (
     CompanionCore, ConsentScope, NeedStatus, UserPriority,
@@ -322,7 +322,12 @@ def chat_endpoint(request: ChatRequest, stream: bool = False, user=Depends(get_c
         def event_stream():
             chunks = []
             try:
-                for token in chat_stream(request.message, history, evidence_context):
+                for item in chat_events(request.message, history, evidence_context):
+                    event_name = item.get("event", "token")
+                    if event_name == "status":
+                        yield "event: status\\ndata: " + json.dumps({"message": item.get("message", "")}, ensure_ascii=False) + "\\n\\n"
+                        continue
+                    token = item.get("token", "")
                     if not token:
                         continue
                     chunks.append(token)
