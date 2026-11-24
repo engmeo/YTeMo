@@ -1,5 +1,7 @@
 import unittest
+from unittest.mock import Mock, patch
 
+import model_intelligence
 from model_intelligence import choose_profile, model_catalog
 
 
@@ -20,6 +22,47 @@ class ModelIntelligenceTests(unittest.TestCase):
         catalog = model_catalog()
         self.assertGreaterEqual(len(catalog["models"]), 4)
         self.assertTrue(all(item["default_enabled"] is False for item in catalog["models"]))
+
+    @patch("model_intelligence.requests.post")
+    def test_stream_yields_text_deltas_without_buffering(self, post):
+        response = Mock()
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        response.raise_for_status = Mock()
+        response.iter_lines.return_value = [
+            b'data: {"choices":[{"delta":{"content":"Xin "}}]}',
+            b'data: {"choices":[{"delta":{"content":"chao"}}]}',
+            b'data: [DONE]',
+        ]
+        post.return_value = response
+
+        with patch.dict("os.environ", {
+            "YTEMO_MODEL_BACKEND": "openrouter",
+            "OPENROUTER_API_KEY": "test-key",
+            "YTEMO_FAST_MODEL": "test-model",
+        }):
+            chunks = list(model_intelligence.generate_stream(
+                [{"role": "user", "content": "hello"}],
+                profile="fast",
+            ))
+
+        self.assertEqual(chunks, ["Xin ", "chao"])
+        self.assertTrue(post.call_args.kwargs["stream"])
+        self.assertTrue(post.call_args.kwargs["json"]["stream"])
+
+    @patch("model_intelligence.requests.post")
+    def test_stream_converts_provider_timeout_to_gateway_error(self, post):
+        import requests
+        post.side_effect = requests.Timeout("provider timeout")
+        with patch.dict("os.environ", {
+            "YTEMO_MODEL_BACKEND": "openrouter",
+            "OPENROUTER_API_KEY": "test-key",
+        }):
+            with self.assertRaises(model_intelligence.ModelGatewayError):
+                list(model_intelligence.generate_stream(
+                    [{"role": "user", "content": "hello"}],
+                    profile="fast",
+                ))
 
 
 if __name__ == "__main__":
