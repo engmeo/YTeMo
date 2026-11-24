@@ -177,7 +177,7 @@ Backend đã có các workflow kỹ thuật cho source discovery, bản gốc b�
 
 - Source-domain match, SHA-256, OCR confidence và exact-quote matching không chứng minh tài liệu chính thống hoặc kết luận y khoa đúng.
 - OCR, claim draft và retrieval đều có thể sai; claim phải được đối chiếu bản PDF gốc.
-- Retrieval hiện là structured lexical matching, chưa phải semantic/vector/hybrid retrieval.
+- Retrieval hiện là structured lexical matching, chưa phải semantic/vector/hybrid retrieval; scope chẩn đoán/điều trị/thuốc chỉ dành cho reviewer hoặc chuyên gia có credential đã xác minh.
 - Frontend đã có reviewer/admin console cơ bản và Companion có form evidence_request tùy chọn; chưa có usability/security review hoặc E2E verification.
 - Chưa có scheduler crawler, OCR runtime validation trên tài liệu scan hoặc external clinical validation.
 - Không dùng làm chẩn đoán/kê đơn độc lập. Chỉ sử dụng trong clinical workflow sau khi reviewer credential, scope, migrations, deployment và đánh giá chuyên gia đã hoàn tất.
