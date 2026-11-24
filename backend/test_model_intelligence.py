@@ -43,6 +43,27 @@ class ModelIntelligenceTests(unittest.TestCase):
         self.assertTrue(all(item["default_enabled"] is False for item in catalog["models"]))
 
     @patch("model_intelligence.requests.post")
+    def test_generate_uses_explicit_per_agent_model_override(self, post):
+        response = Mock()
+        response.raise_for_status = Mock()
+        response.json.return_value = {
+            "choices": [{"message": {"content": "verified"}}],
+            "model": "org/specialist-model",
+        }
+        post.return_value = response
+        with patch.dict("os.environ", {
+            "YTEMO_MODEL_BACKEND": "openrouter",
+            "OPENROUTER_API_KEY": "test-key",
+        }):
+            result = model_intelligence.generate(
+                [{"role": "user", "content": "test"}],
+                profile="medical",
+                model_override="org/specialist-model",
+            )
+        self.assertEqual(result["model"], "org/specialist-model")
+        self.assertEqual(post.call_args.kwargs["json"]["model"], "org/specialist-model")
+
+    @patch("model_intelligence.requests.post")
     def test_stream_yields_text_deltas_without_buffering(self, post):
         response = Mock()
         response.__enter__ = Mock(return_value=response)
