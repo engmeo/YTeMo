@@ -210,6 +210,7 @@ def extract_pdf_pages(data: bytes, enable_ocr: bool = True) -> tuple[list[Extrac
 
     pages: list[ExtractedPage] = []
     ocr_engine = None
+    ocr_pdf = None
     ocr_error = None
     total_chars = 0
     for index, page in enumerate(reader.pages, start=1):
@@ -225,14 +226,19 @@ def extract_pdf_pages(data: bytes, enable_ocr: bool = True) -> tuple[list[Extrac
                     import fitz
                     import pytesseract
                     from PIL import Image
+                    ocr_pdf = fitz.open(stream=data, filetype="pdf")
                     ocr_engine = (fitz, pytesseract, Image)
                 fitz, pytesseract, Image = ocr_engine
-                with fitz.open(stream=data, filetype="pdf") as pdf:
-                    pix = pdf[index - 1].get_pixmap(matrix=fitz.Matrix(1.8, 1.8), alpha=False)
-                    image = Image.open(BytesIO(pix.tobytes("png")))
-                    ocr_data = pytesseract.image_to_data(
-                        image, lang="vie+eng", output_type=pytesseract.Output.DICT
-                    )
+                ocr_page = ocr_pdf[index - 1]
+                page_area = float(ocr_page.rect.width) * float(ocr_page.rect.height)
+                if page_area <= 0 or page_area > 100_000_000:
+                    raise IngestionError("Kích thước trang vượt giới hạn OCR an toàn.")
+                scale = min(1.8, (35_000_000 / page_area) ** 0.5)
+                pix = ocr_page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
+                image = Image.open(BytesIO(pix.tobytes("png")))
+                ocr_data = pytesseract.image_to_data(
+                    image, lang="vie+eng", output_type=pytesseract.Output.DICT
+                )
                 words, confidences = [], []
                 for word, raw_conf in zip(ocr_data.get("text", []), ocr_data.get("conf", [])):
                     word = str(word).strip()
@@ -260,6 +266,8 @@ def extract_pdf_pages(data: bytes, enable_ocr: bool = True) -> tuple[list[Extrac
             text_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
             quality=quality, extraction_status=status,
         ))
+    if ocr_pdf is not None:
+        ocr_pdf.close()
     report = {
         "page_count": len(pages), "extracted_pages": sum(bool(p.text.strip()) for p in pages),
         "pages_needing_human_check": [p.page_number for p in pages if p.quality["requires_human_check"]],
