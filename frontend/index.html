@@ -966,7 +966,8 @@ async function openClinicalDocument(id) {
       '<label style="font-size:11px"><input type="checkbox" id="ckLicenseCleared"> Đã xác minh quyền sử dụng</label>'+
       '<label style="font-size:11px"><input type="checkbox" id="ckExtractionReviewed"> Đã kiểm tra trang có cảnh báo OCR</label></div>'+
       '<textarea id="ckEvidenceAssessment" placeholder="Đánh giá phương pháp, chất lượng bằng chứng, COI, phạm vi áp dụng và giới hạn (bắt buộc)" style="width:100%;min-height:90px;padding:10px;border:1px solid var(--line)"></textarea>'+
-      '<label style="display:block;font-size:11px;margin:8px 0"><input type="checkbox" id="ckDocCOI"> Tôi có xung đột lợi ích (nếu bật, quyết định sẽ bị từ chối)</label>'+\n      '<textarea id="ckDocRationale" placeholder="Lý do phê duyệt (tối thiểu 10 ký tự)" style="width:100%;min-height:65px;padding:10px;border:1px solid var(--line);margin-top:8px"></textarea>'+
+      '<label style="display:block;font-size:11px;margin:8px 0"><input type="checkbox" id="ckDocCOI"> Tôi có xung đột lợi ích (nếu bật, quyết định sẽ bị từ chối)</label>'+
+      '<textarea id="ckDocRationale" placeholder="Lý do phê duyệt (tối thiểu 10 ký tự)" style="width:100%;min-height:65px;padding:10px;border:1px solid var(--line);margin-top:8px"></textarea>'+
       '<div style="font-size:11px;margin:10px 0">Approved scope:</div>'+
       ['patient_education','self_care','prevention','screening','diagnostic_reference','treatment_reference','medication_safety','professional_decision_support','public_health'].map(scope=>'<label style="display:inline-block;margin:4px 10px 4px 0;font-size:10px"><input type="checkbox" class="ckDocScope" value="'+scope+'"> '+scope+'</label>').join('')+
       '<button class="btn" id="ckApproveDocument" style="margin-top:12px">Ghi nhận APPROVED ↗</button>'+
