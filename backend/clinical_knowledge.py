@@ -6,11 +6,11 @@ They never certify clinical correctness. Human reviewers control approval.
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 ALLOWED_STATUSES = {
     "DISCOVERED", "SOURCE_VERIFIED", "PROCESSING", "AI_REVIEWED",
@@ -84,6 +84,19 @@ class KnowledgeDocumentCreate(BaseModel):
     official_identifier: str | None = Field(default=None, max_length=200)
     source_locator: str | None = Field(default=None, max_length=500)
     limitations: str | None = Field(default=None, max_length=3000)
+
+    @field_validator("published_at")
+    @classmethod
+    def validate_published_at(cls, value: str) -> str:
+        date.fromisoformat(value)
+        return value
+
+    @field_validator("effective_from", "effective_until")
+    @classmethod
+    def validate_effective_dates(cls, value: str | None) -> str | None:
+        if value is not None:
+            date.fromisoformat(value)
+        return value
 
 
 class ReviewDecision(BaseModel):
