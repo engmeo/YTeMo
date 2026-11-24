@@ -21,7 +21,7 @@ create table if not exists public.companion_action_tasks (
 create index if not exists companion_action_tasks_user_created_idx
     on public.companion_action_tasks(user_id, created_at desc);
 create index if not exists companion_action_tasks_queue_idx
-    on public.companion_action_tasks(status, created_at)
+    on public.companion_action_tasks(status, scheduled_at)
     where status = 'queued';
 
 alter table public.companion_action_tasks enable row level security;
@@ -41,6 +41,7 @@ begin
     select id
     from public.companion_action_tasks
     where status = 'queued'
+      and scheduled_at <= p_now
       and (approved_at is not null or requires_approval = false)
     order by created_at
     for update skip locked
