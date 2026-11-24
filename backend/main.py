@@ -214,6 +214,26 @@ def public_config():
     }
 
 
+@app.get("/conversations")
+def list_conversations(limit: int = 30, user=Depends(get_current_user)):
+    """List only the authenticated user's conversation summaries."""
+    user_id = str(user.id)
+    bounded_limit = max(1, min(int(limit), 100))
+    try:
+        result = (
+            db_client.table("conversations")
+            .select("id,title,status,created_at,updated_at")
+            .eq("user_id", user_id)
+            .order("updated_at", desc=True)
+            .limit(bounded_limit)
+            .execute()
+        )
+        return {"conversations": result.data or []}
+    except Exception as exc:
+        print("CONVERSATION LIST ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=503, detail="Không thể tải lịch sử hội thoại.") from exc
+
+
 @app.get("/conversations/{conversation_id}/messages")
 def get_conversation_messages(
     conversation_id: str,
