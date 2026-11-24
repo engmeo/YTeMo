@@ -20,7 +20,7 @@ ALLOWED_APPROVED_SCOPES = {
 
 ALLOWED_STATUSES = {
     "DISCOVERED", "SOURCE_VERIFIED", "PROCESSING", "AI_REVIEWED",
-    "CLINICAL_APPROVED", "SUPERSEDED", "REJECTED",
+    "CLINICAL_REVIEW_PENDING_SECOND", "CLINICAL_APPROVED", "SUPERSEDED", "REJECTED",
 }
 
 
@@ -44,7 +44,7 @@ def initial_document_status(source_domain_matched: bool, checks_passed: bool) ->
 
 
 def is_reviewable_status(status: str) -> bool:
-    return status in {"DISCOVERED", "SOURCE_VERIFIED", "AI_REVIEWED"}
+    return status in {"DISCOVERED", "SOURCE_VERIFIED", "AI_REVIEWED", "CLINICAL_REVIEW_PENDING_SECOND"}
 
 
 def reviewer_is_independent(document_creator_id: str | None, reviewer_id: str) -> bool:
@@ -225,7 +225,7 @@ def build_router(db, auth_dependency):
         require_reviewer(user)
         result = db.table("clinical_knowledge_documents").select(
             "id,title,publisher,document_type,source_url,published_at,effective_from,effective_until,version,specialty,knowledge_domain,jurisdiction,target_population,automated_checks,status,created_at"
-        ).in_("status", ["SOURCE_VERIFIED", "AI_REVIEWED", "DISCOVERED"]).order("created_at").limit(100).execute()
+        ).in_("status", ["SOURCE_VERIFIED", "AI_REVIEWED", "DISCOVERED", "CLINICAL_REVIEW_PENDING_SECOND"]).order("created_at").limit(100).execute()
         return {"documents": result.data or []}
 
     @router.get("/documents/{document_id}")
@@ -273,7 +273,7 @@ def build_router(db, auth_dependency):
             prior_reviewers = {item.get("reviewer_id") for item in (prior.data or [])}
             if str(user.id) in prior_reviewers:
                 raise HTTPException(status_code=409, detail="Reviewer này đã ghi nhận phê duyệt; cần reviewer độc lập khác.")
-            new_status = "AI_REVIEWED" if len(prior_reviewers) + 1 < required_reviewers else "CLINICAL_APPROVED"
+            new_status = "CLINICAL_REVIEW_PENDING_SECOND" if len(prior_reviewers) + 1 < required_reviewers else "CLINICAL_APPROVED"
         elif request.decision == "REJECTED":
             new_status = "REJECTED"
         else:
@@ -306,7 +306,7 @@ def build_router(db, auth_dependency):
                             "extraction_quality_reviewed": request.extraction_quality_reviewed},
             }).execute()
             return {"document": updated.data[0] if updated.data else None, "status": new_status,
-                    "notice": "Tài liệu thuộc nhóm tác động cao chỉ được phê duyệt sau hai reviewer độc lập." if new_status == "AI_REVIEWED" else "Phê duyệt chỉ có hiệu lực trong approved_scope; không thay thế đánh giá lâm sàng tại từng ca."}
+                    "notice": "Đã có reviewer đầu tiên; cần reviewer độc lập thứ hai trước khi được retrieval." if new_status == "CLINICAL_REVIEW_PENDING_SECOND" else "Phê duyệt chỉ có hiệu lực trong approved_scope; không thay thế đánh giá lâm sàng tại từng ca."}
         except Exception as exc:
             print("CLINICAL KNOWLEDGE REVIEW ERROR:", repr(exc), flush=True)
             raise HTTPException(status_code=503, detail="Không thể lưu quyết định thẩm định.") from exc
