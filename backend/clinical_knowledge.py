@@ -158,6 +158,14 @@ def build_router(db, auth_dependency):
         ).in_("status", ["SOURCE_VERIFIED", "AI_REVIEWED", "DISCOVERED"]).order("created_at").limit(100).execute()
         return {"documents": result.data or []}
 
+    @router.get("/documents/{document_id}")
+    def get_document_for_review(document_id: str, user=Depends(auth_dependency)):
+        require_reviewer(user)
+        found = db.table("clinical_knowledge_documents").select("*").eq("id", document_id).limit(1).execute()
+        if not found.data:
+            raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
+        return {"document": found.data[0]}
+
     @router.post("/documents/{document_id}/review")
     def review_document(document_id: str, request: ReviewDecision, user=Depends(auth_dependency)):
         reviewer = require_reviewer(user)
