@@ -98,3 +98,26 @@ def test_rejection_closes_pending_proposal():
     action = propose_action(db, "owner-a", "create_reminder", {"title": "Tái khám", "due_at": due, "delivery_channel": "email", "email_consent": True})
     rejected = reject_action(db, "owner-a", action["id"])
     assert rejected["status"] == "rejected"
+
+
+def test_reminder_requires_explicit_consent():
+    due = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+    with pytest.raises(ActionValidationError, match="consent"):
+        propose_action(DB(), "owner-a", "create_reminder", {
+            "title": "Tái khám", "due_at": due, "delivery_channel": "email", "email_consent": False
+        })
+
+
+def test_reminder_rejects_past_timestamp():
+    due = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+    with pytest.raises(ActionValidationError, match="future"):
+        propose_action(DB(), "owner-a", "create_reminder", {
+            "title": "Tái khám", "due_at": due, "delivery_channel": "email", "email_consent": True
+        })
+
+
+def test_timeline_note_requires_source_attribution():
+    with pytest.raises(ActionValidationError, match="source"):
+        propose_action(DB(), "owner-a", "add_timeline_note", {
+            "note": "Người dùng báo đã tái khám", "source": ""
+        })
