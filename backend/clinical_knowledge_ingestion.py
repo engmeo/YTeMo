@@ -37,7 +37,11 @@ def is_allowed_source_url(url: str, registered_hosts: list[str]) -> bool:
     parsed = urlparse(url)
     if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
         return False
-    if parsed.port not in (None, 443):
+    try:
+        port = parsed.port
+    except ValueError:
+        return False
+    if port not in (None, 443):
         return False
     host = parsed.hostname.lower().rstrip(".")
     try:
