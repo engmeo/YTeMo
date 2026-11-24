@@ -423,6 +423,7 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
     <select id="ckRelationType" style="padding:10px;border:1px solid var(--line)"><option>SUPERSEDES</option><option>UPDATE_OF</option><option>CORRECTION_OF</option><option>TRANSLATION_OF</option></select>
     <textarea id="ckRelationRationale" placeholder="Căn cứ xác nhận quan hệ phiên bản (tối thiểu 20 ký tự)" style="grid-column:1/-1;padding:10px;min-height:70px;border:1px solid var(--line)"></textarea>
    </div>
+   <label style="display:block;font-size:11px;margin:8px 0"><input type="checkbox" id="ckRelationCOI"> Tôi có xung đột lợi ích</label>
    <button class="btn" id="ckConfirmRelation">Xác nhận quan hệ (reviewer 1/2)</button>
   </div>
   <div style="margin-top:20px;padding:25px;background:var(--night);color:#f4f1e9">
@@ -965,7 +966,7 @@ async function openClinicalDocument(id) {
       '<label style="font-size:11px"><input type="checkbox" id="ckLicenseCleared"> Đã xác minh quyền sử dụng</label>'+
       '<label style="font-size:11px"><input type="checkbox" id="ckExtractionReviewed"> Đã kiểm tra trang có cảnh báo OCR</label></div>'+
       '<textarea id="ckEvidenceAssessment" placeholder="Đánh giá phương pháp, chất lượng bằng chứng, COI, phạm vi áp dụng và giới hạn (bắt buộc)" style="width:100%;min-height:90px;padding:10px;border:1px solid var(--line)"></textarea>'+
-      '<textarea id="ckDocRationale" placeholder="Lý do phê duyệt (tối thiểu 10 ký tự)" style="width:100%;min-height:65px;padding:10px;border:1px solid var(--line);margin-top:8px"></textarea>'+
+      '<label style="display:block;font-size:11px;margin:8px 0"><input type="checkbox" id="ckDocCOI"> Tôi có xung đột lợi ích (nếu bật, quyết định sẽ bị từ chối)</label>'+\n      '<textarea id="ckDocRationale" placeholder="Lý do phê duyệt (tối thiểu 10 ký tự)" style="width:100%;min-height:65px;padding:10px;border:1px solid var(--line);margin-top:8px"></textarea>'+
       '<div style="font-size:11px;margin:10px 0">Approved scope:</div>'+
       ['patient_education','self_care','prevention','screening','diagnostic_reference','treatment_reference','medication_safety','professional_decision_support','public_health'].map(scope=>'<label style="display:inline-block;margin:4px 10px 4px 0;font-size:10px"><input type="checkbox" class="ckDocScope" value="'+scope+'"> '+scope+'</label>').join('')+
       '<button class="btn" id="ckApproveDocument" style="margin-top:12px">Ghi nhận APPROVED ↗</button>'+
@@ -984,7 +985,8 @@ async function openClinicalDocument(id) {
           version_current:document.getElementById('ckVersionCurrent').checked,
           license_cleared:document.getElementById('ckLicenseCleared').checked,
           evidence_assessment:document.getElementById('ckEvidenceAssessment').value.trim(),
-          extraction_quality_reviewed:document.getElementById('ckExtractionReviewed').checked
+          extraction_quality_reviewed:document.getElementById('ckExtractionReviewed').checked,
+          has_conflict_of_interest:document.getElementById('ckDocCOI').checked
         };
         const result=await ckRequest('/clinical-knowledge/documents/'+encodeURIComponent(id)+'/review','POST',body);
         ckSetStatus('Review đã ghi nhận. Trạng thái: '+result.status+'. '+result.notice);
@@ -1055,6 +1057,9 @@ async function loadClinicalClaims(id) {
     const appraisal=document.createElement('textarea'); appraisal.style.cssText='width:100%;min-height:100px;padding:8px;border:1px solid var(--line);margin:8px 0'; appraisal.value=JSON.stringify(appraisalTemplates[framework.value],null,2);
     framework.addEventListener('change',()=>appraisal.value=JSON.stringify(appraisalTemplates[framework.value],null,2));
     const rationale=document.createElement('textarea'); rationale.placeholder='Lý do appraisal và kết luận reviewer (tối thiểu 20 ký tự)'; rationale.style.cssText='width:100%;min-height:55px;padding:8px;border:1px solid var(--line)';
+    const coiCheck=document.createElement('label'); coiCheck.style.cssText='display:block;font-size:11px;margin:8px 0';
+    const coiCheckInput=document.createElement('input'); coiCheckInput.type='checkbox';
+    coiCheck.append(coiCheckInput,document.createTextNode(' Tôi có xung đột lợi ích'));
     const quoteCheck=document.createElement('label'); quoteCheck.style.cssText='display:block;font-size:11px;margin:8px 0';
     const quoteCheckInput=document.createElement('input'); quoteCheckInput.type='checkbox';
     quoteCheck.append(quoteCheckInput,document.createTextNode(' Đã đối chiếu trích dẫn với PDF gốc'));
@@ -1063,13 +1068,13 @@ async function loadClinicalClaims(id) {
       try {
         await ckRequest('/clinical-knowledge/claims/'+encodeURIComponent(claim.id)+'/review','POST',{
           decision:'ACCEPTED',appraisal_framework:framework.value,appraisal:JSON.parse(appraisal.value),
-          rationale:rationale.value.trim(),has_conflict_of_interest:false,source_quote_verified:quoteCheckInput.checked
+          rationale:rationale.value.trim(),has_conflict_of_interest:coiCheckInput.checked,source_quote_verified:quoteCheckInput.checked
         });
         ckSetStatus('Đã ghi appraisal. Claim chỉ ACCEPTED sau đủ reviewer độc lập.');
         await loadClinicalClaims(id);
       } catch(error){ckSetStatus(error.message,true);}
     });
-    card.append(title,quote,framework,appraisal,rationale,quoteCheck,accept); host.append(card);
+    card.append(title,quote,framework,appraisal,rationale,coiCheck,quoteCheck,accept); host.append(card);
   });
 }
 ck('LoadClaims').addEventListener('click',async()=>{
@@ -1093,7 +1098,7 @@ ck('ConfirmRelation').addEventListener('click',async()=>{
     const rationale=ck('RelationRationale').value.trim();
     if(!id||!predecessor||rationale.length<20)throw new Error('Cần document ID, predecessor ID và căn cứ ít nhất 20 ký tự.');
     const result=await ckRequest('/clinical-knowledge/documents/'+encodeURIComponent(id)+'/version-relations','POST',{
-      predecessor_document_id:predecessor,relation_type:ck('RelationType').value,rationale,decision:'CONFIRM'
+      predecessor_document_id:predecessor,relation_type:ck('RelationType').value,rationale,decision:'CONFIRM',has_conflict_of_interest:ck('RelationCOI').checked
     });
     ckSetStatus('Quan hệ phiên bản: '+result.status+' · '+result.confirmations+'/2 reviewer.');
   } catch(error){ckSetStatus(error.message,true);}
@@ -1111,18 +1116,20 @@ async function loadClinicalConflicts() {
     const title=document.createElement('b');title.textContent=conflict.topic_key+' · '+conflict.resolution_status;
     const desc=document.createElement('p');desc.textContent=conflict.conflict_summary+' · claims: '+(conflict.claim_ids||[]).join(', ');desc.style.fontSize='11px';
     const rationale=document.createElement('textarea');rationale.placeholder='Căn cứ xử lý bất đồng (tối thiểu 20 ký tự)';rationale.style.cssText='width:100%;min-height:60px;padding:8px;background:#f5f4ed;border:1px solid #536b65';
+    const coiLabel=document.createElement('label');coiLabel.style.cssText='display:block;font-size:11px;margin:7px 0';
+    const coiInput=document.createElement('input');coiInput.type='checkbox';coiLabel.append(coiInput,document.createTextNode(' Tôi có xung đột lợi ích'));
     const resolve=document.createElement('button');resolve.className='mini-btn';resolve.textContent='Xác nhận đã giải quyết';
     const unresolved=document.createElement('button');unresolved.className='mini-btn';unresolved.textContent='Giữ UNRESOLVED';unresolved.style.marginLeft='7px';
     const submit=decision=>async()=>{
       try {
         if(rationale.value.trim().length<20)throw new Error('Cần rationale tối thiểu 20 ký tự.');
-        const result=await ckRequest('/clinical-knowledge/conflicts/'+encodeURIComponent(conflict.id)+'/review','POST',{decision,rationale:rationale.value.trim(),has_conflict_of_interest:false});
+        const result=await ckRequest('/clinical-knowledge/conflicts/'+encodeURIComponent(conflict.id)+'/review','POST',{decision,rationale:rationale.value.trim(),has_conflict_of_interest:coiInput.checked});
         ckSetStatus('Conflict '+conflict.id+' → '+result.status+' · '+result.review_count+' review records.');
         await loadClinicalConflicts();
       } catch(error){ckSetStatus(error.message,true);}
     };
     resolve.addEventListener('click',submit('RESOLVE'));unresolved.addEventListener('click',submit('UNRESOLVED'));
-    card.append(title,desc,rationale,resolve,unresolved);host.append(card);
+    card.append(title,desc,rationale,coiLabel,resolve,unresolved);host.append(card);
   });
 }
 ck('LoadConflicts').addEventListener('click',async()=>{
