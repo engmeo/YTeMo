@@ -81,7 +81,15 @@ def test_unknown_action_is_rejected():
 
 def test_reminder_requires_timezone_aware_timestamp():
     with pytest.raises(ActionValidationError):
-        propose_action(DB(), "owner-a", "create_reminder", {"title": "Tái khám", "due_at": "2026-12-01T09:00:00"})
+        propose_action(DB(), "owner-a", "create_reminder", {"title": "Tái khám", "due_at": "2026-12-01T09:00:00", "delivery_channel": "email"})
+
+
+def test_reminder_requires_explicit_email_channel():
+    due = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+    with pytest.raises(ActionValidationError, match="delivery_channel"):
+        propose_action(DB(), "owner-a", "create_reminder", {
+            "title": "Tái khám", "due_at": due, "delivery_channel": "in_app"
+        })
 
 
 def test_rejection_closes_pending_proposal():
