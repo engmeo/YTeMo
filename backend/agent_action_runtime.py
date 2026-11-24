@@ -14,7 +14,7 @@ from typing import Any
 ALLOWED_ACTIONS = {
     "create_reminder": {
         "description": "Create a user-approved follow-up reminder.",
-        "required": {"title", "due_at", "delivery_channel"},
+        "required": {"title", "due_at", "delivery_channel", "email_consent"},
         "approval_required": True,
     },
     "request_clinician_review": {
@@ -29,8 +29,10 @@ ALLOWED_ACTIONS = {
     },
 }
 
+
 class ActionValidationError(ValueError):
     pass
+
 
 def _stable_key(user_id: str, action: str, arguments: dict[str, Any]) -> str:
     raw = json.dumps(
@@ -38,6 +40,7 @@ def _stable_key(user_id: str, action: str, arguments: dict[str, Any]) -> str:
         ensure_ascii=False, sort_keys=True, default=str,
     )
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
 
 def propose_action(db, user_id: str, action: str, arguments: dict[str, Any]) -> dict[str, Any]:
     """Persist a proposal; never execute it."""
@@ -51,6 +54,8 @@ def propose_action(db, user_id: str, action: str, arguments: dict[str, Any]) -> 
         raise ActionValidationError("Missing required action arguments: " + ", ".join(sorted(missing)))
     if len(json.dumps(arguments, ensure_ascii=False, default=str)) > 4000:
         raise ActionValidationError("Action arguments are too large.")
+    persisted_arguments = dict(arguments)
+    now = datetime.now(timezone.utc)
     if action == "create_reminder":
         title = str(arguments.get("title", "")).strip()
         if not title or len(title) > 180:
@@ -62,8 +67,14 @@ def propose_action(db, user_id: str, action: str, arguments: dict[str, Any]) -> 
             raise ActionValidationError("due_at must be an ISO-8601 timestamp.") from exc
         if parsed.tzinfo is None:
             raise ActionValidationError("due_at must include a timezone.")
+        if parsed <= now:
+            raise ActionValidationError("due_at must be in the future.")
         if arguments.get("delivery_channel") != "email":
             raise ActionValidationError("Reminder delivery_channel must be explicitly set to email.")
+        if arguments.get("email_consent") is not True:
+            raise ActionValidationError("Explicit consent to email reminders is required.")
+        persisted_arguments["email_consent_recorded_at"] = now.isoformat()
+
     idem = _stable_key(user_id, action, arguments)
     existing = (
         db.table("companion_action_tasks").select("*")
@@ -74,16 +85,17 @@ def propose_action(db, user_id: str, action: str, arguments: dict[str, Any]) -> 
     row = {
         "user_id": user_id,
         "action_type": action,
-        "arguments": arguments,
+        "arguments": persisted_arguments,
         "status": "awaiting_approval" if spec["approval_required"] else "queued",
         "requires_approval": spec["approval_required"],
         "idempotency_key": idem,
-        "scheduled_at": arguments.get("due_at") if action == "create_reminder" else datetime.now(timezone.utc).isoformat(),
+        "scheduled_at": arguments.get("due_at") if action == "create_reminder" else now.isoformat(),
     }
     result = db.table("companion_action_tasks").insert(row).execute()
     if not result.data:
         raise RuntimeError("Could not persist Agent action proposal.")
     return result.data[0]
+
 
 def approve_action(db, user_id: str, action_id: str) -> dict[str, Any]:
     """Record explicit owner approval. Execution is performed by a worker."""
@@ -106,6 +118,7 @@ def approve_action(db, user_id: str, action_id: str) -> dict[str, Any]:
         raise RuntimeError("Action approval was not persisted.")
     return updated.data[0]
 
+
 def reject_action(db, user_id: str, action_id: str) -> dict[str, Any]:
     updated = (
         db.table("companion_action_tasks")
@@ -116,6 +129,7 @@ def reject_action(db, user_id: str, action_id: str) -> dict[str, Any]:
     if not updated.data:
         raise LookupError("Pending action proposal not found.")
     return updated.data[0]
+
 
 def list_actions(db, user_id: str, limit: int = 50) -> list[dict[str, Any]]:
     result = (
