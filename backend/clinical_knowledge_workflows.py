@@ -26,6 +26,7 @@ from clinical_knowledge_ingestion import (
 
 BUCKET = "clinical-knowledge-originals"
 APPRAISAL_FRAMEWORKS = {"AGREE_II", "GRADE", "AMSTAR_2", "ROB_2", "ROBINS_I", "QUADAS_2", "OTHER"}
+CLINICIAN_ONLY_SCOPES = {"diagnostic_reference", "treatment_reference", "medication_safety", "professional_decision_support"}
 CLAIM_TYPES = {"DIAGNOSIS", "SCREENING", "TREATMENT", "MEDICATION_SAFETY", "PROGNOSIS", "PREVENTION", "PUBLIC_HEALTH", "OTHER"}
 
 
@@ -154,6 +155,23 @@ class EvidenceRetrievalRequest(BaseModel):
         if value not in ALLOWED_APPROVED_SCOPES:
             raise ValueError("scope không nằm trong danh mục được phê duyệt")
         return value
+
+
+def can_access_evidence_scope(db, user, scope: str) -> bool:
+    if scope not in CLINICIAN_ONLY_SCOPES:
+        return True
+    result = db.table("clinical_knowledge_reviewers").select(
+        "role,is_active,credential_verified,credential_type,credential_identifier,credential_verified_at,credential_verified_by"
+    ).eq("user_id", str(user.id)).eq("is_active", True).limit(1).execute()
+    if not result.data:
+        return False
+    reviewer = result.data[0]
+    return bool(
+        reviewer.get("role") in {"physician", "pharmacist", "clinical_reviewer"}
+        and reviewer.get("credential_verified") and reviewer.get("credential_type")
+        and reviewer.get("credential_identifier") and reviewer.get("credential_verified_at")
+        and reviewer.get("credential_verified_by")
+    )
 
 
 def retrieve_approved_evidence(db, request: EvidenceRetrievalRequest) -> dict:
@@ -865,6 +883,8 @@ VĂN BẢN NGUỒN KẾT THÚC.
 
     @router.post("/retrieve")
     def retrieve_approved_evidence_route(request: EvidenceRetrievalRequest, user=Depends(auth_dependency)):
+        if not can_access_evidence_scope(db, user, request.scope):
+            raise HTTPException(status_code=403, detail="Phạm vi này chỉ dành cho reviewer/chuyên gia y tế có credential đã xác minh.")
         return retrieve_approved_evidence(db, request)
 
     return router
