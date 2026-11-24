@@ -8,7 +8,8 @@ create table if not exists public.companion_action_tasks (
     status text not null default 'awaiting_approval'
         check (status in ('awaiting_approval','queued','running','completed','failed','rejected','cancelled')),
     requires_approval boolean not null default true,
-    idempotency_key text not null,\n    scheduled_at timestamptz not null default now(),
+    idempotency_key text not null,
+    scheduled_at timestamptz not null default now(),
     result jsonb,
     last_error text,
     approved_at timestamptz,
