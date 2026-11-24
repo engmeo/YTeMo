@@ -6,7 +6,8 @@
 - Explicit embedding-provider configuration through `CLINICAL_EMBEDDING_API_URL`, `CLINICAL_EMBEDDING_API_KEY`, and `CLINICAL_EMBEDDING_MODEL`. The endpoint must implement the OpenAI-compatible embeddings request/response shape and return exactly 768 dimensions.
 - Provenance-bearing Knowledge Graph entity/edge tables; edges default to CANDIDATE and must not be treated as approved clinical facts.
 - Source synchronization run ledger and a benchmark-case registry with separate PUBLIC_SOURCE_CURATED and EXPERT_ADJUDICATED states.
-- Structured evidence-map draft endpoint. It does not perform meta-analysis or clinical recommendation.
+- Structured evidence-map draft endpoint.
+- Statistical fixed/random-effects pooling for explicitly supplied compatible effect sizes, including Q, I², tau² and confidence intervals. It does not extract effect sizes from prose or decide clinical comparability.
 
 ## Migration
 Apply `202611240009_clinical_evidence_intelligence.sql` only after migrations 001–008. Validate in a separate Supabase staging project first. This migration has not been applied by this code change.
@@ -16,6 +17,7 @@ Apply `202611240009_clinical_evidence_intelligence.sql` only after migrations 00
 - `GET /clinical-intelligence/graph/entities`
 - `GET /clinical-intelligence/graph/edges?entity_id=...`
 - `POST /clinical-intelligence/synthesis/draft`: body is an array of accepted claim IDs.
+- `POST /clinical-intelligence/synthesis/meta-analysis`: body contains structured `studies` with `study_id`, `effect_measure`, `effect`, `standard_error` and optional provenance; all studies must use the same metric and scale.
 
 ## Safety and evidence limitations
 - Vector similarity is relevance ranking, not evidence quality or truth.
