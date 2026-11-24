@@ -583,7 +583,7 @@ VĂN BẢN NGUỒN KẾT THÚC.
         reviewer_for(user)
         query = db.table("clinical_evidence_claims").select("*").eq("document_id", document_id)
         if status:
-            if status not in {"UNREVIEWED", "ACCEPTED", "REJECTED", "NEEDS_REVISION"}:
+            if status not in {"UNREVIEWED", "PENDING_SECOND_REVIEW", "ACCEPTED", "REJECTED", "NEEDS_REVISION"}:
                 raise HTTPException(status_code=422, detail="Claim status không hợp lệ.")
             query = query.eq("reviewer_status", status)
         result = query.order("created_at", desc=True).limit(200).execute()
@@ -596,7 +596,7 @@ VĂN BẢN NGUỒN KẾT THÚC.
         if not doc_result.data:
             raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
         doc = doc_result.data[0]
-        if doc.get("status") not in {"DISCOVERED", "AI_REVIEWED", "CLINICAL_APPROVED"}:
+        if doc.get("status") not in {"DISCOVERED", "AI_REVIEWED", "CLINICAL_REVIEW_PENDING_SECOND", "CLINICAL_APPROVED"}:
             raise HTTPException(status_code=409, detail="Trạng thái tài liệu không cho phép tạo claim.")
         if doc.get("specialty") and doc["specialty"] not in (reviewer.get("specialties") or []):
             raise HTTPException(status_code=403, detail="Reviewer không phù hợp chuyên khoa tài liệu.")
@@ -663,7 +663,7 @@ VĂN BẢN NGUỒN KẾT THÚC.
             raise HTTPException(status_code=409, detail="Reviewer đã thẩm định claim này.")
         accepted = [item for item in prior_rows if item["decision"] == "ACCEPTED"]
         if request.decision == "ACCEPTED" and len(accepted) + 1 < int(claim["required_reviewers"]):
-            final_status = "UNREVIEWED"
+            final_status = "PENDING_SECOND_REVIEW"
         else:
             final_status = request.decision
         db.table("clinical_evidence_claim_reviews").insert({
@@ -685,7 +685,7 @@ VĂN BẢN NGUỒN KẾT THÚC.
         return {
             "claim": updated.data[0] if updated.data else None,
             "status": final_status,
-            "notice": "Cần reviewer độc lập tiếp theo trước khi claim được dùng." if request.decision == "ACCEPTED" and final_status == "UNREVIEWED" else "Đánh giá appraisal không tự chứng minh kết luận lâm sàng.",
+            "notice": "Đã có reviewer đầu tiên; cần reviewer độc lập tiếp theo trước khi claim được retrieval." if request.decision == "ACCEPTED" and final_status == "PENDING_SECOND_REVIEW" else "Đánh giá appraisal không tự chứng minh kết luận lâm sàng.",
         }
 
     @router.post("/conflicts", status_code=201)
