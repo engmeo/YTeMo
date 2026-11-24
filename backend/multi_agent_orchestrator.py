@@ -186,6 +186,7 @@ def _fan_out(state: MultiAgentState):
                 "message": state.get("message", ""),
                 "history": state.get("history", ""),
                 "evidence_context": state.get("evidence_context", ""),
+                "document_context": state.get("document_context", ""),
                 "enabled": key in selected,
             },
         )
