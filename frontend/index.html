@@ -661,7 +661,7 @@ async function openCompanionDashboard() {
     const submit=panel.querySelector('#companionReminderSubmit');
     submit.disabled=true;submit.textContent='ĐANG GỬI ĐỀ XUẤT…';
     try{
-      const response=await fetchWithAuth('/companion/actions/propose',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create_reminder',arguments:{title,due_at:dueDate.toISOString(),delivery_channel:'email'}})});
+      const response=await fetchWithAuth('/companion/actions/propose',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create_reminder',arguments:{title,due_at:dueDate.toISOString(),delivery_channel:'email',email_consent:true}})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.detail||('HTTP '+response.status));
       reminderForm.reset();reminderDate.min=new Date(Date.now()-new Date().getTimezoneOffset()*60000+60000).toISOString().slice(0,16);
