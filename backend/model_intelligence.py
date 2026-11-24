@@ -1,18 +1,13 @@
-"""Low-latency model gateway for Y TE MO.
+"""Low-latency multi-model gateway for Y TE MO.
 
-The gateway supports:
-- a self-hosted OpenAI-compatible inference server (vLLM, SGLang, llama.cpp server);
-- an optional OpenRouter-compatible endpoint;
-- deterministic routing profiles without running an ensemble on every turn.
-
-It deliberately does not download model weights at API startup. Model weights are
-large artifacts and must be fetched explicitly on a controlled inference host.
+Supports separate OpenAI-compatible endpoints per profile (vLLM, SGLang,
+llama.cpp server) and an optional OpenRouter free-model pool. It does not
+download weights at API startup or run an ensemble for routine turns.
 """
 from __future__ import annotations
 
 import json
 import os
-import re
 import time
 from pathlib import Path
 from typing import Any
@@ -20,7 +15,6 @@ from typing import Any
 import requests
 
 REGISTRY_PATH = Path(__file__).with_name("model_registry.json")
-DEFAULT_TIMEOUT = (3.0, 18.0)
 
 
 class ModelGatewayError(RuntimeError):
@@ -33,28 +27,48 @@ def load_model_registry() -> dict[str, Any]:
 
 
 def choose_profile(message: str, evidence_context: str = "", requested_profile: str | None = None) -> str:
-    """Choose a latency profile; safety gates remain outside this heuristic.
-
-    Explicit high-risk evidence scopes and unresolved evidence are handled by
-    clinical governance. This function only chooses an inference budget.
-    """
+    """Select inference budget; clinical authorization and safety are separate."""
     allowed = {"fast", "reasoning", "medical"}
     if requested_profile in allowed:
         return requested_profile
     text = (message or "").casefold()
     evidence = (evidence_context or "").casefold()
-    complex_markers = (
+    if any(term in text for term in (
         "nhiều bệnh", "nhiều thuốc", "tương tác thuốc", "bệnh nền",
         "kết quả xét nghiệm", "diễn biến", "mâu thuẫn", "không rõ nguyên nhân",
-        "phân biệt", "so sánh", "tại sao", "đánh giá nguy cơ",
-    )
-    if any(marker in text for marker in complex_markers):
+        "phân biệt", "so sánh", "đánh giá nguy cơ",
+    )):
         return "reasoning"
-    if any(marker in evidence for marker in ("abstention", "conflict", "unresolved")):
+    if any(term in evidence for term in ("abstention", "conflict", "unresolved")):
         return "reasoning"
-    if any(marker in text for marker in ("liều", "thuốc", "chẩn đoán", "điều trị", "xét nghiệm")):
+    if any(term in text for term in ("liều", "thuốc", "chẩn đoán", "điều trị", "xét nghiệm")):
         return "medical"
     return "fast"
+
+
+def _endpoint_config(profile: str) -> tuple[str, str, str]:
+    backend = os.getenv("YTEMO_MODEL_BACKEND", "openrouter").strip().lower()
+    suffix = profile.upper()
+    if backend == "local":
+        endpoint = os.getenv(
+            f"YTEMO_{suffix}_BASE_URL",
+            os.getenv("YTEMO_LOCAL_MODEL_BASE_URL", "http://127.0.0.1:8001/v1"),
+        ).rstrip("/")
+        key = os.getenv(
+            f"YTEMO_{suffix}_API_KEY",
+            os.getenv("YTEMO_LOCAL_MODEL_API_KEY", "local"),
+        )
+    elif backend == "openrouter":
+        endpoint = os.getenv(
+            f"YTEMO_{suffix}_BASE_URL",
+            os.getenv("YTEMO_OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+        ).rstrip("/")
+        key = os.getenv(f"YTEMO_{suffix}_API_KEY", os.getenv("OPENROUTER_API_KEY", ""))
+    else:
+        raise ModelGatewayError("YTEMO_MODEL_BACKEND chỉ nhận local hoặc openrouter.")
+    if not key:
+        raise ModelGatewayError(f"Thiếu API key cho profile {profile}.")
+    return backend, endpoint, key
 
 
 def _model_for_profile(profile: str) -> str:
@@ -66,21 +80,6 @@ def _model_for_profile(profile: str) -> str:
     return os.getenv(env_key, os.getenv("YTEMO_DEFAULT_MODEL", "openrouter/free"))
 
 
-def _endpoint_config() -> tuple[str, str, str]:
-    backend = os.getenv("YTEMO_MODEL_BACKEND", "openrouter").strip().lower()
-    if backend == "local":
-        endpoint = os.getenv("YTEMO_LOCAL_MODEL_BASE_URL", "http://127.0.0.1:8001/v1").rstrip("/")
-        key = os.getenv("YTEMO_LOCAL_MODEL_API_KEY", "local")
-    elif backend == "openrouter":
-        endpoint = os.getenv("YTEMO_OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
-        key = os.getenv("OPENROUTER_API_KEY", "")
-    else:
-        raise ModelGatewayError("YTEMO_MODEL_BACKEND chỉ nhận local hoặc openrouter.")
-    if not key:
-        raise ModelGatewayError("Thiếu API key của model provider trong cấu hình backend.")
-    return backend, endpoint, key
-
-
 def generate(
     messages: list[dict[str, str]],
     profile: str = "fast",
@@ -89,7 +88,7 @@ def generate(
 ) -> dict[str, Any]:
     if profile not in {"fast", "reasoning", "medical"}:
         raise ValueError("Unknown model profile.")
-    backend, endpoint, key = _endpoint_config()
+    backend, endpoint, key = _endpoint_config(profile)
     model = _model_for_profile(profile)
     timeout = max(5, min(int(os.getenv("YTEMO_MODEL_TIMEOUT_SECONDS", "18")), 30))
     payload = {
@@ -156,9 +155,16 @@ def model_catalog() -> dict[str, Any]:
         ],
         "active_backend": os.getenv("YTEMO_MODEL_BACKEND", "openrouter"),
         "profiles": {
-            "fast": os.getenv("YTEMO_FAST_MODEL", os.getenv("YTEMO_DEFAULT_MODEL", "openrouter/free")),
-            "reasoning": os.getenv("YTEMO_REASONING_MODEL", os.getenv("YTEMO_DEFAULT_MODEL", "openrouter/free")),
-            "medical": os.getenv("YTEMO_MEDICAL_MODEL", os.getenv("YTEMO_DEFAULT_MODEL", "openrouter/free")),
+            profile: {
+                "model": _model_for_profile(profile),
+                "endpoint_configured": bool(
+                    os.getenv(f"YTEMO_{profile.upper()}_BASE_URL")
+                    or os.getenv("YTEMO_LOCAL_MODEL_BASE_URL")
+                    or os.getenv("YTEMO_OPENROUTER_BASE_URL")
+                    or os.getenv("YTEMO_MODEL_BACKEND", "openrouter") == "openrouter"
+                ),
+            }
+            for profile in ("fast", "reasoning", "medical")
         },
     }
 
