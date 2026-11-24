@@ -4,7 +4,7 @@ from unittest.mock import patch
 import multi_agent_orchestrator as orchestration
 
 
-def fake_generate(messages, profile="fast", max_tokens=500, temperature=0.1):
+def fake_generate(messages, profile="fast", max_tokens=500, temperature=0.1, model_override=None):
     prompt = messages[-1]["content"]
     if "Bạn là Supervisor của hệ thống Y TẾ MỞ" in prompt:
         return {"text": '{"agents":["laboratory","cost"],"reason":"Cần đối chiếu hai miền."}', "latency_ms": 10}
@@ -35,10 +35,10 @@ class MultiAgentOrchestrationTests(unittest.TestCase):
 
     @patch("multi_agent_orchestrator.generate", side_effect=fake_generate)
     def test_reviewer_rejection_prevents_unverified_draft_from_reaching_user(self, generate):
-        def reject(messages, profile="fast", max_tokens=500, temperature=0.1):
+        def reject(messages, profile="fast", max_tokens=500, temperature=0.1, model_override=None):
             if "Reviewer độc lập" in messages[-1]["content"]:
                 return {"text": "REJECT"}
-            return fake_generate(messages, profile, max_tokens, temperature)
+            return fake_generate(messages, profile, max_tokens, temperature, model_override)
 
         generate.side_effect = reject
         result = orchestration.run_multi_agent("Tôi muốn hỏi về thuốc")
