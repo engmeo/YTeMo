@@ -36,31 +36,37 @@ ROLE_CONFIG = {
     "medication": {
         "name": "Chuyên gia thuốc",
         "profile": "medical",
+        "model_env": "YTEMO_MEDICATION_MODEL",
         "scope": "Đọc thông tin thuốc, hoạt chất, hàm lượng, lịch dùng và các điểm cần xác minh. Không kê đơn, không đổi liều, không kết luận tương tác nếu thiếu dữ liệu đáng tin cậy.",
     },
     "laboratory": {
         "name": "Chuyên gia xét nghiệm",
         "profile": "medical",
+        "model_env": "YTEMO_LABORATORY_MODEL",
         "scope": "Đọc tên xét nghiệm, giá trị, đơn vị, khoảng tham chiếu được ghi rõ. Không tự tạo khoảng tham chiếu, không chẩn đoán từ một chỉ số.",
     },
     "clinical": {
         "name": "Chuyên gia thông tin lâm sàng",
         "profile": "medical",
+        "model_env": "YTEMO_CLINICAL_MODEL",
         "scope": "Tổ chức triệu chứng, thời điểm, diễn tiến và dấu hiệu cảnh báo. Không chẩn đoán hoặc đề xuất phác đồ khi không có bằng chứng đã duyệt.",
     },
     "cost": {
         "name": "Chuyên gia chi phí",
         "profile": "fast",
+        "model_env": "YTEMO_COST_MODEL",
         "scope": "Phân tích các khoản tiền được người dùng cung cấp, phân biệt khoản đã ghi với khoản ước tính; không tự tạo giá dịch vụ.",
     },
     "insurance": {
         "name": "Chuyên gia BHYT",
         "profile": "reasoning",
+        "model_env": "YTEMO_INSURANCE_MODEL",
         "scope": "Đọc thông tin thẻ, tuyến, giấy chuyển tuyến và điều khoản được cung cấp. Không tự kết luận quyền lợi, tỷ lệ chi trả hoặc tính hợp lệ.",
     },
     "care_navigation": {
         "name": "Chuyên gia điều hướng chăm sóc",
         "profile": "fast",
+        "model_env": "YTEMO_CARE_NAVIGATION_MODEL",
         "scope": "Làm rõ nhu cầu, bối cảnh tiếp cận dịch vụ và bước hành chính an toàn. Không khẳng định bệnh viện còn lịch hoặc dịch vụ đang sẵn có nếu chưa tra cứu.",
     },
 }
@@ -145,6 +151,7 @@ Câu hỏi: {state.get("message", "")[:4000]}
             profile="fast",
             max_tokens=220,
             temperature=0.0,
+            model_override=os.getenv("YTEMO_SUPERVISOR_MODEL") or None,
         )
         parsed = _extract_json(result.get("text", ""))
         if parsed:
@@ -236,6 +243,7 @@ Không viết câu trả lời cuối cho người dùng.
                 profile=config["profile"],
                 max_tokens=650,
                 temperature=0.1,
+                model_override=os.getenv(config["model_env"]) or None,
             )
             report = result["text"]
             status = "completed"
@@ -303,6 +311,7 @@ Viết câu trả lời cuối cho người dùng.
             profile="reasoning",
             max_tokens=1000,
             temperature=0.1,
+            model_override=os.getenv("YTEMO_SYNTHESIS_MODEL") or None,
         )
         return {"draft": result["text"]}
     except Exception:
@@ -343,6 +352,7 @@ DỰ THẢO:
             profile=profile,
             max_tokens=8,
             temperature=0.0,
+            model_override=os.getenv("YTEMO_REVIEWER_MODEL") or None,
         )
         verdict = result.get("text", "").strip().upper()
     except Exception:
