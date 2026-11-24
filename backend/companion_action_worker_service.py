@@ -3,8 +3,12 @@ import os
 
 from supabase import create_client
 
-from companion_email_notifications import make_reminder_email_handler
-from temporal_action_worker import register_handler, serve
+try:
+    from .companion_email_notifications import make_reminder_email_handler
+    from .temporal_action_worker import register_handler, serve
+except ImportError:
+    from companion_email_notifications import make_reminder_email_handler
+    from temporal_action_worker import register_handler, serve
 
 
 def main() -> None:
