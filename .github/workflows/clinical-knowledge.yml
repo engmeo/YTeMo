@@ -108,6 +108,7 @@ jobs:
             backend/agent_action_runtime.py \
             backend/temporal_action_worker.py \
             backend/companion_email_notifications.py \
+            backend/companion_action_handlers.py \
             backend/companion_action_worker_service.py \
             backend/inference_latency_benchmark.py \
             backend/clinical_training/prepare_dataset.py \
