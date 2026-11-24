@@ -8,6 +8,8 @@ on:
       - "backend/clinical_knowledge_workflows.py"
       - "backend/clinical_knowledge_evaluation.py"
       - "backend/test_clinical_knowledge_evaluation.py"
+      - "backend/run_clinical_knowledge_eval.py"
+      - "docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md"
       - "backend/clinical_knowledge_eval_cases.template.json"
       - "backend/test_clinical_knowledge.py"
       - "backend/test_clinical_knowledge_ingestion.py"
@@ -27,6 +29,8 @@ on:
       - "backend/clinical_knowledge_workflows.py"
       - "backend/clinical_knowledge_evaluation.py"
       - "backend/test_clinical_knowledge_evaluation.py"
+      - "backend/run_clinical_knowledge_eval.py"
+      - "docs/CLINICAL_KNOWLEDGE_EVALUATION_PROTOCOL.vi.md"
       - "backend/clinical_knowledge_eval_cases.template.json"
       - "backend/test_clinical_knowledge.py"
       - "backend/test_clinical_knowledge_ingestion.py"
@@ -52,7 +56,7 @@ jobs:
       - name: Compile module and run focused tests
         working-directory: backend
         run: |
-          python -m py_compile clinical_knowledge.py clinical_knowledge_ingestion.py clinical_knowledge_workflows.py clinical_knowledge_evaluation.py main.py
+          python -m py_compile clinical_knowledge.py clinical_knowledge_ingestion.py clinical_knowledge_workflows.py clinical_knowledge_evaluation.py run_clinical_knowledge_eval.py main.py
           python -m unittest -v test_clinical_knowledge test_clinical_knowledge_ingestion test_clinical_knowledge_evaluation
       - name: Syntax-check frontend JavaScript
         run: |
