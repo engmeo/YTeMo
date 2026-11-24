@@ -15,7 +15,7 @@ from datetime import date, datetime, timezone
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 from gemini_service import generate_content
 
 from clinical_knowledge import ALLOWED_APPROVED_SCOPES
@@ -71,6 +71,14 @@ class IngestCandidateRequest(BaseModel):
         if value is not None:
             date.fromisoformat(value)
         return value
+
+    @model_validator(mode="after")
+    def effective_date_order(self):
+        start = parse_iso_date(self.effective_from)
+        end = parse_iso_date(self.effective_until)
+        if start and end and end < start:
+            raise ValueError("effective_until không được trước effective_from")
+        return self
 
 
 class SuggestClaimsRequest(BaseModel):
