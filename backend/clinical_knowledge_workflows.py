@@ -110,6 +110,7 @@ class ConflictCreate(BaseModel):
 class ConflictReview(BaseModel):
     decision: str = Field(pattern="^(RESOLVE|UNRESOLVED)$")
     rationale: str = Field(min_length=20, max_length=5000)
+    has_conflict_of_interest: bool = False
 
 
 class VersionRelationRequest(BaseModel):
@@ -154,6 +155,32 @@ def build_workflow_router(db, storage, auth_dependency):
     def source_hosts(source):
         return [normalize_host(source["base_url"])]
 
+    def require_knowledge_admin(user):
+        result = db.table("clinical_knowledge_reviewers").select("user_id,role,is_active").eq(
+            "user_id", str(user.id)
+        ).eq("is_active", True).limit(1).execute()
+        if not result.data or result.data[0].get("role") != "knowledge_admin":
+            raise HTTPException(status_code=403, detail="Chỉ knowledge_admin được chạy discovery/ingestion.")
+        return result.data[0]
+
+    def validate_appraisal(framework: str, appraisal: dict):
+        required = {
+            "AGREE_II": {"scope_and_purpose", "stakeholder_involvement", "rigor_of_development", "clarity_of_presentation", "applicability", "editorial_independence"},
+            "GRADE": {"risk_of_bias", "inconsistency", "indirectness", "imprecision", "publication_bias", "certainty"},
+            "AMSTAR_2": {"protocol", "search_strategy", "study_selection", "risk_of_bias", "meta_analysis", "publication_bias"},
+            "ROB_2": {"randomization", "deviations_from_intended_interventions", "missing_outcome_data", "outcome_measurement", "selection_of_reported_result"},
+            "ROBINS_I": {"confounding", "participant_selection", "intervention_classification", "deviations", "missing_data", "outcome_measurement", "reported_result_selection"},
+            "QUADAS_2": {"patient_selection", "index_test", "reference_standard", "flow_and_timing"},
+        }
+        keys = required.get(framework)
+        if keys and not keys.issubset(appraisal.keys()):
+            missing = sorted(keys - set(appraisal.keys()))
+            raise HTTPException(status_code=422, detail=f"Appraisal {framework} thiếu domain: {', '.join(missing)}")
+        if framework == "OTHER" and len(appraisal) < 3:
+            raise HTTPException(status_code=422, detail="OTHER appraisal cần ít nhất ba trường đánh giá có giải thích.")
+        if any(value is None or value == "" for value in appraisal.values()):
+            raise HTTPException(status_code=422, detail="Không chấp nhận domain appraisal để trống.")
+
     def get_source(source_key):
         result = db.table("clinical_knowledge_sources").select("*").eq(
             "source_key", source_key
@@ -172,6 +199,7 @@ def build_workflow_router(db, storage, auth_dependency):
 
     @router.post("/sources/{source_key}/discover")
     def discover_source(source_key: str, request: DiscoverRequest, user=Depends(auth_dependency)):
+        require_knowledge_admin(user)
         source = get_source(source_key)
         listing_url = str(request.listing_url or source.get("discovery_url") or "")
         if not listing_url:
@@ -208,6 +236,7 @@ def build_workflow_router(db, storage, auth_dependency):
 
     @router.post("/candidates/{candidate_id}/ingest", status_code=201)
     def ingest_candidate(candidate_id: str, request: IngestCandidateRequest, user=Depends(auth_dependency)):
+        require_knowledge_admin(user)
         candidate_result = db.table("clinical_knowledge_discovery_candidates").select("*").eq(
             "id", candidate_id
         ).limit(1).execute()
@@ -326,8 +355,22 @@ def build_workflow_router(db, storage, auth_dependency):
         reviewer_for(user)
         result = db.table("clinical_knowledge_document_pages").select(
             "id,document_id,page_number,text_sha256,extraction_status,extraction_method,quality_report"
-        ).eq("document_id", document_id).order("page_number").limit(MAX_SOURCE_BYTES).execute()
+        ).eq("document_id", document_id).order("page_number").limit(300).execute()
         return {"pages": result.data or []}
+
+    @router.get("/documents/{document_id}/original-url")
+    def get_original_signed_url(document_id: str, user=Depends(auth_dependency)):
+        reviewer_for(user)
+        found = db.table("clinical_knowledge_documents").select("original_storage_path").eq(
+            "id", document_id
+        ).limit(1).execute()
+        if not found.data or not found.data[0].get("original_storage_path"):
+            raise HTTPException(status_code=404, detail="Không tìm thấy bản gốc đã lưu.")
+        try:
+            signed = storage.from_(BUCKET).create_signed_url(found.data[0]["original_storage_path"], 300)
+            return {"signed_url": signed.get("signedURL") or signed.get("signedUrl"), "expires_in_seconds": 300}
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="Không tạo được URL truy cập bản gốc.") from exc
 
     @router.get("/documents/{document_id}/page/{page_number}")
     def get_document_page(document_id: str, page_number: int, user=Depends(auth_dependency)):
@@ -371,6 +414,7 @@ def build_workflow_router(db, storage, auth_dependency):
             "source_page_number": request.source_page_number, "exact_quote": request.exact_quote,
             "source_locator": request.source_locator, "extraction_method": request.extraction_method,
             "required_reviewers": required, "jurisdiction": doc["jurisdiction"],
+            "created_by": str(user.id),
             "reviewer_status": "UNREVIEWED",
         }
         created = db.table("clinical_evidence_claims").insert(row).execute()
@@ -389,6 +433,7 @@ def build_workflow_router(db, storage, auth_dependency):
             raise HTTPException(status_code=422, detail="Appraisal framework không hợp lệ.")
         if request.has_conflict_of_interest:
             raise HTTPException(status_code=409, detail="Reviewer có xung đột lợi ích không được thẩm định claim.")
+        validate_appraisal(request.appraisal_framework, request.appraisal)
         found = db.table("clinical_evidence_claims").select("*").eq("id", claim_id).limit(1).execute()
         if not found.data:
             raise HTTPException(status_code=404, detail="Không tìm thấy claim.")
@@ -397,8 +442,8 @@ def build_workflow_router(db, storage, auth_dependency):
             "id", claim["document_id"]
         ).limit(1).execute()
         doc = doc_result.data[0] if doc_result.data else {}
-        if doc.get("created_by") and str(doc["created_by"]) == str(user.id):
-            raise HTTPException(status_code=403, detail="Người đăng ký tài liệu không được tự thẩm định claim.")
+        if str(claim.get("created_by") or "") == str(user.id) or (doc.get("created_by") and str(doc["created_by"]) == str(user.id)):
+            raise HTTPException(status_code=403, detail="Người tạo claim hoặc đăng ký tài liệu không được tự thẩm định claim.")
         if doc.get("specialty") and doc["specialty"] not in (reviewer.get("specialties") or []):
             raise HTTPException(status_code=403, detail="Reviewer không phù hợp chuyên khoa.")
         prior = db.table("clinical_evidence_claim_reviews").select("reviewer_id,decision").eq(
@@ -467,6 +512,8 @@ def build_workflow_router(db, storage, auth_dependency):
     @router.post("/conflicts/{conflict_id}/review")
     def review_conflict(conflict_id: str, request: ConflictReview, user=Depends(auth_dependency)):
         reviewer_for(user)
+        if request.has_conflict_of_interest:
+            raise HTTPException(status_code=409, detail="Reviewer có xung đột lợi ích không được xử lý conflict.")
         found = db.table("clinical_evidence_conflicts").select("*").eq("id", conflict_id).limit(1).execute()
         if not found.data:
             raise HTTPException(status_code=404, detail="Không tìm thấy conflict.")
@@ -526,8 +573,10 @@ def build_workflow_router(db, storage, auth_dependency):
         if not current_result.data or not old_result.data:
             raise HTTPException(status_code=404, detail="Không tìm thấy một trong hai tài liệu.")
         current, predecessor = current_result.data[0], old_result.data[0]
-        if current.get("official_identifier") != predecessor.get("official_identifier"):
-            raise HTTPException(status_code=409, detail="Hai tài liệu không cùng official_identifier; không tự liên kết phiên bản.")
+        if not current.get("official_identifier") or current.get("official_identifier") != predecessor.get("official_identifier"):
+            raise HTTPException(status_code=409, detail="Hai tài liệu không cùng official_identifier đã khai báo; không tự liên kết phiên bản.")
+        if current.get("publisher") != predecessor.get("publisher") or current.get("knowledge_domain") != predecessor.get("knowledge_domain"):
+            raise HTTPException(status_code=409, detail="Publisher hoặc knowledge domain không khớp; cần xác minh thủ công ngoài luồng này.")
         if request.decision == "REJECT":
             return {"relation_created": False, "status": "REJECTED", "rationale": request.rationale}
         if str(current.get("created_by") or "") == str(user.id):
