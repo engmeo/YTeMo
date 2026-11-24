@@ -26,7 +26,7 @@ Chỉ dùng prompt tổng hợp hoặc đã khử định danh. Ví dụ:
 cd backend
 $env:YTEMO_BENCHMARK_BASE_URL="http://127.0.0.1:8001/v1"
 $env:YTEMO_BENCHMARK_MODEL="model-id-served"
-python inference_latency_benchmark.py --prompts ..\docs\inference_benchmark_prompts.vi.jsonl --runs 5 --max-tokens 256 --output q4-results.json
+python inference_latency_benchmark.py --prompts ..\docs\inference_benchmark_prompts.vi.jsonl --warmup 1 --runs 5 --max-tokens 256 --output q4-results.json
 ```
 
 Chạy lại chính prompt file đó cho Q5/AWQ/GPTQ, giữ nguyên cấu hình concurrency và warm-up. Không đưa API key vào command history; dùng biến môi trường.
