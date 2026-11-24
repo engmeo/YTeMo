@@ -83,10 +83,10 @@ BENCH_BASE_URL=http://127.0.0.1:8001/v1 \
 BENCH_BASE_MODEL=base-model \
 BENCH_TUNED_URL=http://127.0.0.1:8002/v1 \
 BENCH_TUNED_MODEL=fine-tuned-model \
-python -m clinical_training.benchmark --cases clinical_training/benchmark_cases.template.jsonl
+python -m clinical_training.benchmark --cases clinical_training/benchmark_cases.template.jsonl --output artifacts/clinical_benchmark_blinded.jsonl --key-output artifacts/restricted_benchmark_key.jsonl
 ```
 
-Runner đo latency và lưu outputs. Reviewers phải chấm ẩn danh A/B; không tự động kết luận mô hình đúng về lâm sàng.
+Runner đo latency và xuất hai file: A/B outputs cho reviewers, cùng unblinding key riêng chỉ người quản trị benchmark được giữ. Không chia sẻ key cho reviewers trước khi khóa điểm. Runner không tự động kết luận mô hình đúng về lâm sàng.
 
 ## 6. Giới hạn
 
