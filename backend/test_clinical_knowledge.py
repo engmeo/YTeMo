@@ -64,7 +64,7 @@ class ClinicalKnowledgeChecksTests(unittest.TestCase):
     def test_approval_scope_is_from_controlled_taxonomy(self):
         base = {
             "decision": "APPROVED", "rationale": "Reviewer rationale is sufficiently detailed.",
-            "scope": ["patient_education"],
+            "scope": ["patient_education"], "has_conflict_of_interest": False,
         }
         self.assertEqual(ReviewDecision(**base).scope, ["patient_education"])
         base["scope"] = ["unrestricted_clinical_advice"]
