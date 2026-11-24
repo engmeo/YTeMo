@@ -49,6 +49,22 @@ class MultiAgentOrchestrationTests(unittest.TestCase):
     def test_general_chat_does_not_pay_multi_agent_overhead(self):
         self.assertFalse(orchestration.is_multi_agent_request("Xin chào, hôm nay thế nào?"))
 
+    def test_oversized_document_is_rejected_not_silently_truncated(self):
+        with self.assertRaises(ValueError):
+            orchestration.run_multi_agent(
+                "Phân tích hồ sơ",
+                document_context="x" * 16001,
+                requested_agents=["medication"],
+            )
+
+    def test_unknown_document_specialist_is_rejected(self):
+        with self.assertRaises(ValueError):
+            orchestration.run_multi_agent(
+                "Phân tích hồ sơ",
+                document_context="Hồ sơ mẫu",
+                requested_agents=["unknown"],
+            )
+
     @patch("multi_agent_orchestrator.generate", side_effect=fake_generate)
     def test_document_analysis_requires_explicit_specialist_selection_and_keeps_source_context(self, generate):
         result = orchestration.run_multi_agent(
