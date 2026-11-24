@@ -810,6 +810,26 @@ def get_healthcare_analysis_run(run_id: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=503, detail="Không thể tải lần phân tích.") from exc
 
 
+@app.delete("/healthcare/analysis-runs/{run_id}")
+def delete_healthcare_analysis_run(run_id: str, user=Depends(get_current_user)):
+    try:
+        deleted = (
+            db_client.table("healthcare_analysis_runs")
+            .delete()
+            .eq("id", run_id)
+            .eq("user_id", str(user.id))
+            .execute()
+        )
+        if not deleted.data:
+            raise HTTPException(status_code=404, detail="Không tìm thấy lần phân tích.")
+        return {"deleted": True, "id": run_id}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print("HEALTHCARE ANALYSIS DELETE ERROR:", type(exc).__name__, flush=True)
+        raise HTTPException(status_code=503, detail="Không thể xóa lần phân tích.") from exc
+
+
 @app.post("/healthcare/agents/run")
 def run_healthcare_agents(
     request: HealthcareAnalysisRequest,
