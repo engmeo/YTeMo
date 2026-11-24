@@ -393,6 +393,7 @@ header{height:78px;display:flex;align-items:center;justify-content:space-between
     <input id="ckVersion" placeholder="Phiên bản" style="width:100%;padding:10px;margin:5px 0;border:1px solid var(--line)">
     <input id="ckIdentifier" placeholder="Số hiệu / official identifier" style="width:100%;padding:10px;margin:5px 0;border:1px solid var(--line)">
     <input id="ckSpecialty" placeholder="Chuyên khoa (nếu có)" style="width:100%;padding:10px;margin:5px 0;border:1px solid var(--line)">
+    <select id="ckLanguage" style="width:100%;padding:10px;margin:5px 0;border:1px solid var(--line)"><option value="vi">Tiếng Việt</option><option value="en">English</option><option value="other">Ngôn ngữ khác</option></select>
     <button class="btn" id="ckIngest">Tải và xử lý PDF ↗</button>
    </div>
   </div>
@@ -920,7 +921,7 @@ ck('Ingest').addEventListener('click', async () => {
       effective_until: ck('EffectiveUntil').value || null,
       version: ck('Version').value.trim() || null,
       official_identifier: ck('Identifier').value.trim() || null,
-      specialty: ck('Specialty').value.trim() || null, language:'vi', license_status:'unknown'
+      specialty: ck('Specialty').value.trim() || null, language:ck('Language').value, license_status:'unknown'
     };
     const result = await ckRequest('/clinical-knowledge/candidates/' + encodeURIComponent(candidateId) + '/ingest', 'POST', body);
     ck('ClaimDocumentId').value = result.document_id || '';
