@@ -97,7 +97,9 @@ def route_request(message: str, evidence_context: str = "") -> dict[str, Any]:
     if any(term in evidence for term in ("abstention", "conflict", "unresolved", "retrieval_error")):
         complexity_reasons.append("evidence_uncertainty")
 
-    if emergency or complexity_reasons:
+    if emergency:
+        profile = "fast"
+    elif complexity_reasons:
         profile = "reasoning"
     elif intents:
         profile = "medical"
