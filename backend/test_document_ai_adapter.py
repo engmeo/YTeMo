@@ -35,7 +35,7 @@ class DoclingAdapterTests(unittest.TestCase):
             def __init__(self, format_options):
                 self.format_options = format_options
 
-            def convert(self, source):
+            def convert(self, source, **kwargs):
                 self.source = source
                 document = SimpleNamespace(
                     pages={1: object(), 2: object()},
