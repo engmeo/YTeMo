@@ -818,6 +818,7 @@ def delete_healthcare_analysis_run(run_id: str, user=Depends(get_current_user)):
             .delete()
             .eq("id", run_id)
             .eq("user_id", str(user.id))
+            .select("id")
             .execute()
         )
         if not deleted.data:
