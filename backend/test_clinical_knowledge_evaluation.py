@@ -11,7 +11,7 @@ class ClinicalKnowledgeEvaluationTests(unittest.TestCase):
             "forbidden_claim_ids": ["claim-2"],
             "expected_abstention": False,
             "expected_citations": [{
-                "claim_id": "claim-1", "page": 3,
+                "claim_id": "claim-1", "document_id": "doc-1", "version": "v1", "page": 3,
                 "exact_quote": "An exact source quotation.",
                 "source_url": "https://official.example/guideline.pdf",
             }],
@@ -20,6 +20,7 @@ class ClinicalKnowledgeEvaluationTests(unittest.TestCase):
             "abstention": False,
             "evidence": [{
                 "claim": {"id": "claim-1"},
+                "document": {"id": "doc-1", "version": "v1"},
                 "citation": {
                     "page": 3, "exact_quote": "An exact source quotation.",
                     "source_url": "https://official.example/guideline.pdf",
