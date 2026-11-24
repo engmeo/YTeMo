@@ -42,6 +42,7 @@ def run_once(db, limit: int = 10) -> dict[str, int]:
     claimed = db.rpc("claim_companion_action_tasks", {
         "p_now": now.isoformat(),
         "p_limit": max(1, min(int(limit), 50)),
+        "p_action_types": sorted(_HANDLERS.keys()),
     }).execute().data or []
     completed = failed = retried = skipped = 0
 
