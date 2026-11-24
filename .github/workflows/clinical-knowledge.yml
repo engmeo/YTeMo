@@ -79,6 +79,7 @@ jobs:
             backend/model_intelligence.py \
             backend/agent.py \
             backend/clinical_training/prepare_dataset.py \
+            backend/clinical_training/draft_sft_examples.py \
             backend/clinical_training/train_lora.py \
             backend/clinical_training/benchmark.py \
             backend/clinical_training/download_models.py \
