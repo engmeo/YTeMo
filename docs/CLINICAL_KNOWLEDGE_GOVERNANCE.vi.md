@@ -106,9 +106,10 @@ Phải quản lý version, mapping, provenance và license riêng. Đặc biệt
 1. DISCOVERED — tài liệu vừa được đăng ký.
 2. Automated metadata/extraction checks — kiểm tra trường bắt buộc, HTTPS, độ dài và tính toàn vẹn; không xác minh tính đúng.
 3. Domain match — lưu ở thuộc tính `source_domain_matched`; không phải trạng thái và không phải xác thực tài liệu.
-4. AI_REVIEWED — AI hỗ trợ lập báo cáo/đánh dấu vấn đề; không phải phê duyệt.
-5. CLINICAL_APPROVED — chỉ khi reviewer đã xác minh bản gốc, phiên bản hiện hành, quyền sử dụng, bằng chứng và phạm vi.
-6. SUPERSEDED/REJECTED — không được dùng làm bằng chứng hiện hành.
+4. AI_REVIEWED — chỉ biểu thị AI hỗ trợ lập báo cáo/đánh dấu vấn đề; không phải phê duyệt.
+5. CLINICAL_REVIEW_PENDING_SECOND — reviewer đầu tiên đã ghi nhận đồng ý; cần reviewer độc lập tiếp theo.
+6. CLINICAL_APPROVED — chỉ khi đủ reviewer theo domain đã xác minh bản gốc, phiên bản hiện hành, quyền sử dụng, bằng chứng và phạm vi.
+7. SUPERSEDED/REJECTED — không được dùng làm bằng chứng hiện hành.
 
 Trong code hiện tại, trạng thái mới đăng ký luôn là DISCOVERED. Cột legacy `source_verified` được giữ tương thích nhưng phải false; cột `source_domain_matched` chỉ biểu thị hostname thuộc registry.
 
@@ -213,7 +214,7 @@ Các chỉ số chất lượng chỉ phát hiện dấu hiệu trích xuất k�
 - AI draft không được lưu hoặc phê duyệt tự động. Reviewer phải chọn, sửa và tạo claim bằng `POST /clinical-knowledge/documents/{id}/claims`.
 - Claim lưu population, intervention, comparator, outcomes, effect estimate (chỉ khi nguồn nêu), certainty, recommendation strength, page number, exact quote và locator.
 - `POST /clinical-knowledge/claims/{id}/review`: reviewer thẩm định theo AGREE II, GRADE, AMSTAR 2, RoB 2, ROBINS-I, QUADAS-2 hoặc OTHER; các framework có bộ domain bắt buộc.
-- Claim ở trạng thái UNREVIEWED cho tới khi đủ số reviewer độc lập theo domain. Claim chưa ACCEPTED không được retrieval.
+- Claim ở trạng thái UNREVIEWED trước review; sau reviewer đầu tiên sẽ là PENDING_SECOND_REVIEW nếu domain yêu cầu hai người. Chỉ ACCEPTED sau đủ reviewer độc lập. Claim chưa ACCEPTED không được retrieval.
 
 AI chỉ hỗ trợ trích xuất. Nó không xác định effect estimate, certainty hoặc recommendation strength khi nguồn không nêu; không tự chuyển nội dung thành khuyến nghị. Việc quote khớp text chỉ chứng minh quote có trong bản trích xuất, không bảo đảm OCR không sai.
 
@@ -246,6 +247,7 @@ Các migration phải chạy đúng thứ tự, dùng version duy nhất:
 4. `202611240004_evidence_grade_clinical_knowledge.sql`
 5. `202611240005_clinical_knowledge_ingestion_evidence_workflows.sql`
 6. `202611240006_clinical_knowledge_independent_resolution.sql`
+7. `202611240007_clinical_knowledge_review_state_precision.sql`
 
 Hai migration Clinical Knowledge ban đầu từng bị trùng version với migration core/document storage; đã đổi thành 003 và 004 để tránh xung đột version của Supabase CLI. Không chạy các file cũ có tên 001/002 của Clinical Knowledge nếu chúng còn tồn tại trong bản checkout cũ.
 
