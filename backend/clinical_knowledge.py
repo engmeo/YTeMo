@@ -89,8 +89,8 @@ def build_router(db, auth_dependency):
             .eq("is_active", True)
             .limit(1).execute()
         )
-        if not result.data:
-            raise HTTPException(status_code=403, detail="Bạn chưa được cấp quyền thẩm định tri thức y khoa.")
+        if not result.data or result.data[0].get("role") not in {"physician", "pharmacist", "clinical_reviewer"}:
+            raise HTTPException(status_code=403, detail="Tài khoản chưa được cấp quyền thẩm định lâm sàng.")
         return result.data[0]
 
     @router.get("/sources")
@@ -168,6 +168,8 @@ def build_router(db, auth_dependency):
         if request.decision == "APPROVED":
             if not doc.get("source_verified") or not (doc.get("automated_checks") or {}).get("passed"):
                 raise HTTPException(status_code=409, detail="Tài liệu chưa đạt kiểm tra nguồn và chất lượng tự động.")
+            if not str(doc.get("extracted_text") or "").strip() or len(str(doc.get("extracted_text") or "").strip()) < 200:
+                raise HTTPException(status_code=409, detail="Không thể phê duyệt khi chưa có nội dung tài liệu đã trích xuất đầy đủ.")
             if not request.scope:
                 raise HTTPException(status_code=422, detail="Phải xác định phạm vi sử dụng được phê duyệt.")
             new_status = "CLINICAL_APPROVED"
