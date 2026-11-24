@@ -81,6 +81,8 @@ class MultiAgentState(TypedDict, total=False):
     message: str
     history: str
     evidence_context: str
+    document_context: str
+    requested_agents: list[str]
     route: dict[str, Any]
     selected_agents: list[str]
     plan_reason: str
@@ -113,8 +115,8 @@ def _mandatory_agents(route: dict[str, Any]) -> list[str]:
 
 
 def _plan_node(state: MultiAgentState) -> dict[str, Any]:
-    route = route_request(state.get("message", ""), state.get("evidence_context", ""))
-    mandatory = _mandatory_agents(route)
+    route = route_request(state.get("message", ""), state.get("evidence_context", "") + " " + state.get("document_context", ""))
+    mandatory = list(dict.fromkeys(_mandatory_agents(route) + [key for key in state.get("requested_agents", []) if key in SPECIALISTS]))[:MAX_SPECIALISTS_PER_TURN]
     if not mandatory or route.get("emergency_signal"):
         return {
             "route": route,
@@ -210,6 +212,9 @@ LỊCH SỬ LIÊN QUAN:
 EVIDENCE CONTEXT (chỉ dùng claim đã duyệt; nếu không có thì phải abstain):
 {state.get("evidence_context", "")[:12000]}
 
+HỒ SƠ NGƯỜI DÙNG CUNG CẤP (dữ liệu chưa được thẩm định; chỉ trích xuất và trích dẫn nguyên văn, không coi là clinical evidence):
+{state.get("document_context", "")[:16000]}
+
 ĐỊNH DẠNG BÁO CÁO:
 1. Findings (dữ kiện tìm thấy)
 2. Evidence (trích dẫn nguồn chính xác hoặc ghi không có)
@@ -282,6 +287,7 @@ CÂU HỎI: {state.get("message", "")[:4000]}
 ROUTER: {json.dumps(state.get("route", {}), ensure_ascii=False)}
 SPECIALISTS ĐƯỢC CHỌN: {", ".join(selected)}
 EVIDENCE CONTEXT: {state.get("evidence_context", "")[:12000]}
+HỒ SƠ NGƯỜI DÙNG CUNG CẤP (chưa thẩm định): {state.get("document_context", "")[:16000]}
 BÁO CÁO SPECIALISTS:
 {reports}
 
@@ -321,6 +327,7 @@ Không sửa nội dung, không giải thích.
 
 CÂU HỎI: {state.get("message", "")[:3000]}
 EVIDENCE: {state.get("evidence_context", "")[:10000]}
+HỒ SƠ NGƯỜI DÙNG (chưa thẩm định): {state.get("document_context", "")[:12000]}
 BÁO CÁO: {json.dumps(state.get("agent_results", []), ensure_ascii=False)[:10000]}
 DỰ THẢO:
 {draft[:7000]}
@@ -377,11 +384,15 @@ def run_multi_agent(
     message: str,
     history: str = "",
     evidence_context: str = "",
+    document_context: str = "",
+    requested_agents: list[str] | None = None,
 ) -> dict[str, Any]:
     result = MULTI_AGENT_GRAPH.invoke({
         "message": message,
         "history": history,
         "evidence_context": evidence_context,
+        "document_context": document_context,
+        "requested_agents": requested_agents or [],
         "agent_results": [],
     })
     return {
@@ -397,6 +408,8 @@ def stream_multi_agent_events(
     message: str,
     history: str = "",
     evidence_context: str = "",
+    document_context: str = "",
+    requested_agents: list[str] | None = None,
 ) -> Iterator[dict[str, str]]:
     """Emit workflow progress, then reveal only the reviewer-approved answer."""
     final_state: dict[str, Any] = {}
@@ -406,6 +419,8 @@ def stream_multi_agent_events(
                 "message": message,
                 "history": history,
                 "evidence_context": evidence_context,
+                "document_context": document_context,
+                "requested_agents": requested_agents or [],
                 "agent_results": [],
             },
             stream_mode="updates",
