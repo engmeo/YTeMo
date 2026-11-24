@@ -53,6 +53,7 @@ class ClinicalKnowledgeChecksTests(unittest.TestCase):
     def test_only_unreviewed_or_pending_documents_can_be_reviewed(self):
         self.assertTrue(is_reviewable_status("DISCOVERED"))
         self.assertTrue(is_reviewable_status("AI_REVIEWED"))
+        self.assertTrue(is_reviewable_status("CLINICAL_REVIEW_PENDING_SECOND"))
         self.assertFalse(is_reviewable_status("CLINICAL_APPROVED"))
         self.assertFalse(is_reviewable_status("REJECTED"))
         self.assertFalse(is_reviewable_status("SUPERSEDED"))
