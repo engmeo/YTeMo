@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 import model_intelligence
-from model_intelligence import choose_profile, model_catalog
+from model_intelligence import choose_profile, model_catalog, route_request
 
 
 class ModelIntelligenceTests(unittest.TestCase):
@@ -17,6 +17,21 @@ class ModelIntelligenceTests(unittest.TestCase):
 
     def test_explicit_profile_is_respected(self):
         self.assertEqual(choose_profile("Xin chào", requested_profile="reasoning"), "reasoning")
+
+    def test_router_detects_vietnamese_medical_intent_with_or_without_diacritics(self):
+        self.assertEqual(choose_profile("Tôi muốn hỏi về thuốc"), "medical")
+        self.assertEqual(choose_profile("toi muon hoi ve thuoc"), "medical")
+
+    def test_router_escalates_multi_domain_requests_to_reasoning(self):
+        route = route_request("Tổng hợp kết quả xét nghiệm và chi phí điều trị")
+        self.assertEqual(route["profile"], "reasoning")
+        self.assertIn("laboratory", route["intents"])
+        self.assertIn("cost", route["intents"])
+
+    def test_emergency_signals_use_fast_profile_and_are_flagged(self):
+        route = route_request("Tôi đang khó thở")
+        self.assertEqual(route["profile"], "fast")
+        self.assertTrue(route["emergency_signal"])
 
     def test_catalog_marks_models_as_not_default_enabled(self):
         catalog = model_catalog()
