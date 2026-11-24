@@ -1,14 +1,16 @@
 """Paired Clinical Benchmark runner with blinded human-review handoff.
 
 This runner measures latency and collects outputs. It does NOT assign clinical
-correctness automatically. Human reviewers must score anonymized outputs using
-the rubric in docs/CLINICAL_MODEL_TRAINING.vi.md.
+correctness automatically. Human reviewers receive only A/B outputs; the
+model-to-alias key is written to a separate restricted file.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
+import random
 import statistics
 import time
 from pathlib import Path
@@ -36,7 +38,14 @@ def call_model(base_url: str, model: str, api_key: str, prompt: str, timeout: in
     return str(text), round((time.perf_counter() - started) * 1000, 1)
 
 
-def run(cases_path: Path, output_path: Path, timeout: int) -> dict:
+def percentile(values: list[float], q: float):
+    if not values:
+        return None
+    ordered = sorted(values)
+    return ordered[max(0, math.ceil(q * len(ordered)) - 1)]
+
+
+def run(cases_path: Path, output_path: Path, key_path: Path, timeout: int) -> dict:
     base_url = os.environ["BENCH_BASE_URL"]
     tuned_url = os.environ["BENCH_TUNED_URL"]
     base_model = os.environ["BENCH_BASE_MODEL"]
@@ -44,6 +53,7 @@ def run(cases_path: Path, output_path: Path, timeout: int) -> dict:
     base_key = os.getenv("BENCH_BASE_API_KEY", "local")
     tuned_key = os.getenv("BENCH_TUNED_API_KEY", "local")
     rows = []
+    keys = []
     latencies = {"base": [], "fine_tuned": []}
 
     for line_number, line in enumerate(cases_path.read_text(encoding="utf-8").splitlines(), start=1):
@@ -56,26 +66,39 @@ def run(cases_path: Path, output_path: Path, timeout: int) -> dict:
         tuned_text, tuned_ms = call_model(tuned_url, tuned_model, tuned_key, case["prompt"], timeout)
         latencies["base"].append(base_ms)
         latencies["fine_tuned"].append(tuned_ms)
+
+        base_is_a = bool(random.getrandbits(1))
+        output_a, output_b = (base_text, tuned_text) if base_is_a else (tuned_text, base_text)
         rows.append({
             "case_id": case["case_id"],
             "scenario_group": case["scenario_group"],
             "evidence_state": case.get("evidence_state", "UNSPECIFIED"),
             "must_abstain": bool(case.get("must_abstain", False)),
-            "base": {"text": base_text, "latency_ms": base_ms},
-            "fine_tuned": {"text": tuned_text, "latency_ms": tuned_ms},
-            "blind_review": {"base_alias": "A", "fine_tuned_alias": "B", "review_status": "PENDING"},
+            "model_a": {"text": output_a},
+            "model_b": {"text": output_b},
+            "review_status": "PENDING_BLINDED_REVIEW",
+        })
+        keys.append({
+            "case_id": case["case_id"],
+            "model_a": "base" if base_is_a else "fine_tuned",
+            "model_b": "fine_tuned" if base_is_a else "base",
+            "base_latency_ms": base_ms,
+            "fine_tuned_latency_ms": tuned_ms,
         })
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    key_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
+    key_path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in keys), encoding="utf-8")
     summary = {
         "cases": len(rows),
         "base_latency_median_ms": statistics.median(latencies["base"]) if rows else None,
         "fine_tuned_latency_median_ms": statistics.median(latencies["fine_tuned"]) if rows else None,
-        "base_latency_p95_ms": sorted(latencies["base"])[max(0, int(len(rows) * 0.95) - 1)] if rows else None,
-        "fine_tuned_latency_p95_ms": sorted(latencies["fine_tuned"])[max(0, int(len(rows) * 0.95) - 1)] if rows else None,
+        "base_latency_p95_ms": percentile(latencies["base"], 0.95),
+        "fine_tuned_latency_p95_ms": percentile(latencies["fine_tuned"], 0.95),
         "clinical_quality": "NOT_SCORED_REQUIRES_BLINDED_HUMAN_REVIEW",
-        "output": str(output_path),
+        "reviewer_output": str(output_path),
+        "restricted_unblinding_key": str(key_path),
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return summary
@@ -84,10 +107,14 @@ def run(cases_path: Path, output_path: Path, timeout: int) -> dict:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--cases", required=True)
-    parser.add_argument("--output", default="artifacts/clinical_benchmark_outputs.jsonl")
+    parser.add_argument("--output", default="artifacts/clinical_benchmark_blinded.jsonl")
+    parser.add_argument("--key-output", default="artifacts/restricted_benchmark_key.jsonl")
     parser.add_argument("--timeout", type=int, default=25)
     args = parser.parse_args()
-    run(Path(args.cases), Path(args.output), max(5, min(args.timeout, 60)))
+    run(
+        Path(args.cases), Path(args.output), Path(args.key_output),
+        max(5, min(args.timeout, 60)),
+    )
 
 
 if __name__ == "__main__":
