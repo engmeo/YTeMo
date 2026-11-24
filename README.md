@@ -163,10 +163,14 @@ Backend bổ sung module quản trị nguồn và tài liệu y khoa, gồm prov
 | GET /clinical-knowledge/documents/{id} | Reviewer đọc nội dung gốc đã trích xuất |
 | POST /clinical-knowledge/documents/{id}/review | Ghi nhận phê duyệt/từ chối/yêu cầu sửa |
 
-**Ranh giới an toàn:** automated checks chỉ kiểm tra nguồn/domain, metadata và tính toàn vẹn trích xuất; không xác minh nội dung y khoa đúng. Chỉ reviewer có quyền phù hợp mới được phê duyệt và phải chỉ rõ approved_scope. Tài liệu chưa được phê duyệt không được coi là clinical evidence. Module hiện chưa có crawler, OCR scheduler, vector retrieval hay clinical decision support.
+**Ranh giới an toàn:** domain match không xác thực tài liệu; đăng ký mới luôn ở DISCOVERED. Các domain guideline/thuốc/chẩn đoán yêu cầu hai reviewer độc lập đã xác minh credential. AI chỉ hỗ trợ trích xuất/đối chiếu, không tự chấm độ chắc chắn hay phê duyệt lâm sàng. Chưa bật clinical retrieval hoặc clinical decision support.
 
-- Kiến trúc, quy trình và hướng dẫn: [docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md](docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md)
-- Migration: [supabase/migrations/202611240001_clinical_knowledge_governance.sql](supabase/migrations/202611240001_clinical_knowledge_governance.sql)
+Layer 1 được tổ chức thành 7 knowledge domains: national guidelines, WHO guidelines, specialty guidelines, medication/pharmacovigilance, reviewed health education, diagnostics/clinical reference và prevention/public health. Có terminology registry (ICD-10/11, ATC/DDD, LOINC, SNOMED CT, UCUM), evidence-claim schema và conflict registry. Taxonomy/schema không đồng nghĩa đã có dữ liệu hoặc chuyên gia thẩm định.
+
+- Kiến trúc, tiêu chuẩn bằng chứng, vòng đời và giới hạn: [docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md](docs/CLINICAL_KNOWLEDGE_GOVERNANCE.vi.md)
+- Migrations (chạy theo thứ tự):
+  - [202611240001_clinical_knowledge_governance.sql](supabase/migrations/202611240001_clinical_knowledge_governance.sql)
+  - [202611240002_evidence_grade_clinical_knowledge.sql](supabase/migrations/202611240002_evidence_grade_clinical_knowledge.sql)
 
 ## 10. Đóng góp
 
