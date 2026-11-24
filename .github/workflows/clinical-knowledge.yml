@@ -28,6 +28,10 @@ on:
       - "backend/temporal_action_worker.py"
       - "backend/companion_email_notifications.py"
       - "backend/companion_action_worker_service.py"
+      - "backend/inference_latency_benchmark.py"
+      - "backend/test_inference_latency_benchmark.py"
+      - "docs/INFERENCE_SERVER_BENCHMARK.vi.md"
+      - "docs/inference_benchmark_prompts.vi.jsonl"
       - "backend/tests/**"
       - "docs/api/**"
       - "docs/COMPANION_AGENT_ACTIONS.vi.md"
@@ -73,7 +77,7 @@ on:
       - "backend/requirements.txt"
       - "docs/CLINICAL_MODEL_TRAINING.vi.md"
       - "docs/CLINICAL_DATA_COLLECTION.vi.md"
-      - "supabase/migrations/20261124000*.sql"
+      - "supabase/migrations/202611240*.sql"
       - ".github/workflows/clinical-knowledge.yml"
 
 jobs:
@@ -105,6 +109,7 @@ jobs:
             backend/temporal_action_worker.py \
             backend/companion_email_notifications.py \
             backend/companion_action_worker_service.py \
+            backend/inference_latency_benchmark.py \
             backend/clinical_training/prepare_dataset.py \
             backend/clinical_training/draft_sft_examples.py \
             backend/clinical_training/train_lora.py \
