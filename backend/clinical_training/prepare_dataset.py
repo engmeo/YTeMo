@@ -51,9 +51,10 @@ def validate_record(record: dict, allowed_licenses: set[str]) -> list[str]:
 
 
 def prepare(input_path: Path, output_path: Path, reject_path: Path, licenses: set[str]) -> dict:
-    seen = set()
+    positions = {}
     accepted = []
     rejected = []
+    deduplicated = 0
     for line_number, line in enumerate(input_path.read_text(encoding="utf-8").splitlines(), start=1):
         if not line.strip():
             continue
@@ -64,18 +65,11 @@ def prepare(input_path: Path, output_path: Path, reject_path: Path, licenses: se
             continue
         errors = validate_record(record, licenses)
         key = record_key(record)
-        if key in seen:
-            errors.append("duplicate_content")
         if errors:
             rejected.append({"line": line_number, "source_id": record.get("source_id"), "errors": errors})
             continue
-        seen.add(key)
-        accepted.append({
-            "instruction": normalize_text(record["instruction"]),
-            "input": normalize_text(str(record.get("input", ""))),
-            "response": normalize_text(record["response"]),
-            "evidence_state": record["evidence_state"],
-            "evidence_summary": normalize_text(str(record.get("evidence_summary", ""))),
+
+        provenance = {
             "source_id": record["source_id"],
             "source_url": record["source_url"],
             "license": record["license"],
@@ -84,14 +78,30 @@ def prepare(input_path: Path, output_path: Path, reject_path: Path, licenses: se
             "source_hash": record.get("source_hash"),
             "clinical_review_id": record.get("clinical_review_id"),
             "reviewer_count": record.get("reviewer_count", 0),
+        }
+        if key in positions:
+            # Keep one training example but preserve every independently valid source.
+            accepted[positions[key]]["source_provenance"].append(provenance)
+            deduplicated += 1
+            continue
+
+        positions[key] = len(accepted)
+        accepted.append({
+            "instruction": normalize_text(record["instruction"]),
+            "input": normalize_text(str(record.get("input", ""))),
+            "response": normalize_text(record["response"]),
+            "evidence_state": record["evidence_state"],
+            "evidence_summary": normalize_text(str(record.get("evidence_summary", ""))),
+            "source_provenance": [provenance],
             "privacy_reviewed": True,
             "training_record_sha256": key,
         })
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in accepted), encoding="utf-8")
     reject_path.parent.mkdir(parents=True, exist_ok=True)
     reject_path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rejected), encoding="utf-8")
-    return {"accepted": len(accepted), "rejected": len(rejected), "deduplicated": sum("duplicate_content" in row["errors"] for row in rejected)}
+    return {"accepted": len(accepted), "rejected": len(rejected), "deduplicated": deduplicated}
 
 
 def main():
