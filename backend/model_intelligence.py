@@ -38,8 +38,8 @@ def _normalize_vietnamese(value: str) -> str:
 
 _INTENT_TERMS = {
     "medication": (
-        "thuoc", "lieu dung", "tuong tac", "tac dung phu", "don thuoc",
-        "uống", "tiem", "vien", "mg", "mcg", "ml",
+        "thuoc", "lieu", "tuong tac", "tac dung phu", "don thuoc",
+        "uong thuoc", "vien thuoc", "tiem", "mg", "mcg", "ml",
     ),
     "laboratory": (
         "xet nghiem", "ket qua", "hba1c", "glucose", "creatinin",
