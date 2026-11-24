@@ -204,6 +204,7 @@ Migrations (kiểm tra dependency trước khi áp dụng; xem [hướng dẫn S
 - `202611240011_companion_action_tasks.sql`
 - `202611240012_lockdown_rls_auto_enable.sql`
 - `202611240013_healthcare_document_service_grants.sql`
+- `202611240014_fix_action_claim_batch_bound.sql`
 
 Không chạy `supabase db push` hàng loạt khi remote migration history chưa đồng bộ với schema thực tế.
 
